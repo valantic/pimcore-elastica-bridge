@@ -74,6 +74,11 @@ class ProductIndex extends AbstractIndex
     {
         return [ProductIndexDocument::class];
     }
+
+    public function filterByCategory(Category $category): Match
+    {
+        return new Match('categories', sprintf(',%s,', $category->getId()));
+    }
 }
 ```
 
