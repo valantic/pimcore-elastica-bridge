@@ -1,0 +1,37 @@
+parameters:
+	ignoreErrors:
+		-
+			message: "#^Property Valantic\\\\ElasticaBridgeBundle\\\\Command\\\\Debug\\:\\:\\$indices \\(array\\<Valantic\\\\ElasticaBridgeBundle\\\\Index\\\\IndexInterface\\>\\) does not accept array\\<string, object\\>\\.$#"
+			count: 1
+			path: src/Command/Debug.php
+
+		-
+			message: "#^Property Valantic\\\\ElasticaBridgeBundle\\\\Command\\\\Debug\\:\\:\\$documents \\(array\\<Valantic\\\\ElasticaBridgeBundle\\\\DocumentType\\\\DocumentInterface\\>\\) does not accept array\\<string, object\\>\\.$#"
+			count: 1
+			path: src/Command/Debug.php
+
+		-
+			message: "#^Property Valantic\\\\ElasticaBridgeBundle\\\\Command\\\\Debug\\:\\:\\$indexDocuments \\(array\\<Valantic\\\\ElasticaBridgeBundle\\\\DocumentType\\\\Index\\\\IndexDocumentInterface\\>\\) does not accept array\\<string, object\\>\\.$#"
+			count: 1
+			path: src/Command/Debug.php
+
+		-
+			message: "#^Property Valantic\\\\ElasticaBridgeBundle\\\\Command\\\\Index\\:\\:\\$indices \\(array\\<Valantic\\\\ElasticaBridgeBundle\\\\Index\\\\IndexInterface\\>\\) does not accept array\\<string, object\\>\\.$#"
+			count: 1
+			path: src/Command/Index.php
+
+		-
+			message: "#^Property Valantic\\\\ElasticaBridgeBundle\\\\Command\\\\Index\\:\\:\\$documents \\(array\\<Valantic\\\\ElasticaBridgeBundle\\\\DocumentType\\\\DocumentInterface\\>\\) does not accept array\\<string, object\\>\\.$#"
+			count: 1
+			path: src/Command/Index.php
+
+		-
+			message: "#^Property Valantic\\\\ElasticaBridgeBundle\\\\Command\\\\Index\\:\\:\\$indexDocuments \\(array\\<Valantic\\\\ElasticaBridgeBundle\\\\DocumentType\\\\Index\\\\IndexDocumentInterface\\>\\) does not accept array\\<string, object\\>\\.$#"
+			count: 1
+			path: src/Command/Index.php
+
+		-
+			message: "#^Parameter \\#2 \\$haystack of function in_array expects array, array\\<string\\>\\|string given\\.$#"
+			count: 1
+			path: src/Command/Index.php
+

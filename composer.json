@@ -1,0 +1,44 @@
+{
+  "name": "valantic/pimcore-elastica-bridge",
+  "description": "Elastica bridge for Pimcore",
+  "type": "pimcore-bundle",
+  "require": {
+    "php": "^7.4",
+    "ext-json": "*",
+    "pimcore/pimcore": "6.8.x-dev",
+    "ruflin/elastica": "^7.0"
+  },
+  "require-dev": {
+    "phpstan/phpstan": "^0.12.62"
+  },
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Linus Metzler",
+      "email": "linus.metzler@cec.valantic.com"
+    },
+    {
+      "name": "Florian Völker",
+      "email": "florian.voelker@antiloop.com"
+    },
+    {
+      "name": "Patrick Ryser",
+      "email": "patrick.ryser@cec.valantic.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "Valantic\\ElasticaBridgeBundle\\": "src/"
+    }
+  },
+  "extra": {
+    "pimcore": {
+      "bundles": [
+        "Valantic\\ElasticaBridgeBundle\\ValanticElasticaBridgeBundle"
+      ]
+    }
+  },
+  "scripts": {
+    "phpstan": ["vendor/bin/phpstan analyse src"]
+  }
+}
