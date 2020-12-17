@@ -9,7 +9,7 @@
     "ruflin/elastica": "^7.0"
   },
   "require-dev": {
-    "phpstan/phpstan": "^0.12.62"
+    "phpstan/phpstan": "^0.12.54"
   },
   "license": "MIT",
   "authors": [
