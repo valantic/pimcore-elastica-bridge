@@ -10,7 +10,9 @@ interface DocumentInterface
     public const TYPE_ASSET = 'asset';
     public const TYPE_DOCUMENT = 'document';
     public const TYPE_OBJECT = 'object';
-    public const TYPES = [self::TYPE_ASSET, self::TYPE_DOCUMENT, self::TYPE_OBJECT];
+    public const TYPE_PAGE = 'page';
+
+    public const TYPES = [self::TYPE_ASSET, self::TYPE_DOCUMENT, self::TYPE_OBJECT, self::TYPE_PAGE];
 
     public function getType(): string;
 
