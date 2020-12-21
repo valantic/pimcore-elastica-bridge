@@ -15,21 +15,19 @@ class Debug extends BaseCommand
      * @var IndexInterface[]
      */
     protected array $indices;
-
     /**
      * @var DocumentInterface[]
      */
     protected array $documents;
-
     /**
      * @var IndexDocumentInterface[]
      */
     protected array $indexDocuments;
-
     protected ElasticsearchClient $esClient;
 
     /**
      * Index constructor.
+     *
      * @param iterable<IndexInterface> $indices
      * @param iterable<DocumentInterface> $documents
      * @param iterable<IndexDocumentInterface> $indexDocuments
@@ -48,7 +46,6 @@ class Debug extends BaseCommand
     {
         $this->setName(self::COMMAND_NAMESPACE . 'debug');
     }
-
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {

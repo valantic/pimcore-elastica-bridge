@@ -18,6 +18,7 @@ abstract class BaseCommand extends AbstractCommand
 
     /**
      * @param iterable<object> $iterables
+     *
      * @return array<string,object>
      */
     protected function iterableToArray(iterable $iterables): array

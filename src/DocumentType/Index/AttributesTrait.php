@@ -38,11 +38,11 @@ trait AttributesTrait
 
         foreach ($fields as $field) {
             $ids = [];
-            foreach($element->get($field) as $relation){
+            foreach ($element->get($field) as $relation) {
                 /** @var Concrete $relation */
                 $ids[] = $relation->getId();
             }
-            $result[$field] = sprintf(',%s,',implode(',',$ids));
+            $result[$field] = sprintf(',%s,', implode(',', $ids));
         }
 
         return $result;

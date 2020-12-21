@@ -12,7 +12,6 @@ use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 abstract class AbstractIndex implements IndexInterface
 {
     protected bool $areGlobalFiltersEnabled = true;
-
     protected ElasticsearchClient $client;
 
     public function __construct(ElasticsearchClient $client)

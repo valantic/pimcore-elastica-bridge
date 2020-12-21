@@ -18,26 +18,23 @@ class Index extends BaseCommand
     protected const OPTION_NO_DELETE = 'no-delete';
     protected const OPTION_NO_POPULATE = 'no-populate';
     protected const OPTION_NO_CHECK = 'no-check';
-
     /**
      * @var IndexInterface[]
      */
     protected array $indices;
-
     /**
      * @var DocumentInterface[]
      */
     protected array $documents;
-
     /**
      * @var IndexDocumentInterface[]
      */
     protected array $indexDocuments;
-
     protected ElasticsearchClient $esClient;
 
     /**
      * Index constructor.
+     *
      * @param iterable<IndexInterface> $indices
      * @param iterable<DocumentInterface> $documents
      * @param iterable<IndexDocumentInterface> $indexDocuments
@@ -80,7 +77,6 @@ class Index extends BaseCommand
                 'Do not perform post-populate checks; implied with --' . self::OPTION_NO_POPULATE
             );
     }
-
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
@@ -160,5 +156,4 @@ class Index extends BaseCommand
         $indexDocumentInstance = $indexConfig->getIndexDocumentInstance($esDoc);
         $this->output->writeln(sprintf('> ES %s -> Pimcore %s', $esDoc->getId(), $indexDocumentInstance ? $indexDocumentInstance->getPimcoreElement($esDoc)->getId() : 'FAILED'));
     }
-
 }
