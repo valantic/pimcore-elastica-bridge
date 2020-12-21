@@ -45,4 +45,6 @@ interface IndexInterface
     public function getIndexDocumentInstance(Document $document): ?IndexDocumentInterface;
 
     public function getElasticaIndex(): Index;
+
+    public function getDocumentFromElement(AbstractElement $element): ?Document;
 }

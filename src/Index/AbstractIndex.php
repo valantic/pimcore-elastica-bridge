@@ -4,6 +4,8 @@ namespace Valantic\ElasticaBridgeBundle\Index;
 
 use Elastica\Document;
 use Elastica\Index;
+use Elastica\Query\BoolQuery;
+use Elastica\Query\Match;
 use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\DocumentType\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
@@ -60,18 +62,7 @@ abstract class AbstractIndex implements IndexInterface
 
     public function isElementAllowedInIndex(AbstractElement $element): bool
     {
-        foreach ($this->getAllowedDocuments() as $allowedDocument) {
-            /** @var IndexDocumentInterface $documentInstance */
-            $documentInstance = new $allowedDocument();
-            if (in_array($documentInstance->getType(), [
-                    DocumentInterface::TYPE_OBJECT,
-                    DocumentInterface::TYPE_DOCUMENT,
-                ], true) && $documentInstance->getSubType() === get_class($element)) {
-                return true;
-            }
-        }
-
-        return false;
+        return $this->findIndexDocumentInstanceByPimcore($element) !== null;
     }
 
     public function getIndexDocumentInstance(Document $document): ?IndexDocumentInterface
@@ -82,6 +73,41 @@ abstract class AbstractIndex implements IndexInterface
             /** @var IndexDocumentInterface $documentInstance */
             $documentInstance = new $allowedDocument();
             if ($documentInstance->getType() === $type && $documentInstance->getSubType() === $subType) {
+                return $documentInstance;
+            }
+        }
+
+        return null;
+    }
+
+    public function getDocumentFromElement(AbstractElement $element): ?Document
+    {
+        $documentInstance = $this->findIndexDocumentInstanceByPimcore($element);
+        if (!$documentInstance) {
+            return null;
+        }
+
+        $query = (new BoolQuery())
+            ->addMust(new Match(IndexDocumentInterface::META_ID, $element->getId()))
+            ->addMust(new Match(IndexDocumentInterface::META_TYPE, $documentInstance->getType()))
+            ->addMust(new Match(IndexDocumentInterface::META_SUB_TYPE, $documentInstance->getSubType()));
+        $search = $this->getElasticaIndex()->search($query);
+        if ($search->count() !== 1) {
+            return null;
+        }
+
+        return $search->getDocuments()[0];
+    }
+
+    protected function findIndexDocumentInstanceByPimcore(AbstractElement $element): ?IndexDocumentInterface
+    {
+        foreach ($this->getAllowedDocuments() as $allowedDocument) {
+            /** @var IndexDocumentInterface $documentInstance */
+            $documentInstance = new $allowedDocument();
+            if (in_array($documentInstance->getType(), [
+                    DocumentInterface::TYPE_OBJECT,
+                    DocumentInterface::TYPE_DOCUMENT,
+                ], true) && $documentInstance->getSubType() === get_class($element)) {
                 return $documentInstance;
             }
         }
