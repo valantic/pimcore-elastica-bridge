@@ -91,7 +91,9 @@ abstract class AbstractIndex implements IndexInterface
             ->addMust(new Match(IndexDocumentInterface::META_ID, $element->getId()))
             ->addMust(new Match(IndexDocumentInterface::META_TYPE, $documentInstance->getType()))
             ->addMust(new Match(IndexDocumentInterface::META_SUB_TYPE, $documentInstance->getSubType()));
+
         $search = $this->getElasticaIndex()->search($query);
+
         if ($search->count() !== 1) {
             return null;
         }
