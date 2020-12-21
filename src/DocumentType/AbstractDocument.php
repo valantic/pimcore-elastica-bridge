@@ -2,7 +2,8 @@
 
 namespace Valantic\ElasticaBridgeBundle\DocumentType;
 
-use Elastica\Document;
+use Pimcore\Model\Document as PimcoreDocument;
+use Elastica\Document as ElasticaDocument;
 use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Model\Document\Listing as DocumentListing;
 use Pimcore\Model\Element\AbstractElement;
@@ -15,10 +16,13 @@ abstract class AbstractDocument implements DocumentInterface
         if (in_array($element->getType(), DocumentInterface::TYPES, true)) {
             return $element->getType() . $element->getId();
         }
+        if ($element instanceof PimcoreDocument) {
+            return DocumentInterface::TYPE_DOCUMENT . $element->getId();
+        }
         throw new RuntimeException('Unknown element type');
     }
 
-    public final function getPimcoreId(Document $document): int
+    public final function getPimcoreId(ElasticaDocument $document): int
     {
         if ($document->getId() === null) {
             throw new RuntimeException();
@@ -39,7 +43,7 @@ abstract class AbstractDocument implements DocumentInterface
         throw new RuntimeException('Unknown element type');
     }
 
-    public function getPimcoreElement(Document $document): AbstractElement
+    public function getPimcoreElement(ElasticaDocument $document): AbstractElement
     {
         if ($this->getType() === DocumentInterface::TYPE_OBJECT) {
             $element = Concrete::getById($this->getPimcoreId($document));
@@ -50,8 +54,8 @@ abstract class AbstractDocument implements DocumentInterface
             return $element;
         }
         if ($this->getType() === DocumentInterface::TYPE_DOCUMENT) {
-            /** @var \Pimcore\Model\Document $documentTypeClass */
-            $documentTypeClass = $this->getSubType();
+            /** @var PimcoreDocument $documentTypeClass */
+            $documentTypeClass = PimcoreDocument::class;
             $element = $documentTypeClass::getById($this->getPimcoreId($document));
             if ($element === null) {
                 throw new RuntimeException();
