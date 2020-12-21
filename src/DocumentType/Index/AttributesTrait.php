@@ -33,7 +33,7 @@ trait AttributesTrait
         return $result;
     }
 
-    protected function relationshipAttributes(Concrete $element, array $fields): array
+    protected function relationAttributes(Concrete $element, array $fields): array
     {
         $result = [];
 
@@ -63,6 +63,20 @@ trait AttributesTrait
 
     protected function children(
         Concrete $element,
+        array $objectTypes = [AbstractObject::OBJECT_TYPE_OBJECT, AbstractObject::OBJECT_TYPE_FOLDER]
+    ): array
+    {
+        $ids = [];
+        foreach ($element->getChildren($objectTypes) as $child) {
+            /** @var Concrete $child */
+            $ids[] = $child->getId();
+        }
+
+        return [IndexDocumentInterface::ATTRIBUTE_CHILDREN => $ids];
+    }
+
+    protected function childrenRecursive(
+        Concrete $element,
         array $objectTypes = [AbstractObject::OBJECT_TYPE_OBJECT, AbstractObject::OBJECT_TYPE_FOLDER],
         array $carry = []
     ): array
@@ -70,9 +84,9 @@ trait AttributesTrait
         foreach ($element->getChildren($objectTypes) as $child) {
             /** @var Concrete $child */
             $carry[] = $child->getId();
-            $carry = $this->children($child, $objectTypes, $carry)[IndexDocumentInterface::ATTRIBUTE_CHILDREN];
+            $carry = $this->childrenRecursive($child, $objectTypes, $carry)[IndexDocumentInterface::ATTRIBUTE_CHILDREN_RECURSIVE];
         }
 
-        return [IndexDocumentInterface::ATTRIBUTE_CHILDREN => $carry];
+        return [IndexDocumentInterface::ATTRIBUTE_CHILDREN_RECURSIVE => $carry];
     }
 }

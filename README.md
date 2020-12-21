@@ -55,6 +55,7 @@ class ProductDocument extends AbstractDocument
 namespace AppBundle\Elasticsearch\Index\Product;
 
 use AppBundle\Elasticsearch\Index\Product\Document\ProductIndexDocument;
+use Elastica\Query\Match;
 use Pimcore\Model\DataObject\Category;
 use Valantic\ElasticaBridgeBundle\Index\AbstractIndex;
 
@@ -107,7 +108,9 @@ class ProductIndexDocument extends ProductDocument implements IndexDocumentInter
         return array_merge(
             $this->plainAttributes($element, ['ean']),
             $this->localizedAttributes($element, ['name']),
-            $this->relationshipAttributes($element, ['categories']),
+            $this->relationAttributes($element, ['categories']),
+            $this->children($element, ['variants']),
+            $this->childrenRecursive($element, ['allVariants']),
         );
     }
 

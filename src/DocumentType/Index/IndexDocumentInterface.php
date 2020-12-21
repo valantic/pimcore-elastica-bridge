@@ -14,6 +14,7 @@ interface IndexDocumentInterface extends DocumentInterface
     public const META_ID = '__id';
     public const ATTRIBUTE_LOCALIZED = 'localized';
     public const ATTRIBUTE_CHILDREN = 'children';
+    public const ATTRIBUTE_CHILDREN_RECURSIVE = 'childrenRecursive';
 
     /**
      * @return array<mixed>
