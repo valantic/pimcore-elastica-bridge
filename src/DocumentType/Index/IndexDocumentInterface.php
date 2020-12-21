@@ -11,6 +11,7 @@ interface IndexDocumentInterface extends DocumentInterface
 {
     public const META_TYPE = '__type';
     public const META_SUB_TYPE = '__subType';
+    public const META_ID = '__id';
 
     /**
      * @return array<mixed>

@@ -38,6 +38,7 @@ abstract class BaseCommand extends AbstractCommand
             array_merge($indexDocumentInstance->getNormalized($dataObject), [
                 IndexDocumentInterface::META_TYPE => $indexDocumentInstance->getType(),
                 IndexDocumentInterface::META_SUB_TYPE => $indexDocumentInstance->getSubType(),
+                IndexDocumentInterface::META_ID => $dataObject->getId(),
             ])
         );
     }
