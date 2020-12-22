@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "1e990543285ec24f27ede810ccf6782b",
+    "content-hash": "ec35a592b08093bc7db9a4a96e394056",
     "packages": [
         {
             "name": "amnuts/opcache-gui",
@@ -4160,16 +4160,16 @@
         },
         {
             "name": "nesbot/carbon",
-            "version": "2.42.0",
+            "version": "2.43.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/briannesbitt/Carbon.git",
-                "reference": "d0463779663437392fe42ff339ebc0213bd55498"
+                "reference": "d32c57d8389113742f4a88725a170236470012e2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/briannesbitt/Carbon/zipball/d0463779663437392fe42ff339ebc0213bd55498",
-                "reference": "d0463779663437392fe42ff339ebc0213bd55498",
+                "url": "https://api.github.com/repos/briannesbitt/Carbon/zipball/d32c57d8389113742f4a88725a170236470012e2",
+                "reference": "d32c57d8389113742f4a88725a170236470012e2",
                 "shasum": ""
             },
             "require": {
@@ -4249,7 +4249,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2020-11-28T14:25:28+00:00"
+            "time": "2020-12-17T20:55:32+00:00"
         },
         {
             "name": "ocramius/package-versions",
@@ -4846,16 +4846,16 @@
         },
         {
             "name": "pimcore/pimcore",
-            "version": "v6.8.5",
+            "version": "v6.8.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/pimcore/pimcore.git",
-                "reference": "4256328a6362ffcdcc83b9c95bee17804bd0cc71"
+                "reference": "f4b761df8aa6f9a955ae02fa0f883423f5215ee9"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/pimcore/pimcore/zipball/4256328a6362ffcdcc83b9c95bee17804bd0cc71",
-                "reference": "4256328a6362ffcdcc83b9c95bee17804bd0cc71",
+                "url": "https://api.github.com/repos/pimcore/pimcore/zipball/f4b761df8aa6f9a955ae02fa0f883423f5215ee9",
+                "reference": "f4b761df8aa6f9a955ae02fa0f883423f5215ee9",
                 "shasum": ""
             },
             "require": {
@@ -4931,7 +4931,7 @@
             },
             "conflict": {
                 "monolog/monolog": ">=2",
-                "phpstan/phpstan": "^0.12.55",
+                "phpstan/phpstan": "0.12.55",
                 "symfony/monolog-bundle": "3.6.0",
                 "symfony/symfony": "3.4.43 || 4.4.11"
             },
@@ -5016,7 +5016,7 @@
                 "source": "https://github.com/pimcore/pimcore",
                 "wiki": "https://pimcore.com/docs/latest/"
             },
-            "time": "2020-11-30T10:31:46+00:00"
+            "time": "2020-12-22T13:57:44+00:00"
         },
         {
             "name": "piwik/device-detector",
@@ -7727,16 +7727,16 @@
         },
         {
             "name": "symfony/symfony",
-            "version": "v4.4.17",
+            "version": "v4.4.18",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/symfony.git",
-                "reference": "02562a0eff211123b7ee2204f9b7fc86134a8a8e"
+                "reference": "a05cc024d3d43cb84faea3969de8cc2e590e7a83"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/symfony/zipball/02562a0eff211123b7ee2204f9b7fc86134a8a8e",
-                "reference": "02562a0eff211123b7ee2204f9b7fc86134a8a8e",
+                "url": "https://api.github.com/repos/symfony/symfony/zipball/a05cc024d3d43cb84faea3969de8cc2e590e7a83",
+                "reference": "a05cc024d3d43cb84faea3969de8cc2e590e7a83",
                 "shasum": ""
             },
             "require": {
@@ -7899,7 +7899,7 @@
             ],
             "support": {
                 "issues": "https://github.com/symfony/symfony/issues",
-                "source": "https://github.com/symfony/symfony/tree/v4.4.17"
+                "source": "https://github.com/symfony/symfony/tree/v4.4.18"
             },
             "funding": [
                 {
@@ -7915,7 +7915,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2020-11-29T09:23:30+00:00"
+            "time": "2020-12-18T13:32:50+00:00"
         },
         {
             "name": "tijsverkoyen/css-to-inline-styles",
@@ -8666,16 +8666,16 @@
     "packages-dev": [
         {
             "name": "phpstan/phpstan",
-            "version": "0.12.54",
+            "version": "0.12.64",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpstan/phpstan.git",
-                "reference": "45c7b999a4b7dd9ac5558bdaaf23dcebbef88223"
+                "reference": "23eb1cb7ae125f45f1d0e48051bcf67a9a9b08aa"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/45c7b999a4b7dd9ac5558bdaaf23dcebbef88223",
-                "reference": "45c7b999a4b7dd9ac5558bdaaf23dcebbef88223",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/23eb1cb7ae125f45f1d0e48051bcf67a9a9b08aa",
+                "reference": "23eb1cb7ae125f45f1d0e48051bcf67a9a9b08aa",
                 "shasum": ""
             },
             "require": {
@@ -8706,7 +8706,7 @@
             "description": "PHPStan - PHP Static Analysis Tool",
             "support": {
                 "issues": "https://github.com/phpstan/phpstan/issues",
-                "source": "https://github.com/phpstan/phpstan/tree/0.12.54"
+                "source": "https://github.com/phpstan/phpstan/tree/0.12.64"
             },
             "funding": [
                 {
@@ -8722,7 +8722,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2020-11-05T13:36:26+00:00"
+            "time": "2020-12-21T11:59:02+00:00"
         }
     ],
     "aliases": [],
