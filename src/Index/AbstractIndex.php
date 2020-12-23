@@ -7,6 +7,7 @@ use Elastica\Index;
 use Elastica\Query;
 use Elastica\Query\BoolQuery;
 use Elastica\Query\Match;
+use Elastica\ResultSet;
 use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\DocumentType\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
@@ -116,5 +117,25 @@ abstract class AbstractIndex implements IndexInterface
         }
 
         return null;
+    }
+
+    public function searchForElements(Query\AbstractQuery $query): array
+    {
+        return $this->documentResultToElements($this->getElasticaIndex()->search($query));
+    }
+
+    /**
+     * @param ResultSet $result
+     *
+     * @return AbstractElement[]
+     */
+    public function documentResultToElements(ResultSet $result): array
+    {
+        $elements = [];
+        foreach ($result->getDocuments() as $esDoc) {
+            $elements[] = $this->getIndexDocumentInstance($esDoc)->getPimcoreElement($esDoc);
+        }
+
+        return $elements;
     }
 }
