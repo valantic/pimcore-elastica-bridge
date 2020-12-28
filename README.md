@@ -122,6 +122,44 @@ class ProductIndexDocument extends ProductDocument implements IndexDocumentInter
 }
 ```
 
+## Indexing
+
+### Bulk
+
+```
+$ console valantic:elastica-bridge:index --help
+Description:
+  Ensures all the indices are present and populated.
+
+Usage:
+  valantic:elastica-bridge:index [options] [--] [<index>...]
+
+Arguments:
+  index                          Optional: indices to process. Defaults to all if empty
+
+Options:
+  -d, --no-delete                Do not delete i.e. re-create existing indices
+  -p, --no-populate              Do not populate created indices
+  -c, --no-check                 Do not perform post-populate checks; implied with --no-populate
+  -h, --help                     Display this help message
+  -q, --quiet                    Do not output any message
+  -V, --version                  Display this application version
+      --ansi                     Force ANSI output
+      --no-ansi                  Disable ANSI output
+  -n, --no-interaction           Do not ask any interactive question
+      --ignore-maintenance-mode  Set this flag to force execution in maintenance mode
+      --maintenance-mode         Set this flag to force maintenance mode while this task runs
+  -e, --env=ENV                  The Environment name. [default: "dev"]
+      --no-debug                 Switches off debug mode.
+  -v|vv|vvv, --verbose           Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug
+```
+
+### Specific
+
+The bridge automatically listens to Pimcore events and updates documents as needed.
+
+This can be globally disabled by calling `\Valantic\ElasticaBridgeBundle\EventListener\Pimcore\AbstractListener::disableListener();` or by implementing `\Valantic\ElasticaBridgeBundle\Index\IndexInterface::subscribedDocuments`.
+
 ## Usage
 
 ```php

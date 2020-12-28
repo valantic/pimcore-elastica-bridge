@@ -11,6 +11,8 @@ use Valantic\ElasticaBridgeBundle\DocumentType\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
+use Valantic\ElasticaBridgeBundle\Service\BridgeHelper;
+use Valantic\ElasticaBridgeBundle\Service\DocumentHelper;
 
 class Index extends BaseCommand
 {
@@ -31,6 +33,8 @@ class Index extends BaseCommand
      */
     protected array $indexDocuments;
     protected ElasticsearchClient $esClient;
+    protected BridgeHelper $bridgeHelper;
+    protected DocumentHelper $documentHelper;
 
     /**
      * Index constructor.
@@ -39,14 +43,25 @@ class Index extends BaseCommand
      * @param iterable<DocumentInterface> $documents
      * @param iterable<IndexDocumentInterface> $indexDocuments
      * @param ElasticsearchClient $esClient
+     * @param BridgeHelper $bridgeHelper
+     * @param DocumentHelper $documentHelper
      */
-    public function __construct(iterable $indices, iterable $documents, iterable $indexDocuments, ElasticsearchClient $esClient)
+    public function __construct(
+        iterable $indices,
+        iterable $documents,
+        iterable $indexDocuments,
+        ElasticsearchClient $esClient,
+        BridgeHelper $bridgeHelper,
+        DocumentHelper $documentHelper
+    )
     {
         parent::__construct();
-        $this->indices = $this->iterableToArray($indices);
-        $this->documents = $this->iterableToArray($documents);
-        $this->indexDocuments = $this->iterableToArray($indexDocuments);
+        $this->bridgeHelper = $bridgeHelper;
+        $this->indices = $this->bridgeHelper->iterableToArray($indices);
+        $this->documents = $this->bridgeHelper->iterableToArray($documents);
+        $this->indexDocuments = $this->bridgeHelper->iterableToArray($indexDocuments);
         $this->esClient = $esClient;
+        $this->documentHelper = $documentHelper;
     }
 
     protected function configure(): void
@@ -126,7 +141,7 @@ class Index extends BaseCommand
                     if (!$indexDocumentInstance->shouldIndex($dataObject)) {
                         continue;
                     }
-                    $esDocuments[] = $this->getDocumentForIndex($indexDocumentInstance, $dataObject);
+                    $esDocuments[] = $this->documentHelper->elementToIndexDocument($indexDocumentInstance, $dataObject);
                     if (count($esDocuments) > $indexConfig->getBatchSize()) {
                         $index->addDocuments($esDocuments);
                         $esDocuments = [];

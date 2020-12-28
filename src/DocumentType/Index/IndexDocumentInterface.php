@@ -17,6 +17,8 @@ interface IndexDocumentInterface extends DocumentInterface
     public const ATTRIBUTE_CHILDREN_RECURSIVE = 'childrenRecursive';
 
     /**
+     * @param AbstractElement $element
+     *
      * @return array<mixed>
      */
     public function getNormalized(AbstractElement $element): array;

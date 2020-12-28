@@ -33,12 +33,22 @@ interface IndexInterface
     /**
      * @return array<array>
      */
+    public function getSettings(): array;
+
+    /**
+     * @return array<array>
+     */
     public function getCreateArguments(): array;
 
     /**
      * @return string[] Class names of DocumentIndexInterface instances
      */
     public function getAllowedDocuments(): array;
+
+    /**
+     * @return string[] Class names of DocumentIndexInterface instances
+     */
+    public function subscribedDocuments(): array;
 
     public function isElementAllowedInIndex(AbstractElement $element): bool;
 
@@ -47,4 +57,6 @@ interface IndexInterface
     public function getElasticaIndex(): Index;
 
     public function getDocumentFromElement(AbstractElement $element): ?Document;
+
+    public function findIndexDocumentInstanceByPimcore(AbstractElement $element): ?IndexDocumentInterface;
 }

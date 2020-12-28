@@ -103,7 +103,7 @@ abstract class AbstractIndex implements IndexInterface
         return $search->getDocuments()[0];
     }
 
-    protected function findIndexDocumentInstanceByPimcore(AbstractElement $element): ?IndexDocumentInterface
+    public function findIndexDocumentInstanceByPimcore(AbstractElement $element): ?IndexDocumentInterface
     {
         foreach ($this->getAllowedDocuments() as $allowedDocument) {
             /** @var IndexDocumentInterface $documentInstance */
@@ -137,5 +137,10 @@ abstract class AbstractIndex implements IndexInterface
         }
 
         return $elements;
+    }
+
+    public function subscribedDocuments(): array
+    {
+        return $this->getAllowedDocuments();
     }
 }
