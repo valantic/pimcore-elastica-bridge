@@ -93,14 +93,14 @@ namespace AppBundle\Elasticsearch\Index\Product\Document;
 use AppBundle\Elasticsearch\Document\ProductDocument;
 use Pimcore\Model\DataObject\Product;
 use Pimcore\Model\Element\AbstractElement;
-use Valantic\ElasticaBridgeBundle\DocumentType\Index\AttributesTrait;
+use Valantic\ElasticaBridgeBundle\DocumentType\Index\DataObjectNormalizerTrait;
 use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
 use Valantic\ElasticaBridgeBundle\DocumentType\Index\ListingTrait;
 
 class ProductIndexDocument extends ProductDocument implements IndexDocumentInterface
 {
     use ListingTrait;
-    use AttributesTrait;
+    use DataObjectNormalizerTrait;
 
     public function getNormalized(AbstractElement $element): array
     {

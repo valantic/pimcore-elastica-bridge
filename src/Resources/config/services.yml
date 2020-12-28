@@ -31,6 +31,7 @@ services:
     arguments:
       $host: '%valantic_elastica_bridge.client.host%'
       $port: '%valantic_elastica_bridge.client.port%'
+
   Valantic\ElasticaBridgeBundle\EventListener\Pimcore\DataObject:
     arguments:
       - !tagged_iterator valantic.elastica_bridge.index
@@ -40,6 +41,16 @@ services:
       - { name: kernel.event_listener, event: pimcore.dataobject.postAdd, method: added }
       - { name: kernel.event_listener, event: pimcore.dataobject.postUpdate, method: updated }
       - { name: kernel.event_listener, event: pimcore.dataobject.postDelete, method: deleted }
+
+  Valantic\ElasticaBridgeBundle\EventListener\Pimcore\Document:
+    arguments:
+      - !tagged_iterator valantic.elastica_bridge.index
+      - !tagged_iterator valantic.elastica_bridge.document
+      - !tagged_iterator valantic.elastica_bridge.document_index
+    tags:
+      - { name: kernel.event_listener, event: pimcore.document.postAdd, method: added }
+      - { name: kernel.event_listener, event: pimcore.document.postUpdate, method: updated }
+      - { name: kernel.event_listener, event: pimcore.document.postDelete, method: deleted }
 
   Valantic\ElasticaBridgeBundle\Service\:
     resource: '../../Service/*'

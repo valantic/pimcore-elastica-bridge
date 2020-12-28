@@ -16,6 +16,8 @@ interface DocumentInterface
 
     public function getSubType(): string;
 
+    public function getDocumentType(): ?string;
+
     public function getElasticsearchId(AbstractElement $element): string;
 
     public function getPimcoreId(Document $document): int;

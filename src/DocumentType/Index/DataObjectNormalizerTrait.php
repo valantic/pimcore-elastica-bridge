@@ -6,16 +6,16 @@ use Pimcore\Model\DataObject\AbstractObject;
 use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Tool;
 
-trait AttributesTrait
+trait DataObjectNormalizerTrait
 {
     protected function localizedAttributes(Concrete $element, array $fields): array
     {
         $result = [];
 
-        foreach (Tool::getValidLanguages() as $locale) {
+        foreach ($this->getLocales() as $locale) {
             $result[$locale] = [];
-            foreach ($fields as $field) {
-                $result[$locale][$field] = $element->get($field, $locale);
+            foreach ($this->expandFields($fields) as $from => $to) {
+                $result[$locale][$to] = $element->get($from, $locale);
             }
         }
 
@@ -26,8 +26,8 @@ trait AttributesTrait
     {
         $result = [];
 
-        foreach ($fields as $field) {
-            $result[$field] = $element->get($field);
+        foreach ($this->expandFields($fields) as $from => $to) {
+            $result[$to] = $element->get($from);
         }
 
         return $result;
@@ -37,16 +37,16 @@ trait AttributesTrait
     {
         $result = [];
 
-        foreach ($fields as $field) {
+        foreach ($this->expandFields($fields) as $from => $to) {
             $ids = [];
-            $data = $element->get($field);
+            $data = $element->get($from);
 
             if ($data === null) {
                 continue;
             }
 
             if (!is_iterable($data)) {
-                $result[$field] = $data->getId();
+                $result[$to] = $data->getId();
                 continue;
             }
 
@@ -55,7 +55,7 @@ trait AttributesTrait
                 $ids[] = $relation->getId();
             }
 
-            $result[$field] = $ids;
+            $result[$to] = $ids;
         }
 
         return $result;
@@ -88,5 +88,24 @@ trait AttributesTrait
         }
 
         return [IndexDocumentInterface::ATTRIBUTE_CHILDREN_RECURSIVE => $carry];
+    }
+
+    protected function getLocales(): array
+    {
+        return Tool::getValidLanguages();
+    }
+
+    private function expandFields(array $fields): array
+    {
+        $expanded = [];
+        foreach ($fields as $key => $value) {
+            if (is_int($key)) {
+                $expanded[$value] = $value;
+            } else {
+                $expanded[$key] = $value;
+            }
+        }
+
+        return $expanded;
     }
 }
