@@ -28,6 +28,16 @@ abstract class AbstractIndex implements IndexInterface
         return [];
     }
 
+    public function getMapping(): array
+    {
+        return [];
+    }
+
+    public function getSettings(): array
+    {
+        return [];
+    }
+
     public function disableGlobalFilters(): void
     {
         $this->areGlobalFiltersEnabled = false;
@@ -45,11 +55,10 @@ abstract class AbstractIndex implements IndexInterface
 
     public final function getCreateArguments(): array
     {
-        if (!$this->hasMapping()) {
-            return [];
-        }
-
-        return ['mappings' => $this->getMapping()];
+        return array_filter([
+            'mappings' => $this->getMapping(),
+            'settings' => $this->getSettings(),
+        ]);
     }
 
     public function getBatchSize(): int
@@ -119,6 +128,11 @@ abstract class AbstractIndex implements IndexInterface
         return null;
     }
 
+    /**
+     * @param Query\AbstractQuery $query
+     *
+     * @return AbstractElement[]
+     */
     public function searchForElements(Query\AbstractQuery $query): array
     {
         return $this->documentResultToElements($this->getElasticaIndex()->search($query));
@@ -133,7 +147,11 @@ abstract class AbstractIndex implements IndexInterface
     {
         $elements = [];
         foreach ($result->getDocuments() as $esDoc) {
-            $elements[] = $this->getIndexDocumentInstance($esDoc)->getPimcoreElement($esDoc);
+            $instance = $this->getIndexDocumentInstance($esDoc);
+            if (!$instance) {
+                continue;
+            }
+            $elements[] = $instance->getPimcoreElement($esDoc);
         }
 
         return $elements;

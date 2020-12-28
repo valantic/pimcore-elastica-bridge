@@ -66,11 +66,6 @@ class ProductIndex extends AbstractIndex
         return 'product';
     }
 
-    public function getMapping(): array
-    {
-        return [];
-    }
-
     public function getAllowedDocuments(): array
     {
         return [ProductIndexDocument::class];
