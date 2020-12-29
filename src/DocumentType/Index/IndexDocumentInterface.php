@@ -15,6 +15,7 @@ interface IndexDocumentInterface extends DocumentInterface
     public const ATTRIBUTE_LOCALIZED = 'localized';
     public const ATTRIBUTE_CHILDREN = 'children';
     public const ATTRIBUTE_CHILDREN_RECURSIVE = 'childrenRecursive';
+    public const ATTRIBUTE_RELATED_OBJECTS = 'relatedObjects';
 
     /**
      * @param AbstractElement $element

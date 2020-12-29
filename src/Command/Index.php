@@ -122,8 +122,13 @@ class Index extends BaseCommand
                     }
                 }
             }
+
             if (count($esDocuments) > 0) {
                 $index->addDocuments($esDocuments);
+            }
+
+            if ($indexConfig->refreshIndexAfterEveryIndexDocumentWhenPopulating()) {
+                $indexConfig->getElasticaIndex()->refresh();
             }
         }
     }

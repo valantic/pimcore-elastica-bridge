@@ -59,4 +59,6 @@ interface IndexInterface
     public function getDocumentFromElement(AbstractElement $element): ?Document;
 
     public function findIndexDocumentInstanceByPimcore(AbstractElement $element): ?IndexDocumentInterface;
+
+    public function refreshIndexAfterEveryIndexDocumentWhenPopulating(): bool;
 }

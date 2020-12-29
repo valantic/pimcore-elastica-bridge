@@ -162,4 +162,9 @@ abstract class AbstractIndex implements IndexInterface
     {
         return $this->getAllowedDocuments();
     }
+
+    public function refreshIndexAfterEveryIndexDocumentWhenPopulating(): bool
+    {
+        return false;
+    }
 }
