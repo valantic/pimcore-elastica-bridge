@@ -25,7 +25,8 @@ class IndexRepository
         return $this->indices;
     }
 
-    public function get(string $key):IndexInterface{
+    public function get(string $key): IndexInterface
+    {
         return $this->indices[$key];
     }
 }
