@@ -1,57 +1,42 @@
 parameters:
 	ignoreErrors:
 		-
-			message: "#^Property Valantic\\\\ElasticaBridgeBundle\\\\Command\\\\Debug\\:\\:\\$indices \\(array\\<Valantic\\\\ElasticaBridgeBundle\\\\Index\\\\IndexInterface\\>\\) does not accept array\\<string, object\\>\\.$#"
-			count: 1
-			path: src/Command/Debug.php
-
-		-
-			message: "#^Property Valantic\\\\ElasticaBridgeBundle\\\\Command\\\\Debug\\:\\:\\$documents \\(array\\<Valantic\\\\ElasticaBridgeBundle\\\\DocumentType\\\\DocumentInterface\\>\\) does not accept array\\<string, object\\>\\.$#"
-			count: 1
-			path: src/Command/Debug.php
-
-		-
-			message: "#^Property Valantic\\\\ElasticaBridgeBundle\\\\Command\\\\Debug\\:\\:\\$indexDocuments \\(array\\<Valantic\\\\ElasticaBridgeBundle\\\\DocumentType\\\\Index\\\\IndexDocumentInterface\\>\\) does not accept array\\<string, object\\>\\.$#"
-			count: 1
-			path: src/Command/Debug.php
-
-		-
-			message: "#^Property Valantic\\\\ElasticaBridgeBundle\\\\Command\\\\Index\\:\\:\\$indices \\(array\\<Valantic\\\\ElasticaBridgeBundle\\\\Index\\\\IndexInterface\\>\\) does not accept array\\<string, object\\>\\.$#"
-			count: 1
-			path: src/Command/Index.php
-
-		-
-			message: "#^Property Valantic\\\\ElasticaBridgeBundle\\\\Command\\\\Index\\:\\:\\$documents \\(array\\<Valantic\\\\ElasticaBridgeBundle\\\\DocumentType\\\\DocumentInterface\\>\\) does not accept array\\<string, object\\>\\.$#"
-			count: 1
-			path: src/Command/Index.php
-
-		-
-			message: "#^Property Valantic\\\\ElasticaBridgeBundle\\\\Command\\\\Index\\:\\:\\$indexDocuments \\(array\\<Valantic\\\\ElasticaBridgeBundle\\\\DocumentType\\\\Index\\\\IndexDocumentInterface\\>\\) does not accept array\\<string, object\\>\\.$#"
-			count: 1
-			path: src/Command/Index.php
-
-		-
 			message: "#^Parameter \\#2 \\$haystack of function in_array expects array, array\\<string\\>\\|string given\\.$#"
 			count: 1
 			path: src/Command/Index.php
 
 		-
-			message: "#^Property Valantic\\\\ElasticaBridgeBundle\\\\EventListener\\\\Pimcore\\\\AbstractListener\\:\\:\\$indices \\(array\\<Valantic\\\\ElasticaBridgeBundle\\\\Index\\\\IndexInterface\\>\\) does not accept array\\<string, object\\>\\.$#"
-			count: 1
-			path: src/EventListener/Pimcore/AbstractListener.php
-
-		-
-			message: "#^Property Valantic\\\\ElasticaBridgeBundle\\\\EventListener\\\\Pimcore\\\\AbstractListener\\:\\:\\$documents \\(array\\<Valantic\\\\ElasticaBridgeBundle\\\\DocumentType\\\\DocumentInterface\\>\\) does not accept array\\<string, object\\>\\.$#"
-			count: 1
-			path: src/EventListener/Pimcore/AbstractListener.php
-
-		-
-			message: "#^Property Valantic\\\\ElasticaBridgeBundle\\\\EventListener\\\\Pimcore\\\\AbstractListener\\:\\:\\$indexDocuments \\(array\\<Valantic\\\\ElasticaBridgeBundle\\\\DocumentType\\\\Index\\\\IndexDocumentInterface\\>\\) does not accept array\\<string, object\\>\\.$#"
-			count: 1
-			path: src/EventListener/Pimcore/AbstractListener.php
-
-		-
 			message: "#^Parameter \\#1 \\$query of method Elastica\\\\Index\\:\\:search\\(\\) expects array\\|Elastica\\\\Query\\|string, Elastica\\\\Query\\\\AbstractQuery given\\.$#"
 			count: 1
 			path: src/Index/AbstractIndex.php
+
+		-
+			message: "#^Method Valantic\\\\ElasticaBridgeBundle\\\\Repository\\\\DocumentRepository\\:\\:__construct\\(\\) has parameter \\$documents with no value type specified in iterable type iterable\\.$#"
+			count: 1
+			path: src/Repository/DocumentRepository.php
+
+		-
+			message: "#^Property Valantic\\\\ElasticaBridgeBundle\\\\Repository\\\\DocumentRepository\\:\\:\\$documents \\(array\\<Valantic\\\\ElasticaBridgeBundle\\\\DocumentType\\\\DocumentInterface\\>\\) does not accept array\\<string, object\\>\\.$#"
+			count: 1
+			path: src/Repository/DocumentRepository.php
+
+		-
+			message: "#^Method Valantic\\\\ElasticaBridgeBundle\\\\Repository\\\\IndexDocumentRepository\\:\\:__construct\\(\\) has parameter \\$indexDocuments with no value type specified in iterable type iterable\\.$#"
+			count: 1
+			path: src/Repository/IndexDocumentRepository.php
+
+		-
+			message: "#^Property Valantic\\\\ElasticaBridgeBundle\\\\Repository\\\\IndexDocumentRepository\\:\\:\\$indexDocuments \\(array\\<Valantic\\\\ElasticaBridgeBundle\\\\DocumentType\\\\Index\\\\IndexDocumentInterface\\>\\) does not accept array\\<string, object\\>\\.$#"
+			count: 1
+			path: src/Repository/IndexDocumentRepository.php
+
+		-
+			message: "#^Method Valantic\\\\ElasticaBridgeBundle\\\\Repository\\\\IndexRepository\\:\\:__construct\\(\\) has parameter \\$indices with no value type specified in iterable type iterable\\.$#"
+			count: 1
+			path: src/Repository/IndexRepository.php
+
+		-
+			message: "#^Property Valantic\\\\ElasticaBridgeBundle\\\\Repository\\\\IndexRepository\\:\\:\\$indices \\(array\\<Valantic\\\\ElasticaBridgeBundle\\\\Index\\\\IndexInterface\\>\\) does not accept array\\<string, object\\>\\.$#"
+			count: 1
+			path: src/Repository/IndexRepository.php
 
