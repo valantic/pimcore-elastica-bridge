@@ -3,62 +3,32 @@
 namespace Valantic\ElasticaBridgeBundle\EventListener\Pimcore;
 
 use Pimcore\Model\Element\AbstractElement;
-use Valantic\ElasticaBridgeBundle\DocumentType\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
-use Valantic\ElasticaBridgeBundle\Service\BridgeHelper;
+use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 use Valantic\ElasticaBridgeBundle\Service\DocumentHelper;
 use Valantic\ElasticaBridgeBundle\Service\IndexHelper;
 
 abstract class AbstractListener
 {
     protected static bool $isEnabled = true;
-    /**
-     * @var IndexInterface[]
-     */
-    protected array $indices;
-    /**
-     * @var DocumentInterface[]
-     */
-    protected array $documents;
-    /**
-     * @var IndexDocumentInterface[]
-     */
-    protected array $indexDocuments;
     protected ElasticsearchClient $esClient;
-    protected BridgeHelper $bridgeHelper;
     protected DocumentHelper $documentHelper;
     protected IndexHelper $indexHelper;
+    protected IndexRepository $indexRepository;
 
-    /**
-     * Index constructor.
-     *
-     * @param iterable<IndexInterface> $indices
-     * @param iterable<DocumentInterface> $documents
-     * @param iterable<IndexDocumentInterface> $indexDocuments
-     * @param ElasticsearchClient $esClient
-     * @param BridgeHelper $bridgeHelper
-     * @param DocumentHelper $documentHelper
-     * @param IndexHelper $indexHelper
-     */
     public function __construct(
-        iterable $indices,
-        iterable $documents,
-        iterable $indexDocuments,
+        IndexRepository $indexRepository,
         ElasticsearchClient $esClient,
-        BridgeHelper $bridgeHelper,
         DocumentHelper $documentHelper,
         IndexHelper $indexHelper
     )
     {
-        $this->bridgeHelper = $bridgeHelper;
-        $this->indices = $this->bridgeHelper->iterableToArray($indices);
-        $this->documents = $this->bridgeHelper->iterableToArray($documents);
-        $this->indexDocuments = $this->bridgeHelper->iterableToArray($indexDocuments);
         $this->esClient = $esClient;
         $this->documentHelper = $documentHelper;
         $this->indexHelper = $indexHelper;
+        $this->indexRepository = $indexRepository;
     }
 
     public static function enableListener(): void
@@ -73,7 +43,7 @@ abstract class AbstractListener
 
     protected function decideAction(AbstractElement $element): void
     {
-        foreach ($this->indexHelper->matchingIndicesForElement($this->indices, $element) as $index) {
+        foreach ($this->indexHelper->matchingIndicesForElement($this->indexRepository->all(), $element) as $index) {
             $indexDocument = $index->findIndexDocumentInstanceByPimcore($element);
 
             if (!$indexDocument || !in_array(get_class($indexDocument), $index->subscribedDocuments(), true)) {
@@ -100,7 +70,7 @@ abstract class AbstractListener
 
     protected function ensurePresent(AbstractElement $element): void
     {
-        foreach ($this->indexHelper->matchingIndicesForElement($this->indices, $element) as $index) {
+        foreach ($this->indexHelper->matchingIndicesForElement($this->indexRepository->all(), $element) as $index) {
             $indexDocument = $index->findIndexDocumentInstanceByPimcore($element);
 
             if (!$indexDocument || !in_array(get_class($indexDocument), $index->subscribedDocuments(), true) || !$indexDocument->shouldIndex($element)) {
@@ -118,7 +88,7 @@ abstract class AbstractListener
 
     protected function ensureMissing(AbstractElement $element): void
     {
-        foreach ($this->indexHelper->matchingIndicesForElement($this->indices, $element) as $index) {
+        foreach ($this->indexHelper->matchingIndicesForElement($this->indexRepository->all(), $element) as $index) {
             $indexDocument = $index->findIndexDocumentInstanceByPimcore($element);
 
             if (!$indexDocument || !in_array(get_class($indexDocument), $index->subscribedDocuments(), true)) {

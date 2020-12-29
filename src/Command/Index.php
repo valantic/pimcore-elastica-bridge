@@ -7,11 +7,10 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Valantic\ElasticaBridgeBundle\DocumentType\DocumentInterface;
-use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
-use Valantic\ElasticaBridgeBundle\Service\BridgeHelper;
+use Valantic\ElasticaBridgeBundle\Repository\IndexDocumentRepository;
+use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 use Valantic\ElasticaBridgeBundle\Service\DocumentHelper;
 
 class Index extends BaseCommand
@@ -20,48 +19,23 @@ class Index extends BaseCommand
     protected const OPTION_NO_DELETE = 'no-delete';
     protected const OPTION_NO_POPULATE = 'no-populate';
     protected const OPTION_NO_CHECK = 'no-check';
-    /**
-     * @var IndexInterface[]
-     */
-    protected array $indices;
-    /**
-     * @var DocumentInterface[]
-     */
-    protected array $documents;
-    /**
-     * @var IndexDocumentInterface[]
-     */
-    protected array $indexDocuments;
     protected ElasticsearchClient $esClient;
-    protected BridgeHelper $bridgeHelper;
     protected DocumentHelper $documentHelper;
+    protected IndexRepository $indexRepository;
+    protected IndexDocumentRepository $indexDocumentRepository;
 
-    /**
-     * Index constructor.
-     *
-     * @param iterable<IndexInterface> $indices
-     * @param iterable<DocumentInterface> $documents
-     * @param iterable<IndexDocumentInterface> $indexDocuments
-     * @param ElasticsearchClient $esClient
-     * @param BridgeHelper $bridgeHelper
-     * @param DocumentHelper $documentHelper
-     */
     public function __construct(
-        iterable $indices,
-        iterable $documents,
-        iterable $indexDocuments,
+        IndexRepository $indexRepository,
+        IndexDocumentRepository $indexDocumentRepository,
         ElasticsearchClient $esClient,
-        BridgeHelper $bridgeHelper,
         DocumentHelper $documentHelper
     )
     {
         parent::__construct();
-        $this->bridgeHelper = $bridgeHelper;
-        $this->indices = $this->bridgeHelper->iterableToArray($indices);
-        $this->documents = $this->bridgeHelper->iterableToArray($documents);
-        $this->indexDocuments = $this->bridgeHelper->iterableToArray($indexDocuments);
         $this->esClient = $esClient;
         $this->documentHelper = $documentHelper;
+        $this->indexRepository = $indexRepository;
+        $this->indexDocumentRepository = $indexDocumentRepository;
     }
 
     protected function configure(): void
@@ -95,7 +69,7 @@ class Index extends BaseCommand
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        foreach ($this->indices as $indexConfig) {
+        foreach ($this->indexRepository->all() as $indexConfig) {
             $this->output->writeln('Index: ' . $indexConfig->getName());
             if (
                 !empty($this->input->getArgument(self::ARGUMENT_INDEX)) &&
@@ -130,7 +104,7 @@ class Index extends BaseCommand
     protected function populateIndex(IndexInterface $indexConfig, ElasticaIndex $index): void
     {
         foreach ($indexConfig->getAllowedDocuments() as $indexDocument) {
-            $indexDocumentInstance = $this->indexDocuments[$indexDocument];
+            $indexDocumentInstance = $this->indexDocumentRepository->get($indexDocument);
             $listing = $indexDocumentInstance->getListingInstance($indexConfig);
             $listingCount = $listing->count();
             $esDocuments = [];

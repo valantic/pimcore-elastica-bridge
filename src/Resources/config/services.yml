@@ -14,18 +14,6 @@ services:
     resource: '../../Command/*'
     tags: [ 'console.command' ]
 
-  Valantic\ElasticaBridgeBundle\Command\Debug:
-    arguments:
-      - !tagged_iterator valantic.elastica_bridge.index
-      - !tagged_iterator valantic.elastica_bridge.document
-      - !tagged_iterator valantic.elastica_bridge.document_index
-
-  Valantic\ElasticaBridgeBundle\Command\Index:
-    arguments:
-      - !tagged_iterator valantic.elastica_bridge.index
-      - !tagged_iterator valantic.elastica_bridge.document
-      - !tagged_iterator valantic.elastica_bridge.document_index
-
   Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient:
     factory: [ 'Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClientFactory', 'createElasticsearchClient' ]
     arguments:
@@ -33,20 +21,12 @@ services:
       $port: '%valantic_elastica_bridge.client.port%'
 
   Valantic\ElasticaBridgeBundle\EventListener\Pimcore\DataObject:
-    arguments:
-      - !tagged_iterator valantic.elastica_bridge.index
-      - !tagged_iterator valantic.elastica_bridge.document
-      - !tagged_iterator valantic.elastica_bridge.document_index
     tags:
       - { name: kernel.event_listener, event: pimcore.dataobject.postAdd, method: added }
       - { name: kernel.event_listener, event: pimcore.dataobject.postUpdate, method: updated }
       - { name: kernel.event_listener, event: pimcore.dataobject.postDelete, method: deleted }
 
   Valantic\ElasticaBridgeBundle\EventListener\Pimcore\Document:
-    arguments:
-      - !tagged_iterator valantic.elastica_bridge.index
-      - !tagged_iterator valantic.elastica_bridge.document
-      - !tagged_iterator valantic.elastica_bridge.document_index
     tags:
       - { name: kernel.event_listener, event: pimcore.document.postAdd, method: added }
       - { name: kernel.event_listener, event: pimcore.document.postUpdate, method: updated }
@@ -54,3 +34,15 @@ services:
 
   Valantic\ElasticaBridgeBundle\Service\:
     resource: '../../Service/*'
+
+  Valantic\ElasticaBridgeBundle\Repository\IndexRepository:
+    arguments:
+      - !tagged_iterator valantic.elastica_bridge.index
+
+  Valantic\ElasticaBridgeBundle\Repository\DocumentRepository:
+    arguments:
+      - !tagged_iterator valantic.elastica_bridge.document
+
+  Valantic\ElasticaBridgeBundle\Repository\IndexDocumentRepository:
+    arguments:
+      - !tagged_iterator valantic.elastica_bridge.document_index

@@ -12,15 +12,18 @@ use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\DocumentType\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
+use Valantic\ElasticaBridgeBundle\Repository\IndexDocumentRepository;
 
 abstract class AbstractIndex implements IndexInterface
 {
     protected bool $areGlobalFiltersEnabled = true;
     protected ElasticsearchClient $client;
+    protected IndexDocumentRepository $indexDocumentRepository;
 
-    public function __construct(ElasticsearchClient $client)
+    public function __construct(ElasticsearchClient $client, IndexDocumentRepository $indexDocumentRepository)
     {
         $this->client = $client;
+        $this->indexDocumentRepository = $indexDocumentRepository;
     }
 
     public function getGlobalFilters(): array
@@ -81,8 +84,7 @@ abstract class AbstractIndex implements IndexInterface
         $type = $document->get(IndexDocumentInterface::META_TYPE);
         $subType = $document->get(IndexDocumentInterface::META_SUB_TYPE);
         foreach ($this->getAllowedDocuments() as $allowedDocument) {
-            /** @var IndexDocumentInterface $documentInstance */
-            $documentInstance = new $allowedDocument();
+            $documentInstance = $this->indexDocumentRepository->get($allowedDocument);
             if ($documentInstance->getType() === $type && $documentInstance->getSubType() === $subType) {
                 return $documentInstance;
             }
@@ -115,8 +117,7 @@ abstract class AbstractIndex implements IndexInterface
     public function findIndexDocumentInstanceByPimcore(AbstractElement $element): ?IndexDocumentInterface
     {
         foreach ($this->getAllowedDocuments() as $allowedDocument) {
-            /** @var IndexDocumentInterface $documentInstance */
-            $documentInstance = new $allowedDocument();
+            $documentInstance = $this->indexDocumentRepository->get($allowedDocument);
             if (in_array($documentInstance->getType(), [
                     DocumentInterface::TYPE_OBJECT,
                     DocumentInterface::TYPE_DOCUMENT,
