@@ -3,6 +3,7 @@
 namespace Valantic\ElasticaBridgeBundle\Command;
 
 use Elastica\Index as ElasticaIndex;
+use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -103,15 +104,25 @@ class Index extends BaseCommand
 
     protected function populateIndex(IndexInterface $indexConfig, ElasticaIndex $index): void
     {
+        ProgressBar::setFormatDefinition('custom', "%percent%%\t%remaining%\t%memory%\n%message%");
+
+        $progressBar = new ProgressBar($this->output, 1);
+        $progressBar->setMessage('');
+        $progressBar->setFormat('custom');
+
         foreach ($indexConfig->getAllowedDocuments() as $indexDocument) {
+            $progressBar->setProgress(0);
+            $progressBar->setMessage($indexDocument);
             $indexDocumentInstance = $this->indexDocumentRepository->get($indexDocument);
             $listing = $indexDocumentInstance->getListingInstance($indexConfig);
             $listingCount = $listing->count();
+            $progressBar->setMaxSteps($listingCount);
             $esDocuments = [];
             for ($batchNumber = 0; $batchNumber < ceil($listingCount / $indexConfig->getBatchSize()); $batchNumber++) {
                 $listing->setOffset($batchNumber * $indexConfig->getBatchSize());
                 $listing->setLimit($indexConfig->getBatchSize());
                 foreach ($listing as $dataObject) {
+                    $progressBar->advance();
                     if (!$indexDocumentInstance->shouldIndex($dataObject)) {
                         continue;
                     }
@@ -131,6 +142,8 @@ class Index extends BaseCommand
                 $indexConfig->getElasticaIndex()->refresh();
             }
         }
+        $progressBar->finish();
+        $this->output->writeln('');
     }
 
     protected function ensureIndexExists(ElasticaIndex $index, IndexInterface $indexConfig): void
