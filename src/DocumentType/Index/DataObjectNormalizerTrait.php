@@ -38,8 +38,8 @@ trait DataObjectNormalizerTrait
             }
 
             $result[$locale] = [];
-            foreach ($this->expandFields($fields) as $from => $to) {
-                $result[$locale][$to] = $element->get($from, $locale);
+            foreach ($this->expandFields($fields) as $target => $source) {
+                $result[$locale][$target] = is_callable($source) ? $source($element, $locale) : $element->get($source, $locale);
             }
         }
 
@@ -55,8 +55,8 @@ trait DataObjectNormalizerTrait
     {
         $result = [];
 
-        foreach ($this->expandFields($fields) as $from => $to) {
-            $result[$to] = $element->get($from);
+        foreach ($this->expandFields($fields) as $target => $source) {
+            $result[$target] = is_callable($source) ? $source($element) : $element->get($source);
         }
 
         return $result;
@@ -66,16 +66,16 @@ trait DataObjectNormalizerTrait
     {
         $result = [];
 
-        foreach ($this->expandFields($fields) as $from => $to) {
+        foreach ($this->expandFields($fields) as $target => $source) {
             $ids = [];
-            $data = $element->get($from);
+            $data = is_callable($source) ? $source($element) : $element->get($source);
 
             if ($data === null) {
                 continue;
             }
 
             if (!is_iterable($data)) {
-                $result[$to] = $data->getId();
+                $result[$target] = $data->getId();
                 continue;
             }
 
@@ -84,7 +84,7 @@ trait DataObjectNormalizerTrait
                 $ids[] = $relation->getId();
             }
 
-            $result[$to] = $ids;
+            $result[$target] = $ids;
         }
 
         return $result;
@@ -127,11 +127,11 @@ trait DataObjectNormalizerTrait
     private function expandFields(array $fields): array
     {
         $expanded = [];
-        foreach ($fields as $key => $value) {
-            if (is_int($key)) {
-                $expanded[$value] = $value;
+        foreach ($fields as $target => $source) {
+            if (is_int($target)) {
+                $expanded[$source] = $source;
             } else {
-                $expanded[$key] = $value;
+                $expanded[$target] = $source;
             }
         }
 
