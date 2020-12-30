@@ -148,6 +148,6 @@ class Index extends BaseCommand
         $esDocs = $index->search();
         $esDoc = $esDocs[rand(0, $esDocs->count() - 1)]->getDocument();
         $indexDocumentInstance = $indexConfig->getIndexDocumentInstance($esDoc);
-        $this->output->writeln(sprintf('> ES %s -> Pimcore %s', $esDoc->getId(), $indexDocumentInstance ? $indexDocumentInstance->getPimcoreElement($esDoc)->getId() : 'FAILED'));
+        $this->output->writeln(sprintf('> ES %s -> %s %s', $esDoc->getId(), $indexDocumentInstance ? $indexDocumentInstance->getPimcoreElement($esDoc)->getType() : 'FAILED', $indexDocumentInstance ? $indexDocumentInstance->getPimcoreElement($esDoc)->getId() : 'FAILED'));
     }
 }
