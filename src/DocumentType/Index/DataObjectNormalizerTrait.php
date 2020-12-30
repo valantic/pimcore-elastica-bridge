@@ -2,21 +2,50 @@
 
 namespace Valantic\ElasticaBridgeBundle\DocumentType\Index;
 
+use Pimcore\Localization\LocaleService;
 use Pimcore\Model\DataObject\AbstractObject;
 use Pimcore\Model\DataObject\Concrete;
+use Pimcore\Model\DataObject\Localizedfield;
 use Pimcore\Tool;
 
 trait DataObjectNormalizerTrait
 {
-    protected function localizedAttributes(Concrete $element, array $fields): array
+    protected LocaleService $localeService;
+
+    /**
+     * @param LocaleService $localeService
+     *
+     * @required
+     */
+    public function setLocaleService(LocaleService $localeService): void
     {
+        $this->localeService = $localeService;
+    }
+
+    protected function localizedAttributes(Concrete $element, array $fields, bool $useFallbackValues = false): array
+    {
+        if ($useFallbackValues) {
+            $origLocale = $this->localeService->getLocale();
+            $getFallbackValuesOrig = Localizedfield::getGetFallbackValues();
+            Localizedfield::setGetFallbackValues(true);
+        }
+
         $result = [];
 
         foreach ($this->getLocales() as $locale) {
+            if ($useFallbackValues) {
+                $this->localeService->setLocale($locale);
+            }
+
             $result[$locale] = [];
             foreach ($this->expandFields($fields) as $from => $to) {
                 $result[$locale][$to] = $element->get($from, $locale);
             }
+        }
+
+        if ($useFallbackValues) {
+            $this->localeService->setLocale($origLocale);
+            Localizedfield::setGetFallbackValues($getFallbackValuesOrig);
         }
 
         return [IndexDocumentInterface::ATTRIBUTE_LOCALIZED => $result];
