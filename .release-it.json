@@ -1,17 +1,14 @@
 {
   "src": {
     "commit": true,
-    "commitMessage": "Release %s",
+    "commitMessage": "Release ${version}",
     "tag": true,
-    "tagName": "v%s",
-    "tagAnnotation": "Release %s",
+    "tagName": "v${version}",
+    "tagAnnotation": "Release ${version}",
     "push": true
   },
   "npm": {
     "publish": false
-  },
-  "github": {
-    "release": false
   },
   "plugins": {
     "@release-it/bumper": {
