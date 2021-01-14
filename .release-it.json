@@ -1,0 +1,24 @@
+{
+  "src": {
+    "commit": true,
+    "commitMessage": "Release %s",
+    "tag": true,
+    "tagName": "v%s",
+    "tagAnnotation": "Release %s",
+    "push": true
+  },
+  "npm": {
+    "publish": false
+  },
+  "github": {
+    "release": false
+  },
+  "plugins": {
+    "@release-it/bumper": {
+      "out": {
+        "file": "composer.json",
+        "path": "version"
+      }
+    }
+  }
+}
