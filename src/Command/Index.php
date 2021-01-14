@@ -118,7 +118,7 @@ class Index extends BaseCommand
             $indexDocumentInstance = $this->indexDocumentRepository->get($indexDocument);
             $listing = $indexDocumentInstance->getListingInstance($indexConfig);
             $listingCount = $listing->count();
-            $progressBar->setMaxSteps($listingCount);
+            $progressBar->setMaxSteps($listingCount > 0 ? $listingCount : 1);
             $esDocuments = [];
 
             for ($batchNumber = 0; $batchNumber < ceil($listingCount / $indexConfig->getBatchSize()); $batchNumber++) {
