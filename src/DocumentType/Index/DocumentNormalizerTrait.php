@@ -20,12 +20,15 @@ trait DocumentNormalizerTrait
                 ? array_map(fn(Document\Editable $editable): string => $editable->getName(), $document->getContentMasterDocument()->getEditables())
                 : []
         );
+
         foreach ($editableNames as $editableName) {
             $editable = $document->getEditable($editableName);
             $editableMethod = sprintf('editable%s', ucfirst($editable->getType()));
+
             if (!method_exists($this, $editableMethod)) {
                 throw new RuntimeException();
             }
+
             $data[] = $this->{$editableMethod}($document, $document->getEditable($editable->getName()));
         }
 
@@ -45,6 +48,7 @@ trait DocumentNormalizerTrait
 
             return null;
         }
+
         throw new RuntimeException(sprintf('%s is not yet implemented for %s/%s (%s)', $editable->getType(), $editable->type, $editable->subtype, $editable->getName()));
     }
 
@@ -83,6 +87,7 @@ trait DocumentNormalizerTrait
         return null;
     }
 
+    // TODO check editable block (motorex geschichte)
     protected function editableBlock(Document\Page $document, Document\Editable\Block $editable): ?string
     {
         return null;

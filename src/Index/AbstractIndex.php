@@ -83,8 +83,10 @@ abstract class AbstractIndex implements IndexInterface
     {
         $type = $document->get(IndexDocumentInterface::META_TYPE);
         $subType = $document->get(IndexDocumentInterface::META_SUB_TYPE);
+
         foreach ($this->getAllowedDocuments() as $allowedDocument) {
             $documentInstance = $this->indexDocumentRepository->get($allowedDocument);
+
             if ($documentInstance->getType() === $type && $documentInstance->getSubType() === $subType) {
                 return $documentInstance;
             }
@@ -93,9 +95,11 @@ abstract class AbstractIndex implements IndexInterface
         return null;
     }
 
+    // TODO refactor to use client get($id)
     public function getDocumentFromElement(AbstractElement $element): ?Document
     {
         $documentInstance = $this->findIndexDocumentInstanceByPimcore($element);
+
         if (!$documentInstance) {
             return null;
         }
@@ -118,6 +122,7 @@ abstract class AbstractIndex implements IndexInterface
     {
         foreach ($this->getAllowedDocuments() as $allowedDocument) {
             $documentInstance = $this->indexDocumentRepository->get($allowedDocument);
+
             if (in_array($documentInstance->getType(), [
                     DocumentInterface::TYPE_OBJECT,
                     DocumentInterface::TYPE_DOCUMENT,
@@ -149,9 +154,11 @@ abstract class AbstractIndex implements IndexInterface
         $elements = [];
         foreach ($result->getDocuments() as $esDoc) {
             $instance = $this->getIndexDocumentInstance($esDoc);
+
             if (!$instance) {
                 continue;
             }
+
             $elements[] = $instance->getPimcoreElement($esDoc);
         }
 

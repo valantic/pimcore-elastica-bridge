@@ -41,9 +41,11 @@ abstract class AbstractDocument implements DocumentInterface
         if (in_array($element->getType(), DocumentInterface::TYPES, true)) {
             return $element->getType() . $element->getId();
         }
+
         if ($element instanceof PimcoreDocument) {
             return DocumentInterface::TYPE_DOCUMENT . $element->getId();
         }
+
         throw new RuntimeException('Unknown element type');
     }
 
@@ -61,10 +63,12 @@ abstract class AbstractDocument implements DocumentInterface
         if ($this->getType() === DocumentInterface::TYPE_OBJECT) {
             return $this->getSubType() . '\Listing';
         }
+
         if ($this->getType() === DocumentInterface::TYPE_DOCUMENT) {
             // TODO: this listing doesn't seem to have an option to e.g. only list Hardlinks
             return DocumentListing::class;
         }
+
         throw new RuntimeException('Unknown element type');
     }
 
@@ -72,16 +76,19 @@ abstract class AbstractDocument implements DocumentInterface
     {
         if ($this->getType() === DocumentInterface::TYPE_OBJECT) {
             $element = Concrete::getById($this->getPimcoreId($document));
+
             if ($element === null) {
                 throw new RuntimeException();
             }
 
             return $element;
         }
+
         if ($this->getType() === DocumentInterface::TYPE_DOCUMENT) {
             /** @var PimcoreDocument $documentTypeClass */
             $documentTypeClass = $this->getSubType();
             $element = $documentTypeClass::getById($this->getPimcoreId($document));
+
             if ($element === null) {
                 throw new RuntimeException();
             }
@@ -89,6 +96,7 @@ abstract class AbstractDocument implements DocumentInterface
             return $element;
 
         }
+
         throw new RuntimeException('Unknown element type');
     }
 }

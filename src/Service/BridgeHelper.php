@@ -12,6 +12,7 @@ class BridgeHelper
     public function iterableToArray(iterable $iterables): array
     {
         $arr = [];
+
         foreach ($iterables as $iterable) {
             $arr[get_class($iterable)] = $iterable;
         }

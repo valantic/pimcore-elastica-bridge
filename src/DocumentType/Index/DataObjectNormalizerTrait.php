@@ -96,6 +96,7 @@ trait DataObjectNormalizerTrait
     ): array
     {
         $ids = [];
+
         foreach ($element->getChildren($objectTypes) as $child) {
             /** @var Concrete $child */
             $ids[] = $child->getId();
@@ -127,6 +128,7 @@ trait DataObjectNormalizerTrait
     private function expandFields(array $fields): array
     {
         $expanded = [];
+
         foreach ($fields as $target => $source) {
             if (is_int($target)) {
                 $expanded[$source] = $source;

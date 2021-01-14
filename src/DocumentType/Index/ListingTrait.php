@@ -29,6 +29,7 @@ trait ListingTrait
 
         $listingInstance = new $listingClass();
         $listingInstance->setCondition($this->getIndexListingCondition());
+
         if ($this->getType() === DocumentInterface::TYPE_DOCUMENT) {
             $typeCondition = sprintf("`type` = '%s'", $this->getDocumentType());
             if ($this->getIndexListingCondition() !== null) {

@@ -72,6 +72,7 @@ class Index extends BaseCommand
     {
         foreach ($this->indexRepository->all() as $indexConfig) {
             $this->output->writeln('Index: ' . $indexConfig->getName());
+
             if (
                 !empty($this->input->getArgument(self::ARGUMENT_INDEX)) &&
                 !in_array($indexConfig->getName(), $this->input->getArgument(self::ARGUMENT_INDEX), true)
@@ -113,20 +114,26 @@ class Index extends BaseCommand
         foreach ($indexConfig->getAllowedDocuments() as $indexDocument) {
             $progressBar->setProgress(0);
             $progressBar->setMessage($indexDocument);
+
             $indexDocumentInstance = $this->indexDocumentRepository->get($indexDocument);
             $listing = $indexDocumentInstance->getListingInstance($indexConfig);
             $listingCount = $listing->count();
             $progressBar->setMaxSteps($listingCount);
             $esDocuments = [];
+
             for ($batchNumber = 0; $batchNumber < ceil($listingCount / $indexConfig->getBatchSize()); $batchNumber++) {
                 $listing->setOffset($batchNumber * $indexConfig->getBatchSize());
                 $listing->setLimit($indexConfig->getBatchSize());
+
                 foreach ($listing as $dataObject) {
                     $progressBar->advance();
+
                     if (!$indexDocumentInstance->shouldIndex($dataObject)) {
                         continue;
                     }
+
                     $esDocuments[] = $this->documentHelper->elementToIndexDocument($indexDocumentInstance, $dataObject);
+
                     if (count($esDocuments) > $indexConfig->getBatchSize()) {
                         $index->addDocuments($esDocuments);
                         $esDocuments = [];
@@ -142,6 +149,7 @@ class Index extends BaseCommand
                 $indexConfig->getElasticaIndex()->refresh();
             }
         }
+
         $progressBar->finish();
         $this->output->writeln('');
     }
@@ -152,6 +160,7 @@ class Index extends BaseCommand
             $index->delete();
             $this->output->writeln('> Deleted index');
         }
+
         $index->create($indexConfig->getCreateArguments());
         $this->output->writeln('> Created index');
     }
