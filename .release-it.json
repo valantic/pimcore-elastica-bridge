@@ -1,5 +1,5 @@
 {
-  "src": {
+  "git": {
     "commit": true,
     "commitMessage": "Release ${version}",
     "tag": true,

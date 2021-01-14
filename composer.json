@@ -40,6 +40,8 @@
     }
   },
   "scripts": {
-    "phpstan": ["vendor/bin/phpstan analyse src"]
+    "phpstan": [
+      "vendor/bin/phpstan analyse src"
+    ]
   }
 }
