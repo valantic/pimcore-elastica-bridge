@@ -2,17 +2,23 @@
 
 namespace Valantic\ElasticaBridgeBundle\DocumentType\Index;
 
+use Exception;
 use Pimcore\Localization\LocaleService;
 use Pimcore\Model\DataObject\AbstractObject;
 use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Model\DataObject\Localizedfield;
 use Pimcore\Tool;
 
+/**
+ * Collection of helpers for normalizing a DataObject.
+ */
 trait DataObjectNormalizerTrait
 {
     protected LocaleService $localeService;
 
     /**
+     * Injects the LocaleService using Symfony's DI.
+     *
      * @param LocaleService $localeService
      *
      * @required
@@ -22,6 +28,20 @@ trait DataObjectNormalizerTrait
         $this->localeService = $localeService;
     }
 
+    /**
+     * Given $element, collect data from the localized fields $fields (optionally using fallback values)
+     * and return a normalized array.
+     *
+     * $fields can be a simple array of strings, an array of 'elasticField' => 'pimcoreField', or even
+     * 'elasticField' => function($element, $locale) -- or a mix of these options.
+     *
+     * @param Concrete $element
+     * @param array $fields
+     * @param bool $useFallbackValues
+     *
+     * @return array[]
+     * @throws Exception
+     */
     protected function localizedAttributes(Concrete $element, array $fields, bool $useFallbackValues = false): array
     {
         if ($useFallbackValues) {
@@ -51,6 +71,18 @@ trait DataObjectNormalizerTrait
         return [IndexDocumentInterface::ATTRIBUTE_LOCALIZED => $result];
     }
 
+    /**
+     * Given $element, collect data from the plain (e.g. input, number etc.) fields $fields and return a normalized array.
+     *
+     * $fields can be a simple array of strings, an array of 'elasticField' => 'pimcoreField', or even
+     * 'elasticField' => function($element) -- or a mix of these options.
+     *
+     * @param Concrete $element
+     * @param array $fields
+     *
+     * @return array
+     * @throws Exception
+     */
     protected function plainAttributes(Concrete $element, array $fields): array
     {
         $result = [];
@@ -62,6 +94,18 @@ trait DataObjectNormalizerTrait
         return $result;
     }
 
+    /**
+     * Given $element, collect data from the relation fields $fields and return a normalized array.
+     *
+     * $fields can be a simple array of strings, an array of 'elasticField' => 'pimcoreField', or even
+     * 'elasticField' => function($element) -- or a mix of these options.
+     *
+     * @param Concrete $element
+     * @param array $fields
+     *
+     * @return array
+     * @throws Exception
+     */
     protected function relationAttributes(Concrete $element, array $fields): array
     {
         $result = [];
@@ -90,6 +134,14 @@ trait DataObjectNormalizerTrait
         return $result;
     }
 
+    /**
+     * Returns a normalized array of IDs of the direct children of $element, optionally limited by $objectTypes.
+     *
+     * @param Concrete $element
+     * @param array $objectTypes
+     *
+     * @return array[]
+     */
     protected function children(
         Concrete $element,
         array $objectTypes = [AbstractObject::OBJECT_TYPE_OBJECT, AbstractObject::OBJECT_TYPE_FOLDER]
@@ -105,6 +157,15 @@ trait DataObjectNormalizerTrait
         return [IndexDocumentInterface::ATTRIBUTE_CHILDREN => $ids];
     }
 
+    /**
+     * Returns a normalized array of IDs of all (recursive) children of $element, optionally limited by $objectTypes.
+     *
+     * @param Concrete $element
+     * @param array $objectTypes
+     * @param array $carry
+     *
+     * @return array[]
+     */
     protected function childrenRecursive(
         Concrete $element,
         array $objectTypes = [AbstractObject::OBJECT_TYPE_OBJECT, AbstractObject::OBJECT_TYPE_FOLDER],
@@ -120,11 +181,23 @@ trait DataObjectNormalizerTrait
         return [IndexDocumentInterface::ATTRIBUTE_CHILDREN_RECURSIVE => $carry];
     }
 
+    /**
+     * The locales to use for e.g. $this->localizedAttributes().
+     * Can be overridden for customizing that list.
+     *
+     * @return array
+     */
     protected function getLocales(): array
     {
         return Tool::getValidLanguages();
     }
 
+    /**
+     * @param array $fields
+     *
+     * @return array
+     * @internal
+     */
     private function expandFields(array $fields): array
     {
         $expanded = [];
