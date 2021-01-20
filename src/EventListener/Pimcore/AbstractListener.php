@@ -10,6 +10,11 @@ use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 use Valantic\ElasticaBridgeBundle\Service\DocumentHelper;
 use Valantic\ElasticaBridgeBundle\Service\IndexHelper;
 
+/**
+ * An abstract listener for DataObject and Document listeners.
+ * These listeners are automatically registered by the bundle and update Elasticsearch with
+ * any changes made in Pimcore.
+ */
 abstract class AbstractListener
 {
     protected static bool $isEnabled = true;
@@ -41,6 +46,13 @@ abstract class AbstractListener
         self::$isEnabled = false;
     }
 
+    /**
+     * Whenever an event occurs, a decision needs to be made:
+     * 1. Which indices might need to be updated?
+     * 2. Does the element need to be in Elasticsearch or not?
+     * 3. Are there Elasticsearch documents to be created/updated or deleted?
+     * @param AbstractElement $element
+     */
     protected function decideAction(AbstractElement $element): void
     {
         foreach ($this->indexHelper->matchingIndicesForElement($this->indexRepository->all(), $element) as $index) {

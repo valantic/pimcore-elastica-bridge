@@ -9,6 +9,8 @@ use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 class IndexHelper
 {
     /**
+     * Returns an array of indices that could contain $element.
+     *
      * @param IndexInterface[] $indices
      * @param AbstractElement $element
      *
@@ -19,6 +21,15 @@ class IndexHelper
         return array_filter($indices, fn(IndexInterface $index): bool => $index->isElementAllowedInIndex($element));
     }
 
+    /**
+     * Checks whether a given ID is in an index.
+     *
+     * @param string $id
+     * @param IndexInterface $index
+     *
+     * @return bool
+     * @internal
+     */
     public function isIdInIndex(string $id, IndexInterface $index): bool
     {
         try {

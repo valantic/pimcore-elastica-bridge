@@ -7,6 +7,9 @@ use Pimcore\Model\Listing\AbstractListing;
 use Valantic\ElasticaBridgeBundle\DocumentType\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 
+/**
+ * Provides a default implementation for getListingInstance
+ */
 trait ListingTrait
 {
     abstract public function getType(): string;

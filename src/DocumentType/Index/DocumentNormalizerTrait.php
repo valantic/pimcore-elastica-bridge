@@ -7,10 +7,28 @@ use Pimcore\Model\DataObject\Folder;
 use Pimcore\Model\Document;
 use RuntimeException;
 
+/**
+ * Collection of helpers for normalizing a Document.
+ */
 trait DocumentNormalizerTrait
 {
+    /**
+     * Contains the IDs of DataObjects found in the current document.
+     * For usage, DocumentRelationAwareDataObjectTrait provides a shouldIndex() implementation.
+     *
+     * @see DocumentRelationAwareDataObjectTrait
+     * @var int[]
+     */
     protected array $relatedObjects = [];
 
+    /**
+     * This function converts all editables into an array of strings containing the contents of that editable.
+     * The value can be overridden by overriding the editable...() methods in this trait.
+     *
+     * @param Document\Page $document
+     *
+     * @return string[]
+     */
     protected function editables(Document\Page $document): array
     {
         $data = [];
@@ -26,7 +44,7 @@ trait DocumentNormalizerTrait
             $editableMethod = sprintf('editable%s', ucfirst($editable->getType()));
 
             if (!method_exists($this, $editableMethod)) {
-                throw new RuntimeException();
+                throw new RuntimeException(sprintf('No method for editable of type %s found', $editableName));
             }
 
             $data[] = $this->{$editableMethod}($document, $document->getEditable($editable->getName()));

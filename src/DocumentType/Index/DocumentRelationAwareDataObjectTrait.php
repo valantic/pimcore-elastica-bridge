@@ -7,6 +7,12 @@ use Elastica\Query\Match;
 use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 
+/**
+ * Can be used on conjunction with DocumentNormalizerTrait::$relatedObjects.
+ * Provides a shouldIndex() implementation aware of $relatedObjects.
+ *
+ * @see DocumentNormalizerTrait
+ */
 trait DocumentRelationAwareDataObjectTrait
 {
     protected IndexInterface $index;
