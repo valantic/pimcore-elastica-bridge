@@ -7,7 +7,9 @@ use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Model\Document as PimcoreDocument;
 use Pimcore\Model\Document\Listing as DocumentListing;
 use Pimcore\Model\Element\AbstractElement;
-use RuntimeException;
+use Valantic\ElasticaBridgeBundle\Exception\DocumentType\ElasticsearchDocumentNotFoundException;
+use Valantic\ElasticaBridgeBundle\Exception\DocumentType\PimcoreElementNotFoundException;
+use Valantic\ElasticaBridgeBundle\Exception\DocumentType\UnknownPimcoreElementType;
 
 abstract class AbstractDocument implements DocumentInterface
 {
@@ -30,7 +32,7 @@ abstract class AbstractDocument implements DocumentInterface
             ][$this->getSubType()] ?? null;
 
         if ($candidate === null || !in_array($candidate, PimcoreDocument::$types, true)) {
-            throw new RuntimeException('Unknown document type: ' . $candidate);
+            throw new UnknownPimcoreElementType($candidate);
         }
 
         return $candidate;
@@ -46,13 +48,13 @@ abstract class AbstractDocument implements DocumentInterface
             return DocumentInterface::TYPE_DOCUMENT . $element->getId();
         }
 
-        throw new RuntimeException('Unknown element type');
+        throw new UnknownPimcoreElementType($element->getType());
     }
 
     public final function getPimcoreId(ElasticaDocument $document): int
     {
         if ($document->getId() === null) {
-            throw new RuntimeException();
+            throw new ElasticsearchDocumentNotFoundException($document->getId());
         }
 
         return (int)str_replace(DocumentInterface::TYPES, '', $document->getId());
@@ -69,16 +71,17 @@ abstract class AbstractDocument implements DocumentInterface
             return DocumentListing::class;
         }
 
-        throw new RuntimeException('Unknown element type');
+        throw new UnknownPimcoreElementType($this->getType());
     }
 
     public function getPimcoreElement(ElasticaDocument $document): AbstractElement
     {
         if ($this->getType() === DocumentInterface::TYPE_OBJECT) {
-            $element = Concrete::getById($this->getPimcoreId($document));
+            $pimcoreId = $this->getPimcoreId($document);
+            $element = Concrete::getById($pimcoreId);
 
             if ($element === null) {
-                throw new RuntimeException();
+                throw new PimcoreElementNotFoundException($pimcoreId);
             }
 
             return $element;
@@ -87,16 +90,17 @@ abstract class AbstractDocument implements DocumentInterface
         if ($this->getType() === DocumentInterface::TYPE_DOCUMENT) {
             /** @var PimcoreDocument $documentTypeClass */
             $documentTypeClass = $this->getSubType();
-            $element = $documentTypeClass::getById($this->getPimcoreId($document));
+            $pimcoreId = $this->getPimcoreId($document);
+            $element = $documentTypeClass::getById($pimcoreId);
 
             if ($element === null) {
-                throw new RuntimeException();
+                throw new PimcoreElementNotFoundException($pimcoreId);
             }
 
             return $element;
 
         }
 
-        throw new RuntimeException('Unknown element type');
+        throw new UnknownPimcoreElementType($this->getType());
     }
 }

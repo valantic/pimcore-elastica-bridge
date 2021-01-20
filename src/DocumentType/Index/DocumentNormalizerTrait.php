@@ -6,6 +6,8 @@ use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Model\DataObject\Folder;
 use Pimcore\Model\Document;
 use RuntimeException;
+use Valantic\ElasticaBridgeBundle\Exception\DocumentType\Index\EditablePartiallyImplementedException;
+use Valantic\ElasticaBridgeBundle\Exception\DocumentType\Index\UnknownEditableException;
 
 /**
  * Collection of helpers for normalizing a Document.
@@ -44,7 +46,7 @@ trait DocumentNormalizerTrait
             $editableMethod = sprintf('editable%s', ucfirst($editable->getType()));
 
             if (!method_exists($this, $editableMethod)) {
-                throw new RuntimeException(sprintf('No method for editable of type %s found', $editableName));
+                throw new UnknownEditableException($editableName);
             }
 
             $data[] = $this->{$editableMethod}($document, $document->getEditable($editable->getName()));
@@ -67,7 +69,7 @@ trait DocumentNormalizerTrait
             return null;
         }
 
-        throw new RuntimeException(sprintf('%s is not yet implemented for %s/%s (%s)', $editable->getType(), $editable->type, $editable->subtype, $editable->getName()));
+        throw new EditablePartiallyImplementedException(sprintf('%s is not yet implemented for %s/%s (%s)', $editable->getType(), $editable->type, $editable->subtype, $editable->getName()));
     }
 
     protected function editableRelations(Document\Page $document, Document\Editable\Relations $editable): ?string
