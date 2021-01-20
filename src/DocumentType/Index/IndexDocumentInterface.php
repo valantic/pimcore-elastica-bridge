@@ -10,7 +10,7 @@ use Valantic\ElasticaBridgeBundle\DocumentType\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 
 /**
- * Describes how a Pimcore element related to an Elasticsearch in the context of this index.
+ * Describes how a Pimcore element relates to an Elasticsearch in the context of this index.
  * Classes implementing this interface may extend an AbstractDocument and certain methods could be implemented there
  * to result in DRYer code.
  *
