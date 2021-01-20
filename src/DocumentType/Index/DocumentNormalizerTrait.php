@@ -87,7 +87,6 @@ trait DocumentNormalizerTrait
         return null;
     }
 
-    // TODO check editable block (motorex geschichte)
     protected function editableBlock(Document\Page $document, Document\Editable\Block $editable): ?string
     {
         return null;
