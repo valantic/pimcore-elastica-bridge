@@ -140,7 +140,7 @@ interface IndexInterface
      * In these instances, the index needs to be refreshed in order for newly-added data to be available immediately.
      *
      * @return bool
-     * @see DocumentNormalizerTrait
+     * @see DocumentNormalizerTrait::$relatedObjects
      * @see IndexCommand
      */
     public function refreshIndexAfterEveryIndexDocumentWhenPopulating(): bool;

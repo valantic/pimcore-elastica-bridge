@@ -15,8 +15,20 @@ use Valantic\ElasticaBridgeBundle\Command\Index as IndexCommand;
  */
 interface DocumentInterface
 {
+    /**
+     * For use in getType().
+     * Indicates the definition of an Asset.
+     */
     public const TYPE_ASSET = 'asset';
+    /**
+     * For use in getType().
+     * Indicates the definition of a Document.
+     */
     public const TYPE_DOCUMENT = 'document';
+    /**
+     * For use in getType().
+     * Indicates the definition of a DataObject.
+     */
     public const TYPE_OBJECT = 'object';
     public const TYPES = [self::TYPE_ASSET, self::TYPE_DOCUMENT, self::TYPE_OBJECT];
 

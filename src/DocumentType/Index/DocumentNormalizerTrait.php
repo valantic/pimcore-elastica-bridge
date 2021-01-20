@@ -16,7 +16,7 @@ trait DocumentNormalizerTrait
      * Contains the IDs of DataObjects found in the current document.
      * For usage, DocumentRelationAwareDataObjectTrait provides a shouldIndex() implementation.
      *
-     * @see DocumentRelationAwareDataObjectTrait
+     * @see DocumentRelationAwareDataObjectTrait::shouldIndex()
      * @var int[]
      */
     protected array $relatedObjects = [];

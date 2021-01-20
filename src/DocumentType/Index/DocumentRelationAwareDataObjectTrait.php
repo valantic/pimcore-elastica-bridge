@@ -11,7 +11,7 @@ use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
  * Can be used on conjunction with DocumentNormalizerTrait::$relatedObjects.
  * Provides a shouldIndex() implementation aware of $relatedObjects.
  *
- * @see DocumentNormalizerTrait
+ * @see DocumentNormalizerTrait::$relatedObjects
  */
 trait DocumentRelationAwareDataObjectTrait
 {
