@@ -12,6 +12,7 @@ use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\DocumentType\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
+use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
 use Valantic\ElasticaBridgeBundle\Repository\IndexDocumentRepository;
 
 abstract class AbstractIndex implements IndexInterface
@@ -173,5 +174,71 @@ abstract class AbstractIndex implements IndexInterface
     public function refreshIndexAfterEveryIndexDocumentWhenPopulating(): bool
     {
         return false;
+    }
+
+    public function usesBlueGreenIndices(): bool
+    {
+        return true;
+    }
+
+    final public function hasBlueGreenIndices(): bool
+    {
+        return array_reduce(
+            array_map(
+                fn(string $suffix): bool => $this->client->getIndex($this->getName())->exists(),
+                self::INDEX_SUFFIXES
+            ),
+            fn(bool $item, bool $carry): bool => $item && $carry,
+            true
+        );
+    }
+
+    final public function getBlueGreenActiveSuffix(): string
+    {
+        if (!$this->hasBlueGreenIndices()) {
+            throw new BlueGreenIndicesIncorrectlySetupException();
+        }
+
+        $aliases = array_filter(
+            $this->client->request('_aliases')->getData(),
+            fn(array $datum): bool => in_array($this->getName(), array_keys($datum['aliases']), true)
+        );
+
+        if (count($aliases) !== 1) {
+            throw new BlueGreenIndicesIncorrectlySetupException();
+        }
+
+        $suffix = substr(array_keys($aliases)[0], strlen($this->getName()));
+
+        if (!in_array($suffix, self::INDEX_SUFFIXES, true)) {
+            throw new BlueGreenIndicesIncorrectlySetupException();
+        }
+
+        return $suffix;
+    }
+
+    final public function getBlueGreenInactiveSuffix(): string
+    {
+        $active = $this->getBlueGreenActiveSuffix();
+
+        if ($active === self::INDEX_SUFFIX_BLUE) {
+            return self::INDEX_SUFFIX_GREEN;
+        }
+
+        if ($active === self::INDEX_SUFFIX_GREEN) {
+            return self::INDEX_SUFFIX_BLUE;
+        }
+
+        throw new BlueGreenIndicesIncorrectlySetupException();
+    }
+
+    final public function getBlueGreenActiveElasticaIndex(): Index
+    {
+        return $this->client->getIndex($this->getName() . $this->getBlueGreenActiveSuffix());
+    }
+
+    final public function getBlueGreenInactiveElasticaIndex(): Index
+    {
+        return $this->client->getIndex($this->getName() . $this->getBlueGreenInactiveSuffix());
     }
 }

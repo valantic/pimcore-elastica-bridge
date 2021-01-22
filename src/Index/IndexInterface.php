@@ -9,9 +9,23 @@ use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\Command\Index as IndexCommand;
 use Valantic\ElasticaBridgeBundle\DocumentType\Index\DocumentNormalizerTrait;
 use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
+use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
 
 interface IndexInterface
 {
+    /**
+     * The suffix for the blue index
+     */
+    public const INDEX_SUFFIX_BLUE = '--blue';
+    /**
+     * The suffix for the green index
+     */
+    public const INDEX_SUFFIX_GREEN = '--green';
+    /**
+     * List of valid index suffixes
+     */
+    public const INDEX_SUFFIXES = [self::INDEX_SUFFIX_BLUE, self::INDEX_SUFFIX_GREEN];
+
     /**
      * The name of the Elasticsearch index
      *
@@ -144,4 +158,59 @@ interface IndexInterface
      * @see IndexCommand
      */
     public function refreshIndexAfterEveryIndexDocumentWhenPopulating(): bool;
+
+    /**
+     * Indicates whether this index uses a blue-green setup to ensure re-populating the index doesn't result
+     * in a loss of functionality.
+     *
+     * @return bool
+     * @see IndexCommand
+     */
+    public function usesBlueGreenIndices(): bool;
+
+    /**
+     * Checks whether the blue and green indices are correctly set up.
+     *
+     * @return bool
+     * @internal
+     */
+    public function hasBlueGreenIndices(): bool;
+
+    /**
+     * Returns the currently active blue/green suffix.
+     *
+     * @return string
+     * @throws BlueGreenIndicesIncorrectlySetupException
+     * @internal
+     */
+    public function getBlueGreenActiveSuffix(): string;
+
+    /**
+     * Returns the currently inactive blue/green suffix.
+     *
+     * @return string
+     * @throws BlueGreenIndicesIncorrectlySetupException
+     * @internal
+     */
+    public function getBlueGreenInactiveSuffix(): string;
+
+    /**
+     * Returns the currently active blue/green Elastica index.
+     *
+     * @return Index
+     * @throws BlueGreenIndicesIncorrectlySetupException
+     * @see IndexInterface::getElasticaIndex()
+     * @internal
+     */
+    public function getBlueGreenActiveElasticaIndex(): Index;
+
+    /**
+     * Returns the currently inactive blue/green Elastica index.
+     *
+     * @return Index
+     * @throws BlueGreenIndicesIncorrectlySetupException
+     * @see IndexInterface::getElasticaIndex()
+     * @internal
+     */
+    public function getBlueGreenInactiveElasticaIndex(): Index;
 }
