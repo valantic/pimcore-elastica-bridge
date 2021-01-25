@@ -13,7 +13,7 @@ class ValanticElasticaBridgeBundle extends AbstractPimcoreBundle
     public function getJsPaths()
     {
         return [
-            '/bundles/valanticelasticsearch/js/pimcore/startup.js',
+            '/bundles/valanticelasticabridge/js/pimcore/startup.js',
         ];
     }
 
