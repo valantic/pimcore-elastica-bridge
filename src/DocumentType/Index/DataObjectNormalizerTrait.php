@@ -42,7 +42,7 @@ trait DataObjectNormalizerTrait
      * @return array[]
      * @throws Exception
      */
-    protected function localizedAttributes(Concrete $element, array $fields, bool $useFallbackValues = false): array
+    protected function localizedAttributes(Concrete $element, array $fields, bool $useFallbackValues = true): array
     {
         if ($useFallbackValues) {
             $origLocale = $this->localeService->getLocale();
