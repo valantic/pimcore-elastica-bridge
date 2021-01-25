@@ -24,13 +24,13 @@ services:
     tags:
       - { name: kernel.event_listener, event: pimcore.dataobject.postAdd, method: added }
       - { name: kernel.event_listener, event: pimcore.dataobject.postUpdate, method: updated }
-      - { name: kernel.event_listener, event: pimcore.dataobject.postDelete, method: deleted }
+      - { name: kernel.event_listener, event: pimcore.dataobject.preDelete, method: deleted }
 
   Valantic\ElasticaBridgeBundle\EventListener\Pimcore\Document:
     tags:
       - { name: kernel.event_listener, event: pimcore.document.postAdd, method: added }
       - { name: kernel.event_listener, event: pimcore.document.postUpdate, method: updated }
-      - { name: kernel.event_listener, event: pimcore.document.postDelete, method: deleted }
+      - { name: kernel.event_listener, event: pimcore.document.preDelete, method: deleted }
 
   Valantic\ElasticaBridgeBundle\Service\:
     resource: '../../Service/*'
