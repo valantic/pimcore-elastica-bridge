@@ -21,6 +21,7 @@ class Index extends BaseCommand
     protected const OPTION_NO_DELETE = 'no-delete';
     protected const OPTION_NO_POPULATE = 'no-populate';
     protected const OPTION_NO_CHECK = 'no-check';
+    public static bool $isPopulating = false;
     protected ElasticsearchClient $esClient;
     protected DocumentHelper $documentHelper;
     protected IndexRepository $indexRepository;
@@ -104,7 +105,7 @@ class Index extends BaseCommand
             if ($indexConfig->usesBlueGreenIndices()) {
                 $activeIndex = $indexConfig->getBlueGreenActiveElasticaIndex();
                 $inactiveIndex = $indexConfig->getBlueGreenInactiveElasticaIndex();
-
+                $inactiveIndex->flush();
                 $activeIndex->removeAlias($indexConfig->getName());
                 $activeIndex->flush();
                 $inactiveIndex->addAlias($indexConfig->getName());
@@ -116,6 +117,7 @@ class Index extends BaseCommand
 
     protected function populateIndex(IndexInterface $indexConfig, ElasticaIndex $index): void
     {
+        self::$isPopulating = true;
         ProgressBar::setFormatDefinition('custom', "%percent%%\t%remaining%\t%memory%\n%message%");
 
         $progressBar = new ProgressBar($this->output, 1);
@@ -157,12 +159,18 @@ class Index extends BaseCommand
             }
 
             if ($indexConfig->refreshIndexAfterEveryIndexDocumentWhenPopulating()) {
+
+                if ($indexConfig->usesBlueGreenIndices()) {
+                    $indexConfig->getBlueGreenActiveElasticaIndex()->refresh();
+                    $indexConfig->getBlueGreenInactiveElasticaIndex()->refresh();
+                }
                 $indexConfig->getElasticaIndex()->refresh();
             }
         }
 
         $progressBar->finish();
         $this->output->writeln('');
+        self::$isPopulating = false;
     }
 
     protected function ensureCorrectIndexSetup(IndexInterface $indexConfig): void

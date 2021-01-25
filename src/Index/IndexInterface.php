@@ -153,9 +153,13 @@ interface IndexInterface
      * When indexing DataObjects based on usage in Pimcore Documents, the index is queried during indexing.
      * In these instances, the index needs to be refreshed in order for newly-added data to be available immediately.
      *
+     * While populating is happening (as indicated by IndexCommand::$isPopulating), use the inactive index.
+     *
      * @return bool
      * @see DocumentNormalizerTrait::$relatedObjects
      * @see IndexCommand
+     * @see IndexCommand::$isPopulating
+     * @see IndexInterface::getBlueGreenInactiveElasticaIndex()
      */
     public function refreshIndexAfterEveryIndexDocumentWhenPopulating(): bool;
 
