@@ -9,6 +9,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
+use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 use Valantic\ElasticaBridgeBundle\Repository\IndexDocumentRepository;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
@@ -20,6 +21,7 @@ class Index extends BaseCommand
     protected const OPTION_NO_DELETE = 'no-delete';
     protected const OPTION_NO_POPULATE = 'no-populate';
     protected const OPTION_NO_CHECK = 'no-check';
+    public static bool $isPopulating = false;
     protected ElasticsearchClient $esClient;
     protected DocumentHelper $documentHelper;
     protected IndexRepository $indexRepository;
@@ -82,21 +84,33 @@ class Index extends BaseCommand
             }
 
             $index = $this->esClient->getIndex($indexConfig->getName());
+            $currentIndex = $index;
+            $this->ensureCorrectIndexSetup($indexConfig);
 
-            if (!$this->input->getOption(self::OPTION_NO_DELETE)) {
-                $this->ensureIndexExists($index, $indexConfig);
+            if ($indexConfig->usesBlueGreenIndices()) {
+                $currentIndex = $indexConfig->getBlueGreenInactiveElasticaIndex();
             }
 
             if (!$this->input->getOption(self::OPTION_NO_POPULATE)) {
-                $this->populateIndex($indexConfig, $index);
+                $this->populateIndex($indexConfig, $currentIndex);
 
-                $index->refresh();
-                $indexCount = $index->count();
+                $currentIndex->refresh();
+                $indexCount = $currentIndex->count();
                 $this->output->writeln('> ' . $indexCount . ' documents');
 
                 if ($indexCount > 0 && !$this->input->getOption(self::OPTION_NO_CHECK)) {
-                    $this->checkRandomDocument($index, $indexConfig);
+                    $this->checkRandomDocument($currentIndex, $indexConfig);
                 }
+            }
+
+            if ($indexConfig->usesBlueGreenIndices()) {
+                $oldIndex = $indexConfig->getBlueGreenActiveElasticaIndex();
+                $newIndex = $indexConfig->getBlueGreenInactiveElasticaIndex();
+
+                $newIndex->flush();
+                $oldIndex->removeAlias($indexConfig->getName());
+                $newIndex->addAlias($indexConfig->getName());
+                $oldIndex->flush();
             }
         }
 
@@ -105,6 +119,7 @@ class Index extends BaseCommand
 
     protected function populateIndex(IndexInterface $indexConfig, ElasticaIndex $index): void
     {
+        self::$isPopulating = true;
         ProgressBar::setFormatDefinition('custom', "%percent%%\t%remaining%\t%memory%\n%message%");
 
         $progressBar = new ProgressBar($this->output, 1);
@@ -146,23 +161,65 @@ class Index extends BaseCommand
             }
 
             if ($indexConfig->refreshIndexAfterEveryIndexDocumentWhenPopulating()) {
-                $indexConfig->getElasticaIndex()->refresh();
+                $index->refresh();
             }
         }
 
         $progressBar->finish();
         $this->output->writeln('');
+        self::$isPopulating = false;
     }
 
-    protected function ensureIndexExists(ElasticaIndex $index, IndexInterface $indexConfig): void
+    protected function ensureCorrectIndexSetup(IndexInterface $indexConfig): void
     {
-        if ($index->exists()) {
+        if ($indexConfig->usesBlueGreenIndices()) {
+            $this->ensureCorrectBlueGreenIndexSetup($indexConfig);
+
+            return;
+        }
+
+        $this->ensureCorrectSimpleIndexSetup($indexConfig);
+    }
+
+    protected function ensureCorrectSimpleIndexSetup(IndexInterface $indexConfig): void
+    {
+        $index = $indexConfig->getElasticaIndex();
+
+        if (!$this->input->getOption(self::OPTION_NO_DELETE) && $index->exists()) {
             $index->delete();
             $this->output->writeln('> Deleted index');
         }
 
-        $index->create($indexConfig->getCreateArguments());
-        $this->output->writeln('> Created index');
+        if (!$index->exists()) {
+            $index->create($indexConfig->getCreateArguments());
+            $this->output->writeln('> Created index');
+        }
+    }
+
+    protected function ensureCorrectBlueGreenIndexSetup(IndexInterface $indexConfig): void
+    {
+        $shouldDelete = !$this->input->getOption(self::OPTION_NO_DELETE);
+
+        foreach (IndexInterface::INDEX_SUFFIXES as $suffix) {
+            $name = $indexConfig->getName() . $suffix;
+            $aliasIndex = $this->esClient->getIndex($name);
+
+            if ($shouldDelete && $aliasIndex->exists()) {
+                $aliasIndex->delete();
+            }
+
+            if (!$aliasIndex->exists()) {
+                $aliasIndex->create($indexConfig->getCreateArguments());
+            }
+        }
+
+        try {
+            $indexConfig->getBlueGreenActiveSuffix();
+        } catch (BlueGreenIndicesIncorrectlySetupException $exception) {
+            $this->esClient->getIndex($indexConfig->getName() . IndexInterface::INDEX_SUFFIX_BLUE)->addAlias($indexConfig->getName());
+        }
+
+        $this->output->writeln('> Ensured indices are correctly set up with alias');
     }
 
     protected function checkRandomDocument(ElasticaIndex $index, IndexInterface $indexConfig): void
