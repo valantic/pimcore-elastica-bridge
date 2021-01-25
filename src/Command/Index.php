@@ -102,13 +102,15 @@ class Index extends BaseCommand
                     $this->checkRandomDocument($currentIndex, $indexConfig);
                 }
             }
+
             if ($indexConfig->usesBlueGreenIndices()) {
-                $activeIndex = $indexConfig->getBlueGreenActiveElasticaIndex();
-                $inactiveIndex = $indexConfig->getBlueGreenInactiveElasticaIndex();
-                $inactiveIndex->flush();
-                $activeIndex->removeAlias($indexConfig->getName());
-                $activeIndex->flush();
-                $inactiveIndex->addAlias($indexConfig->getName());
+                $oldIndex = $indexConfig->getBlueGreenActiveElasticaIndex();
+                $newIndex = $indexConfig->getBlueGreenInactiveElasticaIndex();
+
+                $newIndex->flush();
+                $oldIndex->removeAlias($indexConfig->getName());
+                $newIndex->addAlias($indexConfig->getName());
+                $oldIndex->flush();
             }
         }
 
@@ -159,12 +161,7 @@ class Index extends BaseCommand
             }
 
             if ($indexConfig->refreshIndexAfterEveryIndexDocumentWhenPopulating()) {
-
-                if ($indexConfig->usesBlueGreenIndices()) {
-                    $indexConfig->getBlueGreenActiveElasticaIndex()->refresh();
-                    $indexConfig->getBlueGreenInactiveElasticaIndex()->refresh();
-                }
-                $indexConfig->getElasticaIndex()->refresh();
+                $index->refresh();
             }
         }
 
@@ -180,6 +177,7 @@ class Index extends BaseCommand
 
             return;
         }
+
         $this->ensureCorrectSimpleIndexSetup($indexConfig);
     }
 
@@ -201,9 +199,11 @@ class Index extends BaseCommand
     protected function ensureCorrectBlueGreenIndexSetup(IndexInterface $indexConfig): void
     {
         $shouldDelete = !$this->input->getOption(self::OPTION_NO_DELETE);
+
         foreach (IndexInterface::INDEX_SUFFIXES as $suffix) {
             $name = $indexConfig->getName() . $suffix;
             $aliasIndex = $this->esClient->getIndex($name);
+
             if ($shouldDelete && $aliasIndex->exists()) {
                 $aliasIndex->delete();
             }

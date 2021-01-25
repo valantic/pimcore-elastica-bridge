@@ -185,7 +185,7 @@ abstract class AbstractIndex implements IndexInterface
     {
         return array_reduce(
             array_map(
-                fn(string $suffix): bool => $this->client->getIndex($this->getName())->exists(),
+                fn(string $suffix): bool => $this->client->getIndex($this->getName().$suffix)->exists(),
                 self::INDEX_SUFFIXES
             ),
             fn(bool $item, bool $carry): bool => $item && $carry,
