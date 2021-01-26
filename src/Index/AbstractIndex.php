@@ -188,7 +188,7 @@ abstract class AbstractIndex implements IndexInterface
                 fn(string $suffix): bool => $this->client->getIndex($this->getName().$suffix)->exists(),
                 self::INDEX_SUFFIXES
             ),
-            fn(bool $item, bool $carry): bool => $item && $carry,
+            fn(bool $carry, bool $item): bool => $item && $carry,
             true
         );
     }
