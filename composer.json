@@ -41,7 +41,7 @@
   },
   "scripts": {
     "phpstan": [
-      "vendor/bin/phpstan analyse src"
+      "vendor/bin/phpstan analyse src --memory-limit=1G"
     ]
   }
 }
