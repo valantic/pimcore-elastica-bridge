@@ -137,12 +137,20 @@ abstract class AbstractIndex implements IndexInterface
 
     /**
      * @param Query\AbstractQuery $query
+     * @param int $size Max number of elements to be retrieved aka limit
+     * @param int $from Number of elements to skip from the beginning aka offset
      *
      * @return AbstractElement[]
      */
-    public function searchForElements(Query\AbstractQuery $query): array
+    public function searchForElements(Query\AbstractQuery $query, int $size = 10, int $from = 0): array
     {
-        return $this->documentResultToElements($this->getElasticaIndex()->search($query));
+        return $this->documentResultToElements(
+            $this->getElasticaIndex()
+                ->search(
+                    (new Query($query))
+                        ->setSize($size)
+                        ->setFrom($from))
+        );
     }
 
     /**
