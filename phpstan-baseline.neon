@@ -6,11 +6,6 @@ parameters:
 			path: src/Command/Index.php
 
 		-
-			message: "#^Parameter \\#1 \\$query of method Elastica\\\\Index\\:\\:search\\(\\) expects array\\|Elastica\\\\Query\\|string, Elastica\\\\Query\\\\AbstractQuery given\\.$#"
-			count: 1
-			path: src/Index/AbstractIndex.php
-
-		-
 			message: "#^Method Valantic\\\\ElasticaBridgeBundle\\\\Repository\\\\DocumentRepository\\:\\:__construct\\(\\) has parameter \\$documents with no value type specified in iterable type iterable\\.$#"
 			count: 1
 			path: src/Repository/DocumentRepository.php
