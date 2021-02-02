@@ -82,17 +82,18 @@ class Index extends BaseCommand
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        foreach ($this->indexRepository->all() as $indexConfig) {
-            $this->output->writeln(sprintf('<info>Index: %s</info>', $indexConfig->getName()));
+        $skippedIndices = [];
 
+        foreach ($this->indexRepository->all() as $indexConfig) {
             if (
                 !empty($this->input->getArgument(self::ARGUMENT_INDEX)) &&
                 !in_array($indexConfig->getName(), $this->input->getArgument(self::ARGUMENT_INDEX), true)
             ) {
-                $this->output->writeln('<comment>-> Skipped</comment>');
-                $this->output->writeln('');
+                $skippedIndices[] = $indexConfig->getName();
                 continue;
             }
+
+            $this->output->writeln(sprintf('<info>Index: %s</info>', $indexConfig->getName()));
 
             $index = $this->esClient->getIndex($indexConfig->getName());
             $currentIndex = $index;
@@ -131,6 +132,11 @@ class Index extends BaseCommand
                 $oldIndex->flush();
             }
             $this->output->writeln('');
+        }
+
+        if (count($skippedIndices)) {
+            $this->output->writeln('');
+            $this->output->writeln(sprintf('<info>Skipped the following indices: %s</info>', implode(', ', $skippedIndices)));
         }
 
         return 0;
