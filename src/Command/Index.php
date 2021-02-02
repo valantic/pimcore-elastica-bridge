@@ -83,13 +83,14 @@ class Index extends BaseCommand
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         foreach ($this->indexRepository->all() as $indexConfig) {
-            $this->output->writeln('Index: ' . $indexConfig->getName());
+            $this->output->writeln(sprintf('<info>Index: %s</info>', $indexConfig->getName()));
 
             if (
                 !empty($this->input->getArgument(self::ARGUMENT_INDEX)) &&
                 !in_array($indexConfig->getName(), $this->input->getArgument(self::ARGUMENT_INDEX), true)
             ) {
-                $this->output->writeln('> Skipped');
+                $this->output->writeln('<comment>-> Skipped</comment>');
+                $this->output->writeln('');
                 continue;
             }
 
@@ -107,7 +108,7 @@ class Index extends BaseCommand
 
                 $currentIndex->refresh();
                 $indexCount = $currentIndex->count();
-                $this->output->writeln('> ' . $indexCount . ' documents');
+                $this->output->writeln(sprintf('<comment>-> %d documents</comment>', $indexCount));
 
                 if ($indexCount > 0 && $this->input->getOption(self::OPTION_CHECK)) {
                     $this->checkRandomDocument($currentIndex, $indexConfig);
@@ -123,6 +124,7 @@ class Index extends BaseCommand
                 $newIndex->addAlias($indexConfig->getName());
                 $oldIndex->flush();
             }
+            $this->output->writeln('');
         }
 
         return 0;
@@ -198,12 +200,12 @@ class Index extends BaseCommand
 
         if ($this->input->getOption(self::OPTION_DELETE) && $index->exists()) {
             $index->delete();
-            $this->output->writeln('> Deleted index');
+            $this->output->writeln('<comment>-> Deleted index</comment>');
         }
 
         if (!$index->exists()) {
             $index->create($indexConfig->getCreateArguments());
-            $this->output->writeln('> Created index');
+            $this->output->writeln('<comment>-> Created index</comment>');
         }
     }
 
@@ -230,7 +232,7 @@ class Index extends BaseCommand
             $this->esClient->getIndex($indexConfig->getName() . IndexInterface::INDEX_SUFFIX_BLUE)->addAlias($indexConfig->getName());
         }
 
-        $this->output->writeln('> Ensured indices are correctly set up with alias');
+        $this->output->writeln('<comment>-> Ensured indices are correctly set up with alias</comment>');
     }
 
     protected function checkRandomDocument(ElasticaIndex $index, IndexInterface $indexConfig): void
@@ -238,6 +240,6 @@ class Index extends BaseCommand
         $esDocs = $index->search();
         $esDoc = $esDocs[rand(0, $esDocs->count() - 1)]->getDocument();
         $indexDocumentInstance = $indexConfig->getIndexDocumentInstance($esDoc);
-        $this->output->writeln(sprintf('> ES %s -> %s %s', $esDoc->getId(), $indexDocumentInstance ? $indexDocumentInstance->getPimcoreElement($esDoc)->getType() : 'FAILED', $indexDocumentInstance ? $indexDocumentInstance->getPimcoreElement($esDoc)->getId() : 'FAILED'));
+        $this->output->writeln(sprintf('<comment>-> ES %s -> %s %s</comment>', $esDoc->getId(), $indexDocumentInstance ? $indexDocumentInstance->getPimcoreElement($esDoc)->getType() : 'FAILED', $indexDocumentInstance ? $indexDocumentInstance->getPimcoreElement($esDoc)->getId() : 'FAILED'));
     }
 }
