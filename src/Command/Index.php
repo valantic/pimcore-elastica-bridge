@@ -18,9 +18,9 @@ use Valantic\ElasticaBridgeBundle\Service\DocumentHelper;
 class Index extends BaseCommand
 {
     protected const ARGUMENT_INDEX = 'index';
-    protected const OPTION_NO_DELETE = 'no-delete';
-    protected const OPTION_NO_POPULATE = 'no-populate';
-    protected const OPTION_NO_CHECK = 'no-check';
+    protected const OPTION_DELETE = 'delete';
+    protected const OPTION_POPULATE = 'populate';
+    protected const OPTION_CHECK = 'check';
     public static bool $isPopulating = false;
     protected ElasticsearchClient $esClient;
     protected DocumentHelper $documentHelper;
@@ -51,23 +51,33 @@ class Index extends BaseCommand
                 'Optional: indices to process. Defaults to all if empty'
             )
             ->addOption(
-                self::OPTION_NO_DELETE,
+                self::OPTION_DELETE,
                 'd',
                 InputOption::VALUE_NONE,
-                'Do not delete i.e. re-create existing indices'
+                'Delete i.e. re-create existing indices'
             )
             ->addOption(
-                self::OPTION_NO_POPULATE,
+                self::OPTION_POPULATE,
                 'p',
                 InputOption::VALUE_NONE,
-                'Do not populate created indices'
+                'Populate indices (by default, all indices are populated)'
             )
             ->addOption(
-                self::OPTION_NO_CHECK,
+                self::OPTION_CHECK,
                 'c',
                 InputOption::VALUE_NONE,
-                'Do not perform post-populate checks; implied with --' . self::OPTION_NO_POPULATE
+                'Perform post-populate checks'
             );
+    }
+
+    protected function initialize(InputInterface $input, OutputInterface $output)
+    {
+        parent::initialize($input, $output);
+
+        if ($this->input->getOption(self::OPTION_CHECK) && !$this->input->getOption(self::OPTION_POPULATE)) {
+            $this->output->writeln(sprintf('<error>--%s without --%s has no effect</error>', self::OPTION_CHECK, self::OPTION_POPULATE));
+            $this->output->writeln('');
+        }
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -91,14 +101,15 @@ class Index extends BaseCommand
                 $currentIndex = $indexConfig->getBlueGreenInactiveElasticaIndex();
             }
 
-            if (!$this->input->getOption(self::OPTION_NO_POPULATE)) {
+            if ($this->input->getOption(self::OPTION_POPULATE)) {
+
                 $this->populateIndex($indexConfig, $currentIndex);
 
                 $currentIndex->refresh();
                 $indexCount = $currentIndex->count();
                 $this->output->writeln('> ' . $indexCount . ' documents');
 
-                if ($indexCount > 0 && !$this->input->getOption(self::OPTION_NO_CHECK)) {
+                if ($indexCount > 0 && $this->input->getOption(self::OPTION_CHECK)) {
                     $this->checkRandomDocument($currentIndex, $indexConfig);
                 }
             }
@@ -185,7 +196,7 @@ class Index extends BaseCommand
     {
         $index = $indexConfig->getElasticaIndex();
 
-        if (!$this->input->getOption(self::OPTION_NO_DELETE) && $index->exists()) {
+        if ($this->input->getOption(self::OPTION_DELETE) && $index->exists()) {
             $index->delete();
             $this->output->writeln('> Deleted index');
         }
@@ -198,7 +209,7 @@ class Index extends BaseCommand
 
     protected function ensureCorrectBlueGreenIndexSetup(IndexInterface $indexConfig): void
     {
-        $shouldDelete = !$this->input->getOption(self::OPTION_NO_DELETE);
+        $shouldDelete = $this->input->getOption(self::OPTION_DELETE);
 
         foreach (IndexInterface::INDEX_SUFFIXES as $suffix) {
             $name = $indexConfig->getName() . $suffix;

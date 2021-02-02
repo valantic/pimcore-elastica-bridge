@@ -133,20 +133,10 @@ Arguments:
   index                          Optional: indices to process. Defaults to all if empty
 
 Options:
-  -d, --no-delete                Do not delete i.e. re-create existing indices
-  -p, --no-populate              Do not populate created indices
-  -c, --no-check                 Do not perform post-populate checks; implied with --no-populate
+  -d, --delete                   Delete i.e. re-create existing indices
+  -p, --populate                 Populate indices (by default, all indices are populated)
+  -c, --check                    Perform post-populate checks
   -h, --help                     Display this help message
-  -q, --quiet                    Do not output any message
-  -V, --version                  Display this application version
-      --ansi                     Force ANSI output
-      --no-ansi                  Disable ANSI output
-  -n, --no-interaction           Do not ask any interactive question
-      --ignore-maintenance-mode  Set this flag to force execution in maintenance mode
-      --maintenance-mode         Set this flag to force maintenance mode while this task runs
-  -e, --env=ENV                  The Environment name. [default: "dev"]
-      --no-debug                 Switches off debug mode.
-  -v|vv|vvv, --verbose           Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug
 ```
 
 ### Specific
