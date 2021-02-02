@@ -145,6 +145,17 @@ The bridge automatically listens to Pimcore events and updates documents as need
 
 This can be globally disabled by calling `\Valantic\ElasticaBridgeBundle\EventListener\Pimcore\AbstractListener::disableListener();` or by implementing `\Valantic\ElasticaBridgeBundle\Index\IndexInterface::subscribedDocuments`.
 
+## Status
+
+```
+$ console valantic:elastica-bridge:status --help
+Description:
+  Displays the status of the configured Elasticsearch indices
+
+Usage:
+  valantic:elastica-bridge:status
+```
+
 ## Usage
 
 ```php
