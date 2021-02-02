@@ -104,6 +104,12 @@ class Index extends BaseCommand
 
             if ($this->input->getOption(self::OPTION_POPULATE)) {
 
+                if ($indexConfig->usesBlueGreenIndices()) {
+                    $this->output->writeln('<comment>-> Re-created inactive blue/green index</comment>');
+                    $currentIndex->delete();
+                    $currentIndex->create($indexConfig->getCreateArguments());
+                }
+
                 $this->populateIndex($indexConfig, $currentIndex);
 
                 $currentIndex->refresh();
