@@ -134,7 +134,7 @@ Arguments:
 
 Options:
   -d, --delete                   Delete i.e. re-create existing indices
-  -p, --populate                 Populate indices (by default, all indices are populated)
+  -p, --populate                 Populate indices
   -c, --check                    Perform post-populate checks
   -h, --help                     Display this help message
 ```

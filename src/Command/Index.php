@@ -60,7 +60,7 @@ class Index extends BaseCommand
                 self::OPTION_POPULATE,
                 'p',
                 InputOption::VALUE_NONE,
-                'Populate indices (by default, all indices are populated)'
+                'Populate indices'
             )
             ->addOption(
                 self::OPTION_CHECK,
