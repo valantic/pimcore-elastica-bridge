@@ -5,7 +5,6 @@ namespace Valantic\ElasticaBridgeBundle\DocumentType\Index;
 use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Model\DataObject\Folder;
 use Pimcore\Model\Document;
-use RuntimeException;
 use Valantic\ElasticaBridgeBundle\Exception\DocumentType\Index\EditablePartiallyImplementedException;
 use Valantic\ElasticaBridgeBundle\Exception\DocumentType\Index\UnknownEditableException;
 
