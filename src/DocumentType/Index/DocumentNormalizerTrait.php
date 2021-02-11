@@ -56,6 +56,10 @@ trait DocumentNormalizerTrait
 
     protected function editableRelation(Document\Page $document, Document\Editable\Relation $editable): ?string
     {
+        if ($editable->type === null && $editable->subtype === null) {
+            return null;
+        }
+
         if ($editable->type === 'object' && $editable->subtype === 'folder') {
             $contents = Folder::getById($editable->getId());
 
