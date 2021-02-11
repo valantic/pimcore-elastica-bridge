@@ -151,9 +151,6 @@ This can be globally disabled by calling `\Valantic\ElasticaBridgeBundle\EventLi
 $ console valantic:elastica-bridge:status --help
 Description:
   Displays the status of the configured Elasticsearch indices
-
-Usage:
-  valantic:elastica-bridge:status
 ```
 
 ## Usage
