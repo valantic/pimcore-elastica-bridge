@@ -120,17 +120,18 @@ class Index extends BaseCommand
                 if ($indexCount > 0 && $this->input->getOption(self::OPTION_CHECK)) {
                     $this->checkRandomDocument($currentIndex, $indexConfig);
                 }
+
+                if ($indexConfig->usesBlueGreenIndices()) {
+                    $oldIndex = $indexConfig->getBlueGreenActiveElasticaIndex();
+                    $newIndex = $indexConfig->getBlueGreenInactiveElasticaIndex();
+
+                    $newIndex->flush();
+                    $oldIndex->removeAlias($indexConfig->getName());
+                    $newIndex->addAlias($indexConfig->getName());
+                    $oldIndex->flush();
+                }
             }
 
-            if ($indexConfig->usesBlueGreenIndices()) {
-                $oldIndex = $indexConfig->getBlueGreenActiveElasticaIndex();
-                $newIndex = $indexConfig->getBlueGreenInactiveElasticaIndex();
-
-                $newIndex->flush();
-                $oldIndex->removeAlias($indexConfig->getName());
-                $newIndex->addAlias($indexConfig->getName());
-                $oldIndex->flush();
-            }
             $this->output->writeln('');
         }
 
