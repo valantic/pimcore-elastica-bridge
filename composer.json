@@ -41,6 +41,12 @@
     }
   },
   "scripts": {
+    "post-install-cmd": [
+      "@composer bin all install --ansi"
+    ],
+    "post-update-cmd": [
+      "@composer bin all update --ansi"
+    ],
     "phpstan": [
       "vendor/bin/phpstan analyse src --memory-limit=1G"
     ],
