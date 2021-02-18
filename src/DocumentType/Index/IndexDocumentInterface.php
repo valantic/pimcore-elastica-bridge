@@ -93,4 +93,11 @@ interface IndexDocumentInterface extends DocumentInterface
      * @see ListingTrait
      */
     public function getListingInstance(IndexInterface $index): AbstractListing;
+
+    /**
+     * Whether Elasticsearch documents should be created for object variants.
+     *
+     * @return bool
+     */
+    public function treatObjectVariantsAsDocuments(): bool;
 }

@@ -126,6 +126,7 @@ abstract class AbstractIndex implements IndexInterface
 
             if (in_array($documentInstance->getType(), [
                     DocumentInterface::TYPE_OBJECT,
+                    DocumentInterface::TYPE_VARIANT,
                     DocumentInterface::TYPE_DOCUMENT,
                 ], true) && $documentInstance->getSubType() === get_class($element)) {
                 return $documentInstance;
