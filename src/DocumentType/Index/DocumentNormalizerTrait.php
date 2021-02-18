@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Valantic\ElasticaBridgeBundle\DocumentType\Index;
 
 use Pimcore\Model\DataObject\Concrete;
@@ -18,6 +20,7 @@ trait DocumentNormalizerTrait
      * For usage, DocumentRelationAwareDataObjectTrait provides a shouldIndex() implementation.
      *
      * @see DocumentRelationAwareDataObjectTrait::shouldIndex()
+     *
      * @var int[]
      */
     protected array $relatedObjects = [];

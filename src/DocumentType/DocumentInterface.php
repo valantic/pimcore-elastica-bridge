@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Valantic\ElasticaBridgeBundle\DocumentType;
 
 use Elastica\Document;
@@ -53,6 +55,7 @@ interface DocumentInterface
 
     /**
      * @return string|null
+     *
      * @internal
      */
     public function getDocumentType(): ?string;
@@ -63,6 +66,7 @@ interface DocumentInterface
      * @param AbstractElement $element
      *
      * @return string
+     *
      * @internal
      */
     public function getElasticsearchId(AbstractElement $element): string;
@@ -73,6 +77,7 @@ interface DocumentInterface
      * @param Document $document
      *
      * @return int
+     *
      * @internal
      */
     public function getPimcoreId(Document $document): int;
@@ -81,7 +86,9 @@ interface DocumentInterface
      * The name of the class to use for listing all the associated Pimcore elements.
      *
      * @return string
+     *
      * @see IndexCommand
+     *
      * @internal
      */
     public function getListingClass(): string;

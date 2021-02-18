@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace AppBundle\Elasticsearch\Index\Product;
 
 use AppBundle\Elasticsearch\Index\Category\CategoryIndex;
@@ -45,11 +47,12 @@ class ProductIndex extends AbstractIndex
     public function filterByLocaleAndQuery(string $locale, string $query): BoolQuery
     {
         return (new BoolQuery())
-            ->addMust((new MultiMatch())
-                ->setFields([
-                    sprintf('%s.%s.*', IndexDocumentInterface::ATTRIBUTE_LOCALIZED, $locale),
-                ])
-                ->setQuery($query)
+            ->addMust(
+                (new MultiMatch())
+                    ->setFields([
+                        sprintf('%s.%s.*', IndexDocumentInterface::ATTRIBUTE_LOCALIZED, $locale),
+                    ])
+                    ->setQuery($query)
             )
             ->addFilter(new Match(IndexDocumentInterface::META_TYPE, IndexDocumentInterface::TYPE_OBJECT))
             ->addFilter(new Match(IndexDocumentInterface::META_SUB_TYPE, Product::class));

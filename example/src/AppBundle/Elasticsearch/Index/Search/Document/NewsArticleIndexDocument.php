@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace AppBundle\Elasticsearch\Index\Search\Document;
 
 use AppBundle\Elasticsearch\Document\NewsArticleDocument;
@@ -14,11 +16,11 @@ use Valantic\ElasticaBridgeBundle\Service\DeepImplodeTrait;
 
 class NewsArticleIndexDocument extends NewsArticleDocument implements IndexDocumentInterface
 {
-    use ListingTrait;
+    use DataObjectNormalizerTrait;
     use DeepImplodeTrait;
     use DocumentRelationAwareDataObjectTrait;
+    use ListingTrait;
     use SearchIndexAwareTrait;
-    use DataObjectNormalizerTrait;
 
     public function getNormalized(AbstractElement $element): array
     {

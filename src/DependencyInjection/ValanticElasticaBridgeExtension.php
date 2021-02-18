@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Valantic\ElasticaBridgeBundle\DependencyInjection;
 
 use Exception;
@@ -14,7 +16,7 @@ use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 /**
  * This is the class that loads and manages your bundle configuration.
  *
- * @link http://symfony.com/doc/current/cookbook/bundles/extension.html
+ * @see http://symfony.com/doc/current/cookbook/bundles/extension.html
  */
 class ValanticElasticaBridgeExtension extends Extension
 {
@@ -23,7 +25,8 @@ class ValanticElasticaBridgeExtension extends Extension
     public const TAG_DOCUMENT_INDEX = 'valantic.elastica_bridge.document_index';
 
     /**
-     * {@inheritdoc}
+     * {@inheritDoc}
+     *
      * @param array<mixed> $configs
      * @param ContainerBuilder $container
      *
@@ -42,6 +45,5 @@ class ValanticElasticaBridgeExtension extends Extension
         $loader->load('services.yml');
 
         array_walk($config['client'], fn($value, $key) => $container->setParameter('valantic_elastica_bridge.client.' . $key, $value));
-
     }
 }

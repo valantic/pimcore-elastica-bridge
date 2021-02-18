@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Valantic\ElasticaBridgeBundle\DocumentType\Index;
 
 use Pimcore\Model\Element\AbstractElement;
@@ -19,15 +21,15 @@ use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 interface IndexDocumentInterface extends DocumentInterface
 {
     /**
-     * Every Elasticsearch document will contain a __type field, corresponding to DocumentInterface::getType()
+     * Every Elasticsearch document will contain a __type field, corresponding to DocumentInterface::getType().
      */
     public const META_TYPE = '__type';
     /**
-     * Every Elasticsearch document will contain a __subType field, corresponding to DocumentInterface::getSubType()
+     * Every Elasticsearch document will contain a __subType field, corresponding to DocumentInterface::getSubType().
      */
     public const META_SUB_TYPE = '__subType';
     /**
-     * Every Elasticsearch document will contain an __id field, corresponding to DocumentInterface::getPimcoreId()
+     * Every Elasticsearch document will contain an __id field, corresponding to DocumentInterface::getPimcoreId().
      */
     public const META_ID = '__id';
     /**
@@ -62,6 +64,7 @@ interface IndexDocumentInterface extends DocumentInterface
      * @param AbstractElement $element
      *
      * @return array<mixed>
+     *
      * @see DocumentNormalizerTrait
      * @see DocumentRelationAwareDataObjectTrait
      * @see DataObjectNormalizerTrait
@@ -82,6 +85,7 @@ interface IndexDocumentInterface extends DocumentInterface
      * Conditions to pass to the listing of Pimcore elements.
      *
      * @return string|null
+     *
      * @see IndexCommand
      */
     public function getIndexListingCondition(): ?string; // TODO: refactor to use array of interfaces
@@ -90,6 +94,7 @@ interface IndexDocumentInterface extends DocumentInterface
      * @param IndexInterface $index
      *
      * @return AbstractListing
+     *
      * @see ListingTrait
      */
     public function getListingInstance(IndexInterface $index): AbstractListing;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Valantic\ElasticaBridgeBundle\Command;
 
 use Pimcore\Console\AbstractCommand;

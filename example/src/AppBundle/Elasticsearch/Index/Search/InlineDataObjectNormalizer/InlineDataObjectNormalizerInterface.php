@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace AppBundle\Elasticsearch\Index\Search\InlineDataObjectNormalizer;
 
 use Pimcore\Model\DataObject\Concrete;

@@ -1,5 +1,7 @@
 /.idea/
 /.vscode/
 /vendor/
+/vendor-bin/*/vendor
 /node_modules/
 .DS_STORE
+/.php_cs.cache

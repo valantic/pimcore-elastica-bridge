@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Valantic\ElasticaBridgeBundle\DocumentType\Index;
 
 use Pimcore\Model\DataObject;
@@ -8,7 +10,7 @@ use Valantic\ElasticaBridgeBundle\DocumentType\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 
 /**
- * Provides a default implementation for getListingInstance
+ * Provides a default implementation for getListingInstance.
  */
 trait ListingTrait
 {

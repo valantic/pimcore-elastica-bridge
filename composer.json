@@ -10,6 +10,7 @@
     "ruflin/elastica": "^7.0"
   },
   "require-dev": {
+    "bamarni/composer-bin-plugin": "^1.4",
     "phpstan/phpstan": "^0.12.64"
   },
   "license": "MIT",
@@ -42,6 +43,15 @@
   "scripts": {
     "phpstan": [
       "vendor/bin/phpstan analyse src --memory-limit=1G"
+    ],
+    "phpcs": [
+      "vendor/bin/php-cs-fixer fix --diff --diff-format udiff"
+    ],
+    "phpcs-check": [
+      "vendor/bin/php-cs-fixer fix --diff --dry-run"
     ]
+  },
+  "config": {
+    "sort-packages": true
   }
 }

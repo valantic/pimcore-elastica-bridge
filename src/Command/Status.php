@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Valantic\ElasticaBridgeBundle\Command;
 
 use Symfony\Component\Console\Helper\Table;
@@ -17,8 +19,7 @@ class Status extends BaseCommand
     public function __construct(
         IndexRepository $indexRepository,
         ElasticsearchClient $esClient
-    )
-    {
+    ) {
         parent::__construct();
         $this->esClient = $esClient;
         $this->indexRepository = $indexRepository;
@@ -107,6 +108,7 @@ class Status extends BaseCommand
      * @param int $bytes
      *
      * @return string
+     *
      * @see https://stackoverflow.com/a/2510540
      */
     protected function formatBytes(int $bytes): string
@@ -114,6 +116,6 @@ class Status extends BaseCommand
         $base = log($bytes, 1024);
         $suffixes = ['', 'K', 'M', 'G', 'T'];
 
-        return round(pow(1024, $base - floor($base)), 2) . ' ' . $suffixes[floor($base)] . 'B';
+        return round(1024 ** ($base - floor($base)), 2) . ' ' . $suffixes[floor($base)] . 'B';
     }
 }

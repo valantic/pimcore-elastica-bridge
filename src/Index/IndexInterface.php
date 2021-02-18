@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Valantic\ElasticaBridgeBundle\Index;
 
 use Elastica\Document;
@@ -14,20 +16,20 @@ use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySet
 interface IndexInterface
 {
     /**
-     * The suffix for the blue index
+     * The suffix for the blue index.
      */
     public const INDEX_SUFFIX_BLUE = '--blue';
     /**
-     * The suffix for the green index
+     * The suffix for the green index.
      */
     public const INDEX_SUFFIX_GREEN = '--green';
     /**
-     * List of valid index suffixes
+     * List of valid index suffixes.
      */
     public const INDEX_SUFFIXES = [self::INDEX_SUFFIX_BLUE, self::INDEX_SUFFIX_GREEN];
 
     /**
-     * The name of the Elasticsearch index
+     * The name of the Elasticsearch index.
      *
      * @return string
      */
@@ -38,8 +40,8 @@ interface IndexInterface
      * This is used e.g. when populating the index.
      *
      * @return int
-     * @see IndexCommand
      *
+     * @see IndexCommand
      */
     public function getBatchSize(): int;
 
@@ -62,6 +64,7 @@ interface IndexInterface
 
     /**
      * @return bool
+     *
      * @internal
      */
     public function hasMapping(): bool;
@@ -84,6 +87,7 @@ interface IndexInterface
 
     /**
      * @return array<array>
+     *
      * @internal
      */
     public function getCreateArguments(): array;
@@ -92,6 +96,7 @@ interface IndexInterface
      * Defines the types of documents found in this index. Array of classes implementing IndexDocumentInterface.
      *
      * @return string[] Class names of IndexDocumentInterface classes
+     *
      * @see IndexDocumentInterface
      */
     public function getAllowedDocuments(): array;
@@ -100,6 +105,7 @@ interface IndexInterface
      * The documents this index subscribes to i.e. the documents which are updated using event listeners.
      *
      * @return string[] Class names of IndexDocumentInterface instances
+     *
      * @see IndexDocumentInterface
      */
     public function subscribedDocuments(): array;
@@ -110,6 +116,7 @@ interface IndexInterface
      * @param AbstractElement $element
      *
      * @return bool
+     *
      * @internal
      */
     public function isElementAllowedInIndex(AbstractElement $element): bool;
@@ -120,6 +127,7 @@ interface IndexInterface
      * @param Document $document
      *
      * @return IndexDocumentInterface|null
+     *
      * @internal
      */
     public function getIndexDocumentInstance(Document $document): ?IndexDocumentInterface;
@@ -156,6 +164,7 @@ interface IndexInterface
      * While populating is happening (as indicated by IndexCommand::$isPopulating), use the inactive index.
      *
      * @return bool
+     *
      * @see DocumentNormalizerTrait::$relatedObjects
      * @see IndexCommand
      * @see IndexCommand::$isPopulating
@@ -168,6 +177,7 @@ interface IndexInterface
      * in a loss of functionality.
      *
      * @return bool
+     *
      * @see IndexCommand
      */
     public function usesBlueGreenIndices(): bool;
@@ -176,6 +186,7 @@ interface IndexInterface
      * Checks whether the blue and green indices are correctly set up.
      *
      * @return bool
+     *
      * @internal
      */
     public function hasBlueGreenIndices(): bool;
@@ -183,8 +194,10 @@ interface IndexInterface
     /**
      * Returns the currently active blue/green suffix.
      *
-     * @return string
      * @throws BlueGreenIndicesIncorrectlySetupException
+     *
+     * @return string
+     *
      * @internal
      */
     public function getBlueGreenActiveSuffix(): string;
@@ -192,8 +205,10 @@ interface IndexInterface
     /**
      * Returns the currently inactive blue/green suffix.
      *
-     * @return string
      * @throws BlueGreenIndicesIncorrectlySetupException
+     *
+     * @return string
+     *
      * @internal
      */
     public function getBlueGreenInactiveSuffix(): string;
@@ -201,9 +216,12 @@ interface IndexInterface
     /**
      * Returns the currently active blue/green Elastica index.
      *
-     * @return Index
      * @throws BlueGreenIndicesIncorrectlySetupException
+     *
+     * @return Index
+     *
      * @see IndexInterface::getElasticaIndex()
+     *
      * @internal
      */
     public function getBlueGreenActiveElasticaIndex(): Index;
@@ -211,9 +229,12 @@ interface IndexInterface
     /**
      * Returns the currently inactive blue/green Elastica index.
      *
-     * @return Index
      * @throws BlueGreenIndicesIncorrectlySetupException
+     *
+     * @return Index
+     *
      * @see IndexInterface::getElasticaIndex()
+     *
      * @internal
      */
     public function getBlueGreenInactiveElasticaIndex(): Index;

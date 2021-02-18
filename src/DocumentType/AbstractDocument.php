@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Valantic\ElasticaBridgeBundle\DocumentType;
 
 use Elastica\Document as ElasticaDocument;
@@ -20,16 +22,16 @@ abstract class AbstractDocument implements DocumentInterface
         }
 
         $candidate = [
-                PimcoreDocument\Folder::class => 'folder',
-                PimcoreDocument\Page::class => 'page',
-                PimcoreDocument\Snippet::class => 'snippet',
-                PimcoreDocument\Link::class => 'link',
-                PimcoreDocument\Hardlink::class => 'hardlink',
-                PimcoreDocument\Email::class => 'email',
-                PimcoreDocument\Newsletter::class => 'newsletter',
-                PimcoreDocument\Printpage::class => 'printpage',
-                PimcoreDocument\Printcontainer::class => 'printcontainer',
-            ][$this->getSubType()] ?? null;
+            PimcoreDocument\Folder::class => 'folder',
+            PimcoreDocument\Page::class => 'page',
+            PimcoreDocument\Snippet::class => 'snippet',
+            PimcoreDocument\Link::class => 'link',
+            PimcoreDocument\Hardlink::class => 'hardlink',
+            PimcoreDocument\Email::class => 'email',
+            PimcoreDocument\Newsletter::class => 'newsletter',
+            PimcoreDocument\Printpage::class => 'printpage',
+            PimcoreDocument\Printcontainer::class => 'printcontainer',
+        ][$this->getSubType()] ?? null;
 
         if ($candidate === null || !in_array($candidate, PimcoreDocument::$types, true)) {
             throw new UnknownPimcoreElementType($candidate);
@@ -38,7 +40,7 @@ abstract class AbstractDocument implements DocumentInterface
         return $candidate;
     }
 
-    public final function getElasticsearchId(AbstractElement $element): string
+    final public function getElasticsearchId(AbstractElement $element): string
     {
         if (in_array($element->getType(), DocumentInterface::TYPES, true)) {
             return $element->getType() . $element->getId();
@@ -51,13 +53,13 @@ abstract class AbstractDocument implements DocumentInterface
         throw new UnknownPimcoreElementType($element->getType());
     }
 
-    public final function getPimcoreId(ElasticaDocument $document): int
+    final public function getPimcoreId(ElasticaDocument $document): int
     {
         if ($document->getId() === null) {
             throw new ElasticsearchDocumentNotFoundException($document->getId());
         }
 
-        return (int)str_replace(DocumentInterface::TYPES, '', $document->getId());
+        return (int) str_replace(DocumentInterface::TYPES, '', $document->getId());
     }
 
     public function getListingClass(): string
@@ -98,7 +100,6 @@ abstract class AbstractDocument implements DocumentInterface
             }
 
             return $element;
-
         }
 
         throw new UnknownPimcoreElementType($this->getType());

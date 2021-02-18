@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Valantic\ElasticaBridgeBundle\Command;
 
 use Elastica\Index as ElasticaIndex;
@@ -32,8 +34,7 @@ class Index extends BaseCommand
         IndexDocumentRepository $indexDocumentRepository,
         ElasticsearchClient $esClient,
         DocumentHelper $documentHelper
-    )
-    {
+    ) {
         parent::__construct();
         $this->esClient = $esClient;
         $this->documentHelper = $documentHelper;
@@ -86,8 +87,8 @@ class Index extends BaseCommand
 
         foreach ($this->indexRepository->all() as $indexConfig) {
             if (
-                !empty($this->input->getArgument(self::ARGUMENT_INDEX)) &&
-                !in_array($indexConfig->getName(), $this->input->getArgument(self::ARGUMENT_INDEX), true)
+                !empty($this->input->getArgument(self::ARGUMENT_INDEX))
+                && !in_array($indexConfig->getName(), $this->input->getArgument(self::ARGUMENT_INDEX), true)
             ) {
                 $skippedIndices[] = $indexConfig->getName();
                 continue;
@@ -104,7 +105,6 @@ class Index extends BaseCommand
             }
 
             if ($this->input->getOption(self::OPTION_POPULATE)) {
-
                 if ($indexConfig->usesBlueGreenIndices()) {
                     $this->output->writeln('<comment>-> Re-created inactive blue/green index</comment>');
                     $currentIndex->delete();
@@ -251,7 +251,7 @@ class Index extends BaseCommand
     protected function checkRandomDocument(ElasticaIndex $index, IndexInterface $indexConfig): void
     {
         $esDocs = $index->search();
-        $esDoc = $esDocs[rand(0, $esDocs->count() - 1)]->getDocument();
+        $esDoc = $esDocs[random_int(0, $esDocs->count() - 1)]->getDocument();
         $indexDocumentInstance = $indexConfig->getIndexDocumentInstance($esDoc);
         $this->output->writeln(sprintf('<comment>-> ES %s -> %s %s</comment>', $esDoc->getId(), $indexDocumentInstance ? $indexDocumentInstance->getPimcoreElement($esDoc)->getType() : 'FAILED', $indexDocumentInstance ? $indexDocumentInstance->getPimcoreElement($esDoc)->getId() : 'FAILED'));
     }

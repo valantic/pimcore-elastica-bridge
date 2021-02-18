@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Valantic\ElasticaBridgeBundle\Exception\DocumentType;
 
 use Valantic\ElasticaBridgeBundle\Exception\BaseException;

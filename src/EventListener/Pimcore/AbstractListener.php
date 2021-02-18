@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Valantic\ElasticaBridgeBundle\EventListener\Pimcore;
 
 use Pimcore\Model\DataObject\AbstractObject;
@@ -29,8 +31,7 @@ abstract class AbstractListener
         ElasticsearchClient $esClient,
         DocumentHelper $documentHelper,
         IndexHelper $indexHelper
-    )
-    {
+    ) {
         $this->esClient = $esClient;
         $this->documentHelper = $documentHelper;
         $this->indexHelper = $indexHelper;

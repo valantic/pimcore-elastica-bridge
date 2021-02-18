@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Valantic\ElasticaBridgeBundle\EventListener\Pimcore;
 
 use Pimcore\Event\Model\DataObjectEvent;

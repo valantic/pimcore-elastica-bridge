@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Valantic\ElasticaBridgeBundle\Service;
 
 use Elastica\Document;
@@ -9,12 +11,13 @@ use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
 class DocumentHelper
 {
     /**
-     * Creates an Elastica document based on an IndexDocumentInterface
+     * Creates an Elastica document based on an IndexDocumentInterface.
      *
      * @param IndexDocumentInterface $indexDocumentInstance
      * @param AbstractElement $dataObject
      *
      * @return Document
+     *
      * @internal
      */
     public function elementToIndexDocument(IndexDocumentInterface $indexDocumentInstance, AbstractElement $dataObject): Document

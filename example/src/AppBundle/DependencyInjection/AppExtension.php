@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace AppBundle\DependencyInjection;
 
 use AppBundle\Elasticsearch\Index\Search\InlineDataObjectNormalizer\InlineDataObjectNormalizerInterface;
@@ -13,9 +15,9 @@ class AppExtension extends Extension
     public const TAG_ELASTICSEARCH_SEARCH_INLINE_DATAOBJECT_NORMALIZER = 'app.elasticsearch.search.inline_dataobject_normalizer';
 
     /**
-     * @inheritdoc
+     * {@inheritDoc}
      */
-    public function load(array $configs, ContainerBuilder $container)
+    public function load(array $configs, ContainerBuilder $container): void
     {
         $container
             ->registerForAutoconfiguration(InlineDataObjectNormalizerInterface::class)

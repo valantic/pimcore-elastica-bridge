@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Valantic\ElasticaBridgeBundle\Index;
 
 use Elastica\Document;
@@ -52,12 +54,12 @@ abstract class AbstractIndex implements IndexInterface
         $this->areGlobalFiltersEnabled = true;
     }
 
-    public final function hasMapping(): bool
+    final public function hasMapping(): bool
     {
         return count($this->getMapping()) > 0;
     }
 
-    public final function getCreateArguments(): array
+    final public function getCreateArguments(): array
     {
         return array_filter([
             'mappings' => $this->getMapping(),
@@ -125,10 +127,10 @@ abstract class AbstractIndex implements IndexInterface
             $documentInstance = $this->indexDocumentRepository->get($allowedDocument);
 
             if (in_array($documentInstance->getType(), [
-                    DocumentInterface::TYPE_OBJECT,
-                    DocumentInterface::TYPE_VARIANT,
-                    DocumentInterface::TYPE_DOCUMENT,
-                ], true) && $documentInstance->getSubType() === get_class($element)) {
+                DocumentInterface::TYPE_OBJECT,
+                DocumentInterface::TYPE_VARIANT,
+                DocumentInterface::TYPE_DOCUMENT,
+            ], true) && $documentInstance->getSubType() === get_class($element)) {
                 return $documentInstance;
             }
         }

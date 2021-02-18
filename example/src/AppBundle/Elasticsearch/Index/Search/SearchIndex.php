@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace AppBundle\Elasticsearch\Index\Search;
 
 use AppBundle\Elasticsearch\Index\Search\Document\CategoryIndexDocument;
@@ -96,12 +98,13 @@ class SearchIndex extends AbstractIndex
     public function filterByLocaleAndQuery(string $locale, string $query): BoolQuery
     {
         return (new BoolQuery())
-            ->addMust((new MultiMatch())
-                ->setFields([
-                    sprintf('%s.%s.*', IndexDocumentInterface::ATTRIBUTE_LOCALIZED, $locale),
-                    sprintf('%s.%s.%s^3', IndexDocumentInterface::ATTRIBUTE_LOCALIZED, $locale, self::ATTRIBUTE_TITLE),
-                ])
-                ->setQuery($query)
+            ->addMust(
+                (new MultiMatch())
+                    ->setFields([
+                        sprintf('%s.%s.*', IndexDocumentInterface::ATTRIBUTE_LOCALIZED, $locale),
+                        sprintf('%s.%s.%s^3', IndexDocumentInterface::ATTRIBUTE_LOCALIZED, $locale, self::ATTRIBUTE_TITLE),
+                    ])
+                    ->setQuery($query)
             );
     }
 

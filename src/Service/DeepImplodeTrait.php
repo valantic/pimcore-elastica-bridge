@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Valantic\ElasticaBridgeBundle\Service;
 
 /**
@@ -23,6 +25,7 @@ trait DeepImplodeTrait
      * @param array $arr
      *
      * @return array
+     *
      * @internal
      */
     protected function deepFlatten(array $arr): array
@@ -30,8 +33,7 @@ trait DeepImplodeTrait
         return array_reduce($arr,
             fn($carry, $item) => is_array($item)
                 ? [...$carry, ...$this->deepFlatten($item)]
-                : [...$carry, $item]
-            , []
+                : [...$carry, $item], []
         );
     }
 }

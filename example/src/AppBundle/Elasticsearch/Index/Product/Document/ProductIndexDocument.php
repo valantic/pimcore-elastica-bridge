@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace AppBundle\Elasticsearch\Index\Product\Document;
 
 use AppBundle\Elasticsearch\Document\ProductDocument;
@@ -12,8 +14,8 @@ use Valantic\ElasticaBridgeBundle\DocumentType\Index\ListingTrait;
 
 class ProductIndexDocument extends ProductDocument implements IndexDocumentInterface
 {
-    use ListingTrait;
     use DataObjectNormalizerTrait;
+    use ListingTrait;
 
     public function __construct()
     {
@@ -21,7 +23,7 @@ class ProductIndexDocument extends ProductDocument implements IndexDocumentInter
 
     public function getNormalized(AbstractElement $element): array
     {
-        /**@var Product $element */
+        /** @var Product $element */
         return array_merge(
             $this->plainAttributes($element, ['sku']),
             $this->localizedAttributes($element, ['name', 'url']),
@@ -36,7 +38,7 @@ class ProductIndexDocument extends ProductDocument implements IndexDocumentInter
 
     public function shouldIndex(AbstractElement $element): bool
     {
-        /**@var Product $element */
+        /** @var Product $element */
         return $element->isPublished();
     }
 }

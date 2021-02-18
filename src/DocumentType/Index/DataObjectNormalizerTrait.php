@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Valantic\ElasticaBridgeBundle\DocumentType\Index;
 
 use Exception;
@@ -39,8 +41,9 @@ trait DataObjectNormalizerTrait
      * @param array $fields
      * @param bool $useFallbackValues
      *
-     * @return array[]
      * @throws Exception
+     *
+     * @return array[]
      */
     protected function localizedAttributes(Concrete $element, array $fields, bool $useFallbackValues = true): array
     {
@@ -80,8 +83,9 @@ trait DataObjectNormalizerTrait
      * @param Concrete $element
      * @param array $fields
      *
-     * @return array
      * @throws Exception
+     *
+     * @return array
      */
     protected function plainAttributes(Concrete $element, array $fields): array
     {
@@ -103,8 +107,9 @@ trait DataObjectNormalizerTrait
      * @param Concrete $element
      * @param array $fields
      *
-     * @return array
      * @throws Exception
+     *
+     * @return array
      */
     protected function relationAttributes(Concrete $element, array $fields): array
     {
@@ -145,8 +150,7 @@ trait DataObjectNormalizerTrait
     protected function children(
         Concrete $element,
         array $objectTypes = [AbstractObject::OBJECT_TYPE_OBJECT, AbstractObject::OBJECT_TYPE_FOLDER]
-    ): array
-    {
+    ): array {
         $ids = [];
 
         foreach ($element->getChildren($objectTypes) as $child) {
@@ -170,8 +174,7 @@ trait DataObjectNormalizerTrait
         Concrete $element,
         array $objectTypes = [AbstractObject::OBJECT_TYPE_OBJECT, AbstractObject::OBJECT_TYPE_FOLDER],
         array $carry = []
-    ): array
-    {
+    ): array {
         foreach ($element->getChildren($objectTypes) as $child) {
             /** @var Concrete $child */
             $carry[] = $child->getId();
@@ -196,6 +199,7 @@ trait DataObjectNormalizerTrait
      * @param array $fields
      *
      * @return array
+     *
      * @internal
      */
     private function expandFields(array $fields): array

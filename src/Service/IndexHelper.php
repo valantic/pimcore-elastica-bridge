@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Valantic\ElasticaBridgeBundle\Service;
 
 use Elastica\Exception\NotFoundException;
@@ -28,6 +30,7 @@ class IndexHelper
      * @param IndexInterface $index
      *
      * @return bool
+     *
      * @internal
      */
     public function isIdInIndex(string $id, IndexInterface $index): bool

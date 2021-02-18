@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Valantic\ElasticaBridgeBundle\Repository;
 
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
@@ -7,6 +9,7 @@ use Valantic\ElasticaBridgeBundle\Service\BridgeHelper;
 
 /**
  * Used for typehinting. Contains an array of all IndexInterface implementations.
+ *
  * @see IndexInterface
  */
 class IndexRepository

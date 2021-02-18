@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace AppBundle\Elasticsearch\Index\Search\InlineDataObjectNormalizer;
 
 use Pimcore\Localization\LocaleService;
@@ -9,8 +11,8 @@ use Valantic\ElasticaBridgeBundle\Service\DeepImplodeTrait;
 
 class SeminarNormalizer implements InlineDataObjectNormalizerInterface
 {
-    use LocaleAwareNormalizerTrait;
     use DeepImplodeTrait;
+    use LocaleAwareNormalizerTrait;
 
     public function __construct(LocaleService $localeService)
     {

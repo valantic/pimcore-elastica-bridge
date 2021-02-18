@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Valantic\ElasticaBridgeBundle\DependencyInjection;
 
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
@@ -13,18 +15,18 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
 class Configuration implements ConfigurationInterface
 {
     /**
-     * {@inheritdoc}
+     * {@inheritDoc}
      */
     public function getConfigTreeBuilder()
     {
         $treeBuilder = new TreeBuilder('valantic_elastica_bridge');
         $treeBuilder->getRootNode()
             ->children()
-                ->arrayNode('client')
-                    ->children()
-                    ->scalarNode('host')->defaultValue('localhost')->end()
-                    ->integerNode('port')->defaultValue(9200)->end()
-                ->end()
+            ->arrayNode('client')
+            ->children()
+            ->scalarNode('host')->defaultValue('localhost')->end()
+            ->integerNode('port')->defaultValue(9200)->end()
+            ->end()
             ->end();
 
         // Here you should define the parameters that are allowed to

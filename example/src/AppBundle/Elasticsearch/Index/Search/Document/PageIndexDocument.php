@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace AppBundle\Elasticsearch\Index\Search\Document;
 
 use AppBundle\Constant\DocumentPropertyConstants;
@@ -19,11 +21,11 @@ use Valantic\ElasticaBridgeBundle\Service\DeepImplodeTrait;
 
 class PageIndexDocument extends PageDocument implements IndexDocumentInterface
 {
-    use ListingTrait;
     use DeepImplodeTrait;
     use DocumentNormalizerTrait {
         DocumentNormalizerTrait::editableRelation as protected editableRelationBase;
     }
+    use ListingTrait;
 
     /**
      * @var InlineDataObjectNormalizerInterface[]
@@ -37,7 +39,7 @@ class PageIndexDocument extends PageDocument implements IndexDocumentInterface
 
     public function getNormalized(AbstractElement $element): array
     {
-        /**@var Page $element */
+        /** @var Page $element */
         $this->relatedObjects = [];
 
         $html = $this->deepImplode($this->editables($element));
@@ -63,7 +65,6 @@ class PageIndexDocument extends PageDocument implements IndexDocumentInterface
     public function shouldIndex(AbstractElement $element): bool
     {
         /** @var Page $element */
-
         if (!$element->isPublished()) {
             return false;
         }
