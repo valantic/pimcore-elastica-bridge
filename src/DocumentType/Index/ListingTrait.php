@@ -20,7 +20,7 @@ trait ListingTrait
 
     abstract public function getListingClass(): string;
 
-    abstract public function treatVariantsAsSeparateEntities(): bool;
+    abstract public function treatObjectVariantsAsDocuments(): bool;
 
     public function getIndexListingCondition(): ?string
     {
@@ -35,7 +35,7 @@ trait ListingTrait
         $listingInstance = new $listingClass();
         $listingInstance->setCondition($this->getIndexListingCondition());
 
-        if ($this->getType() === DocumentInterface::TYPE_OBJECT && $this->treatVariantsAsSeparateEntities()) {
+        if ($this->getType() === DocumentInterface::TYPE_OBJECT && $this->treatObjectVariantsAsDocuments()) {
             $listingInstance->setObjectTypes([DataObject\AbstractObject::OBJECT_TYPE_OBJECT, DataObject\AbstractObject::OBJECT_TYPE_VARIANT]);
         }
 

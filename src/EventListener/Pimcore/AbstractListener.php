@@ -64,8 +64,8 @@ abstract class AbstractListener
                 continue;
             }
 
-            if ($element->getType() === AbstractObject::OBJECT_TYPE_VARIANT && !$indexDocument->treatVariantsAsSeparateEntities()) {
-                $element = $element->getParent();
+            if ($element->getType() === AbstractObject::OBJECT_TYPE_VARIANT && !$indexDocument->treatObjectVariantsAsDocuments()) {
+                continue;
             }
 
             $elasticsearchId = $indexDocument->getElasticsearchId($element);

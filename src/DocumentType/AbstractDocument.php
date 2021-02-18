@@ -62,7 +62,7 @@ abstract class AbstractDocument implements DocumentInterface
 
     public function getListingClass(): string
     {
-        if ($this->getType() === DocumentInterface::TYPE_OBJECT || $this->getType() === DocumentInterface::TYPE_VARIANT) {
+        if (in_array($this->getType(), [DocumentInterface::TYPE_OBJECT, DocumentInterface::TYPE_VARIANT], true)) {
             return $this->getSubType() . '\Listing';
         }
 
@@ -76,7 +76,7 @@ abstract class AbstractDocument implements DocumentInterface
 
     public function getPimcoreElement(ElasticaDocument $document): AbstractElement
     {
-        if ($this->getType() === DocumentInterface::TYPE_OBJECT || $this->getType() === DocumentInterface::TYPE_VARIANT) {
+        if (in_array($this->getType(), [DocumentInterface::TYPE_OBJECT, DocumentInterface::TYPE_VARIANT], true)) {
             $pimcoreId = $this->getPimcoreId($document);
             $element = Concrete::getById($pimcoreId);
 
