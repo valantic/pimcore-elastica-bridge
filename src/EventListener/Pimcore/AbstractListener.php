@@ -2,6 +2,7 @@
 
 namespace Valantic\ElasticaBridgeBundle\EventListener\Pimcore;
 
+use Pimcore\Model\DataObject\AbstractObject;
 use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
@@ -51,6 +52,7 @@ abstract class AbstractListener
      * 1. Which indices might need to be updated?
      * 2. Does the element need to be in Elasticsearch or not?
      * 3. Are there Elasticsearch documents to be created/updated or deleted?
+     *
      * @param AbstractElement $element
      */
     protected function decideAction(AbstractElement $element): void
@@ -60,6 +62,10 @@ abstract class AbstractListener
 
             if (!$indexDocument || !in_array(get_class($indexDocument), $index->subscribedDocuments(), true)) {
                 continue;
+            }
+
+            if ($element->getType() === AbstractObject::OBJECT_TYPE_VARIANT && !$indexDocument->treatVariantsAsSeparateEntities()) {
+                $element = $element->getParent();
             }
 
             $elasticsearchId = $indexDocument->getElasticsearchId($element);

@@ -93,4 +93,11 @@ interface IndexDocumentInterface extends DocumentInterface
      * @see ListingTrait
      */
     public function getListingInstance(IndexInterface $index): AbstractListing;
+
+    /**
+     * Whether object variants should be treated as separate entities i.e. Elasticsearch documents.
+     *
+     * @return bool
+     */
+    public function treatVariantsAsSeparateEntities(): bool;
 }

@@ -30,7 +30,12 @@ interface DocumentInterface
      * Indicates the definition of a DataObject.
      */
     public const TYPE_OBJECT = 'object';
-    public const TYPES = [self::TYPE_ASSET, self::TYPE_DOCUMENT, self::TYPE_OBJECT];
+    /**
+     * For use in getType().
+     * Indicates the definition of a DataObject Variant.
+     */
+    public const TYPE_VARIANT = 'variant';
+    public const TYPES = [self::TYPE_ASSET, self::TYPE_DOCUMENT, self::TYPE_OBJECT, self::TYPE_VARIANT];
 
     /**
      * Defines the Pimcore type of this document. One of self::TYPES.
