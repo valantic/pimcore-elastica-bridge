@@ -36,7 +36,7 @@ trait ListingTrait
         $listingInstance->setCondition($this->getIndexListingCondition());
 
         if ($this->getType() === DocumentInterface::TYPE_OBJECT && $this->treatVariantsAsSeparateEntities()) {
-            $listingInstance->setObjectTypes([DataObject\AbstractObject::OBJECT_TYPE_VARIANT]);
+            $listingInstance->setObjectTypes([DataObject\AbstractObject::OBJECT_TYPE_OBJECT, DataObject\AbstractObject::OBJECT_TYPE_VARIANT]);
         }
 
         if ($this->getType() === DocumentInterface::TYPE_DOCUMENT) {
