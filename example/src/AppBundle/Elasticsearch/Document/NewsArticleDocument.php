@@ -20,7 +20,7 @@ class NewsArticleDocument extends AbstractDocument
         return NewsArticle::class;
     }
 
-    public function treatVariantsAsSeparateEntities(): bool
+    public function treatObjectVariantsAsDocuments(): bool
     {
         return false;
     }

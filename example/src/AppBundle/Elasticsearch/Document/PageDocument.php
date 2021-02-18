@@ -20,7 +20,7 @@ class PageDocument extends AbstractDocument
         return Page::class;
     }
 
-    public function treatVariantsAsSeparateEntities(): bool
+    public function treatObjectVariantsAsDocuments(): bool
     {
         return false;
     }

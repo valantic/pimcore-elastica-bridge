@@ -20,7 +20,7 @@ class CategoryDocument extends AbstractDocument
         return Category::class;
     }
 
-    public function treatVariantsAsSeparateEntities(): bool
+    public function treatObjectVariantsAsDocuments(): bool
     {
         return false;
     }

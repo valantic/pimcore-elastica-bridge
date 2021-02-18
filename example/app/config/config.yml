@@ -1,0 +1,4 @@
+valantic_elastica_bridge:
+  client:
+    host: 'localhost'
+    port: 9200

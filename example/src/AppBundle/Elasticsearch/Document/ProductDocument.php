@@ -20,7 +20,7 @@ class ProductDocument extends AbstractDocument
         return Product::class;
     }
 
-    public function treatVariantsAsSeparateEntities(): bool
+    public function treatObjectVariantsAsDocuments(): bool
     {
         return false;
     }
