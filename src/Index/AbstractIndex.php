@@ -8,7 +8,7 @@ use Elastica\Document;
 use Elastica\Index;
 use Elastica\Query;
 use Elastica\Query\BoolQuery;
-use Elastica\Query\Match;
+use Elastica\Query\MatchQuery;
 use Elastica\ResultSet;
 use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\DocumentType\DocumentInterface;
@@ -108,9 +108,9 @@ abstract class AbstractIndex implements IndexInterface
         }
 
         $query = (new BoolQuery())
-            ->addMust(new Match(IndexDocumentInterface::META_ID, $element->getId()))
-            ->addMust(new Match(IndexDocumentInterface::META_TYPE, $documentInstance->getType()))
-            ->addMust(new Match(IndexDocumentInterface::META_SUB_TYPE, $documentInstance->getSubType()));
+            ->addMust(new MatchQuery(IndexDocumentInterface::META_ID, $element->getId()))
+            ->addMust(new MatchQuery(IndexDocumentInterface::META_TYPE, $documentInstance->getType()))
+            ->addMust(new MatchQuery(IndexDocumentInterface::META_SUB_TYPE, $documentInstance->getSubType()));
 
         $search = $this->getElasticaIndex()->search(new Query($query));
 

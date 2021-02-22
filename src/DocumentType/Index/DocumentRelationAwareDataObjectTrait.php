@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Valantic\ElasticaBridgeBundle\DocumentType\Index;
 
 use Elastica\Query\BoolQuery;
-use Elastica\Query\Match;
+use Elastica\Query\MatchQuery;
 use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\Command\Index;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
@@ -29,8 +29,8 @@ trait DocumentRelationAwareDataObjectTrait
         )
             ->search(
                 (new BoolQuery())
-                    ->addFilter(new Match(IndexDocumentInterface::META_TYPE, IndexDocumentInterface::TYPE_DOCUMENT))
-                    ->addFilter(new Match(IndexDocumentInterface::ATTRIBUTE_RELATED_OBJECTS, $element->getId()))
+                    ->addFilter(new MatchQuery(IndexDocumentInterface::META_TYPE, IndexDocumentInterface::TYPE_DOCUMENT))
+                    ->addFilter(new MatchQuery(IndexDocumentInterface::ATTRIBUTE_RELATED_OBJECTS, $element->getId()))
             );
 
         return $result->count() > 0;
