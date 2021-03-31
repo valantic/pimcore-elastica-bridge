@@ -157,16 +157,16 @@ class Index extends BaseCommand
             $progressBar->setMessage($indexDocument);
 
             $indexDocumentInstance = $this->indexDocumentRepository->get($indexDocument);
-            $listing = $indexDocumentInstance->getListingInstance($indexConfig);
-            $listingCount = $listing->count();
+            $listingCount = $indexDocumentInstance->getListingInstance($indexConfig)->count();
             $progressBar->setMaxSteps($listingCount > 0 ? $listingCount : 1);
             $esDocuments = [];
 
             for ($batchNumber = 0; $batchNumber < ceil($listingCount / $indexConfig->getBatchSize()); $batchNumber++) {
+                $listing = $indexDocumentInstance->getListingInstance($indexConfig);
                 $listing->setOffset($batchNumber * $indexConfig->getBatchSize());
                 $listing->setLimit($indexConfig->getBatchSize());
 
-                foreach ($listing as $dataObject) {
+                foreach ($listing->getData() as $dataObject) {
                     $progressBar->advance();
 
                     if (!$indexDocumentInstance->shouldIndex($dataObject)) {
@@ -174,11 +174,11 @@ class Index extends BaseCommand
                     }
 
                     $esDocuments[] = $this->documentHelper->elementToIndexDocument($indexDocumentInstance, $dataObject);
+                }
 
-                    if (count($esDocuments) > $indexConfig->getBatchSize()) {
-                        $index->addDocuments($esDocuments);
-                        $esDocuments = [];
-                    }
+                if (count($esDocuments) > 0) {
+                    $index->addDocuments($esDocuments);
+                    $esDocuments = [];
                 }
             }
 

@@ -6,6 +6,11 @@ parameters:
 			path: src/Command/Index.php
 
 		-
+			message: "#^Comparison operation \"\\>\" between 0 and 0 is always false\\.$#"
+			count: 1
+			path: src/Command/Index.php
+
+		-
 			message: "#^Method Valantic\\\\ElasticaBridgeBundle\\\\Repository\\\\DocumentRepository\\:\\:__construct\\(\\) has parameter \\$documents with no value type specified in iterable type iterable\\.$#"
 			count: 1
 			path: src/Repository/DocumentRepository.php
