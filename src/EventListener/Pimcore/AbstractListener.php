@@ -58,6 +58,7 @@ abstract class AbstractListener
      */
     protected function decideAction(AbstractElement $element): void
     {
+        // TODO: flattened
         foreach ($this->indexHelper->matchingIndicesForElement($this->indexRepository->all(), $element) as $index) {
             $indexDocument = $index->findIndexDocumentInstanceByPimcore($element);
 
@@ -89,6 +90,7 @@ abstract class AbstractListener
 
     protected function ensurePresent(AbstractElement $element): void
     {
+        // TODO: flattened
         foreach ($this->indexHelper->matchingIndicesForElement($this->indexRepository->all(), $element) as $index) {
             $indexDocument = $index->findIndexDocumentInstanceByPimcore($element);
 
@@ -107,6 +109,7 @@ abstract class AbstractListener
 
     protected function ensureMissing(AbstractElement $element): void
     {
+        // TODO: flattened
         foreach ($this->indexHelper->matchingIndicesForElement($this->indexRepository->all(), $element) as $index) {
             $indexDocument = $index->findIndexDocumentInstanceByPimcore($element);
 

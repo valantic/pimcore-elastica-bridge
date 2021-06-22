@@ -11,6 +11,8 @@ interface TenantAwareInterface
      */
     public function getTenants(): array;
 
+    public function hasTenant(): bool;
+
     public function getTenant(): string;
 
     public function setTenant(string $tenant): void;

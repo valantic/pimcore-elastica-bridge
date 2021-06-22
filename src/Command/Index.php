@@ -12,11 +12,12 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Throwable;
+use Valantic\ElasticaBridgeBundle\DocumentType\Index\TenantAwareInterface as IndexDocumentTenantAwareInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Exception\Command\IndexingFailedException;
 use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
-use Valantic\ElasticaBridgeBundle\Index\TenantAwareInterface;
+use Valantic\ElasticaBridgeBundle\Index\TenantAwareInterface as IndexTenantAwareInterfaceAlias;
 use Valantic\ElasticaBridgeBundle\Repository\IndexDocumentRepository;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 use Valantic\ElasticaBridgeBundle\Service\DocumentHelper;
@@ -89,29 +90,15 @@ class Index extends BaseCommand
     {
         $skippedIndices = [];
 
-        foreach ($this->indexRepository->all() as $indexConfig) {
-            if ($indexConfig instanceof TenantAwareInterface) {
-                if (
-                    !empty($this->input->getArgument(self::ARGUMENT_INDEX))
-                    && !in_array($indexConfig->getTenantUnawareName(), $this->input->getArgument(self::ARGUMENT_INDEX), true)
-                ) {
-                    $skippedIndices[] = $indexConfig->getTenantUnawareName();
-                    continue;
-                }
-                foreach ($indexConfig->getTenants() as $tenant) {
-                    $indexConfig->setTenant($tenant);
-                    $this->processIndex($indexConfig);
-                }
-            } else {
-                if (
-                    !empty($this->input->getArgument(self::ARGUMENT_INDEX))
-                    && !in_array($indexConfig->getName(), $this->input->getArgument(self::ARGUMENT_INDEX), true)
-                ) {
-                    $skippedIndices[] = $indexConfig->getName();
-                    continue;
-                }
-                $this->processIndex($indexConfig);
+        foreach ($this->indexRepository->flattened() as $indexConfig) {
+            if (
+                !empty($this->input->getArgument(self::ARGUMENT_INDEX))
+                && !in_array($indexConfig->getName(), $this->input->getArgument(self::ARGUMENT_INDEX), true)
+            ) {
+                $skippedIndices[] = $indexConfig->getName();
+                continue;
             }
+            $this->processIndex($indexConfig);
         }
 
         if (count($skippedIndices)) {
@@ -165,7 +152,7 @@ class Index extends BaseCommand
         $this->output->writeln('');
     }
 
-    protected function populateIndex(IndexInterface $indexConfig, ElasticaIndex $index): void
+    protected function populateIndex(IndexInterface $indexConfig, ElasticaIndex $esIndex): void
     {
         self::$isPopulating = true;
         ProgressBar::setFormatDefinition('custom', "%percent%%\t%remaining%\t%memory%\n%message%");
@@ -180,6 +167,11 @@ class Index extends BaseCommand
                 $progressBar->setMessage($indexDocument);
 
                 $indexDocumentInstance = $this->indexDocumentRepository->get($indexDocument);
+
+                if ($indexConfig instanceof IndexTenantAwareInterfaceAlias && $indexDocumentInstance instanceof IndexDocumentTenantAwareInterface) {
+                    $indexDocumentInstance->setTenant($indexConfig->getTenant());
+                }
+
                 $listingCount = $indexDocumentInstance->getListingInstance($indexConfig)->count();
                 $progressBar->setMaxSteps($listingCount > 0 ? $listingCount : 1);
                 $esDocuments = [];
@@ -200,17 +192,17 @@ class Index extends BaseCommand
                     }
 
                     if (count($esDocuments) > 0) {
-                        $index->addDocuments($esDocuments);
+                        $esIndex->addDocuments($esDocuments);
                         $esDocuments = [];
                     }
                 }
 
                 if (count($esDocuments) > 0) {
-                    $index->addDocuments($esDocuments);
+                    $esIndex->addDocuments($esDocuments);
                 }
 
                 if ($indexConfig->refreshIndexAfterEveryIndexDocumentWhenPopulating()) {
-                    $index->refresh();
+                    $esIndex->refresh();
                 }
             }
         } catch (Throwable $throwable) {

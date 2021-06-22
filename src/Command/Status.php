@@ -9,12 +9,25 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
+use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 
 class Status extends BaseCommand
 {
     protected ElasticsearchClient $esClient;
     protected IndexRepository $indexRepository;
+    /**
+     * @var array<int,array>
+     */
+    protected array $bundleIndices = [];
+    /**
+     * @var array<int,array>
+     */
+    protected array $otherIndices = [];
+    /**
+     * @var string[]
+     */
+    protected array $skipOtherIndices = [];
 
     public function __construct(
         IndexRepository $indexRepository,
@@ -46,50 +59,31 @@ class Status extends BaseCommand
 
         $this->output->writeln('');
 
-        $data = [];
-        foreach ($this->indexRepository->all() as $indexConfig) {
-            $name = $indexConfig->getName();
-            $exists = $indexConfig->getElasticaIndex()->exists();
-            $useBlueGreen = $indexConfig->usesBlueGreenIndices();
-            $hasBlueGreen = $indexConfig->hasBlueGreenIndices();
-            $numDocs = 'N/A';
-            $size = 'N/A';
-            $activeBlueGreen = 'N/A';
-
-            if ($exists) {
-                $stats = $indexConfig->getElasticaIndex()->getStats()->get()['indices'];
-                $stats = array_values($stats)[0]['total'];
-                $numDocs = $stats['docs']['count'];
-                $size = $stats['store']['size_in_bytes'];
-            }
-
-            if ($hasBlueGreen) {
-                try {
-                    $activeBlueGreen = $indexConfig->getBlueGreenActiveElasticaIndex()->getName();
-                } catch (BlueGreenIndicesIncorrectlySetupException $exception) {
-                    $hasBlueGreen = false;
-                }
-            }
-
-            $data[] = [
-                $name,
-                $this->formatBoolean($exists),
-                $numDocs,
-                is_int($size) ? $this->formatBytes($size) : $size,
-                sprintf(
-                    '%s / %s / %s',
-                    $this->formatBoolean($useBlueGreen),
-                    $this->formatBoolean($hasBlueGreen),
-                    $activeBlueGreen
-                ),
-            ];
+        foreach ($this->indexRepository->flattened() as $indexConfig) {
+            $this->processBundleIndex($indexConfig);
         }
 
         $table = new Table($output);
         $table
             ->setHeaders(['Name', 'Exists', '# Docs', 'Size', 'Blue/Green: use / present / active'])
-            ->setRows($data)
-            ->setHeaderTitle('Indices');
+            ->setRows($this->bundleIndices)
+            ->setHeaderTitle('Indices (managed by this bundle)');
+        $table->render();
+
+        foreach ($this->esClient->getCluster()->getIndexNames() as $indexName) {
+            if (in_array($indexName, $this->skipOtherIndices, true)) {
+                continue;
+            }
+            $this->processOtherIndex($indexName);
+        }
+
+        $this->output->writeln('');
+
+        $table = new Table($output);
+        $table
+            ->setHeaders(['Name', '# Docs', 'Size'])
+            ->setRows($this->otherIndices)
+            ->setHeaderTitle('Other indices in this cluster');
         $table->render();
 
         return 0;
@@ -117,5 +111,64 @@ class Status extends BaseCommand
         $suffixes = ['', 'K', 'M', 'G', 'T'];
 
         return round(1024 ** ($base - floor($base)), 2) . ' ' . $suffixes[floor($base)] . 'B';
+    }
+
+    protected function processBundleIndex(IndexInterface $indexConfig): void
+    {
+        $name = $indexConfig->getName();
+        $exists = $indexConfig->getElasticaIndex()->exists();
+        $useBlueGreen = $indexConfig->usesBlueGreenIndices();
+        $hasBlueGreen = $indexConfig->hasBlueGreenIndices();
+        $numDocs = 'N/A';
+        $size = 'N/A';
+        $activeBlueGreen = 'N/A';
+
+        if ($exists) {
+            $stats = $indexConfig->getElasticaIndex()->getStats()->get()['indices'];
+            $stats = array_values($stats)[0]['total'];
+            $numDocs = $stats['docs']['count'];
+            $size = $stats['store']['size_in_bytes'];
+        }
+
+        if ($hasBlueGreen) {
+            try {
+                $activeBlueGreen = $indexConfig->getBlueGreenActiveElasticaIndex()->getName();
+                $this->skipOtherIndices[] = $indexConfig->getBlueGreenActiveElasticaIndex()->getName();
+                $this->skipOtherIndices[] = $indexConfig->getBlueGreenInactiveElasticaIndex()->getName();
+            } catch (BlueGreenIndicesIncorrectlySetupException $exception) {
+                $hasBlueGreen = false;
+            }
+        }
+
+        $this->skipOtherIndices[] = $indexConfig->getName();
+
+        $this->bundleIndices[] = [
+            $name,
+            $this->formatBoolean($exists),
+            $numDocs,
+            is_int($size) ? $this->formatBytes($size) : $size,
+            sprintf(
+                '%s / %s / %s',
+                $this->formatBoolean($useBlueGreen),
+                $this->formatBoolean($hasBlueGreen),
+                $activeBlueGreen
+            ),
+        ];
+    }
+
+    protected function processOtherIndex(string $indexName): void
+    {
+        $index = $this->esClient->getIndex($indexName);
+
+        $stats = $index->getStats()->get()['indices'];
+        $stats = array_values($stats)[0]['total'];
+        $numDocs = $stats['docs']['count'];
+        $size = $stats['store']['size_in_bytes'];
+
+        $this->otherIndices[] = [
+            $indexName,
+            $numDocs,
+            is_int($size) ? $this->formatBytes($size) : $size,
+        ];
     }
 }
