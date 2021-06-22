@@ -35,7 +35,7 @@ class IndexRepository
     }
 
     /**
-     * @return Generator<IndexInterface>|IndexInterface
+     * @return Generator<string,IndexInterface,void,void>
      */
     public function flattened(): Generator
     {
@@ -43,10 +43,10 @@ class IndexRepository
             if ($indexConfig instanceof TenantAwareInterface) {
                 foreach ($indexConfig->getTenants() as $tenant) {
                     $indexConfig->setTenant($tenant);
-                    yield $indexConfig;
+                    yield $indexConfig->getName() => $indexConfig;
                 }
             } else {
-                yield $indexConfig;
+                yield $indexConfig->getName() => $indexConfig;
             }
         }
     }
