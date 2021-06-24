@@ -14,7 +14,7 @@ class IndexHelper
     /**
      * Returns an array of indices that could contain $element.
      *
-     * @param Generator $indices
+     * @param Generator<string,IndexInterface,void,void> $indices
      * @param AbstractElement $element
      *
      * @return IndexInterface[]
