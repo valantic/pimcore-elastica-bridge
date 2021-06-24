@@ -41,7 +41,7 @@ class DocumentHelper
      * @param IndexDocumentInterface $indexDocument
      * @param IndexInterface $index
      */
-    public function setTenantIfNeeded(IndexDocumentInterface $indexDocument, IndexInterface $index)
+    public function setTenantIfNeeded(IndexDocumentInterface $indexDocument, IndexInterface $index): void
     {
         if ($index instanceof IndexTenantAwareInterfaceAlias && $indexDocument instanceof IndexDocumentTenantAwareInterface) {
             $indexDocument->setTenant($index->getTenant());

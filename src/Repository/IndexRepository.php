@@ -27,8 +27,10 @@ class IndexRepository
     }
 
     /**
-     * @internal Generally, usage is discouraged.
+     * @internal generally, usage is discouraged
+     *
      * @see IndexRepository::flattened()
+     *
      * @return IndexInterface[]
      */
     public function all(): array
