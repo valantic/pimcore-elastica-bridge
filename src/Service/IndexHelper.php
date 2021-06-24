@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Valantic\ElasticaBridgeBundle\Service;
 
 use Elastica\Exception\NotFoundException;
+use Generator;
 use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 
@@ -13,14 +14,22 @@ class IndexHelper
     /**
      * Returns an array of indices that could contain $element.
      *
-     * @param IndexInterface[] $indices
+     * @param Generator $indices
      * @param AbstractElement $element
      *
      * @return IndexInterface[]
      */
-    public function matchingIndicesForElement(array $indices, AbstractElement $element): array
+    public function matchingIndicesForElement(Generator $indices, AbstractElement $element): array
     {
-        return array_filter($indices, fn(IndexInterface $index): bool => $index->isElementAllowedInIndex($element));
+        $matching = [];
+        foreach ($indices as $index) {
+            /** @var IndexInterface $index */
+            if ($index->isElementAllowedInIndex($element)) {
+                $matching[] = $index;
+            }
+        }
+
+        return $matching;
     }
 
     /**

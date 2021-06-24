@@ -12,12 +12,10 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Throwable;
-use Valantic\ElasticaBridgeBundle\DocumentType\Index\TenantAwareInterface as IndexDocumentTenantAwareInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Exception\Command\IndexingFailedException;
 use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
-use Valantic\ElasticaBridgeBundle\Index\TenantAwareInterface as IndexTenantAwareInterfaceAlias;
 use Valantic\ElasticaBridgeBundle\Repository\IndexDocumentRepository;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 use Valantic\ElasticaBridgeBundle\Service\DocumentHelper;
@@ -168,9 +166,7 @@ class Index extends BaseCommand
 
                 $indexDocumentInstance = $this->indexDocumentRepository->get($indexDocument);
 
-                if ($indexConfig instanceof IndexTenantAwareInterfaceAlias && $indexDocumentInstance instanceof IndexDocumentTenantAwareInterface) {
-                    $indexDocumentInstance->setTenant($indexConfig->getTenant());
-                }
+                $this->documentHelper->setTenantIfNeeded($indexDocumentInstance, $indexConfig);
 
                 $listingCount = $indexDocumentInstance->getListingInstance($indexConfig)->count();
                 $progressBar->setMaxSteps($listingCount > 0 ? $listingCount : 1);
