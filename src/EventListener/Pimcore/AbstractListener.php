@@ -61,6 +61,8 @@ abstract class AbstractListener
         foreach ($this->indexHelper->matchingIndicesForElement($this->indexRepository->flattened(), $element) as $index) {
             $indexDocument = $index->findIndexDocumentInstanceByPimcore($element);
 
+            $this->documentHelper->setTenantIfNeeded($indexDocument, $index);
+
             if (!$indexDocument || !in_array(get_class($indexDocument), $index->subscribedDocuments(), true)) {
                 continue;
             }
@@ -68,8 +70,6 @@ abstract class AbstractListener
             if ($element->getType() === AbstractObject::OBJECT_TYPE_VARIANT && !$indexDocument->treatObjectVariantsAsDocuments()) {
                 continue;
             }
-
-            $this->documentHelper->setTenantIfNeeded($indexDocument, $index);
 
             $elasticsearchId = $indexDocument->getElasticsearchId($element);
 
@@ -94,11 +94,11 @@ abstract class AbstractListener
         foreach ($this->indexHelper->matchingIndicesForElement($this->indexRepository->flattened(), $element) as $index) {
             $indexDocument = $index->findIndexDocumentInstanceByPimcore($element);
 
+            $this->documentHelper->setTenantIfNeeded($indexDocument, $index);
+
             if (!$indexDocument || !in_array(get_class($indexDocument), $index->subscribedDocuments(), true) || !$indexDocument->shouldIndex($element)) {
                 continue;
             }
-
-            $this->documentHelper->setTenantIfNeeded($indexDocument, $index);
 
             if ($this->indexHelper->isIdInIndex($indexDocument->getElasticsearchId($element), $index)) {
                 $this->updateElementInIndex($element, $index, $indexDocument);
@@ -114,11 +114,11 @@ abstract class AbstractListener
         foreach ($this->indexHelper->matchingIndicesForElement($this->indexRepository->flattened(), $element) as $index) {
             $indexDocument = $index->findIndexDocumentInstanceByPimcore($element);
 
+            $this->documentHelper->setTenantIfNeeded($indexDocument, $index);
+
             if (!$indexDocument || !in_array(get_class($indexDocument), $index->subscribedDocuments(), true)) {
                 continue;
             }
-
-            $this->documentHelper->setTenantIfNeeded($indexDocument, $index);
 
             $elasticsearchId = $indexDocument->getElasticsearchId($element);
 
