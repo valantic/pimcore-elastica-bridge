@@ -61,9 +61,13 @@ abstract class AbstractListener
         foreach ($this->indexHelper->matchingIndicesForElement($this->indexRepository->flattened(), $element) as $index) {
             $indexDocument = $index->findIndexDocumentInstanceByPimcore($element);
 
+            if (!$indexDocument) {
+                continue;
+            }
+
             $this->documentHelper->setTenantIfNeeded($indexDocument, $index);
 
-            if (!$indexDocument || !in_array(get_class($indexDocument), $index->subscribedDocuments(), true)) {
+            if (!in_array(get_class($indexDocument), $index->subscribedDocuments(), true)) {
                 continue;
             }
 
@@ -94,9 +98,13 @@ abstract class AbstractListener
         foreach ($this->indexHelper->matchingIndicesForElement($this->indexRepository->flattened(), $element) as $index) {
             $indexDocument = $index->findIndexDocumentInstanceByPimcore($element);
 
+            if (!$indexDocument) {
+                continue;
+            }
+
             $this->documentHelper->setTenantIfNeeded($indexDocument, $index);
 
-            if (!$indexDocument || !in_array(get_class($indexDocument), $index->subscribedDocuments(), true) || !$indexDocument->shouldIndex($element)) {
+            if (!in_array(get_class($indexDocument), $index->subscribedDocuments(), true) || !$indexDocument->shouldIndex($element)) {
                 continue;
             }
 
@@ -114,9 +122,13 @@ abstract class AbstractListener
         foreach ($this->indexHelper->matchingIndicesForElement($this->indexRepository->flattened(), $element) as $index) {
             $indexDocument = $index->findIndexDocumentInstanceByPimcore($element);
 
+            if (!$indexDocument) {
+                continue;
+            }
+
             $this->documentHelper->setTenantIfNeeded($indexDocument, $index);
 
-            if (!$indexDocument || !in_array(get_class($indexDocument), $index->subscribedDocuments(), true)) {
+            if (!in_array(get_class($indexDocument), $index->subscribedDocuments(), true)) {
                 continue;
             }
 
