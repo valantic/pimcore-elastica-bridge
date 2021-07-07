@@ -30,10 +30,12 @@ trait DeepImplodeTrait
      */
     protected function deepFlatten(array $arr): array
     {
-        return array_reduce($arr,
+        return array_reduce(
+            $arr,
             fn($carry, $item) => is_array($item)
                 ? [...$carry, ...$this->deepFlatten($item)]
-                : [...$carry, $item], []
+                : [...$carry, $item],
+            []
         );
     }
 }

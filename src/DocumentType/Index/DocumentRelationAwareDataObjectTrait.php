@@ -23,7 +23,7 @@ trait DocumentRelationAwareDataObjectTrait
     public function shouldIndex(AbstractElement $element): bool
     {
         $result = (
-        Index::$isPopulating && $this->index->usesBlueGreenIndices()
+            Index::$isPopulating && $this->index->usesBlueGreenIndices()
             ? $this->index->getBlueGreenInactiveElasticaIndex()
             : $this->index->getElasticaIndex()
         )

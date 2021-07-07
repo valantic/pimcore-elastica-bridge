@@ -152,7 +152,8 @@ abstract class AbstractIndex implements IndexInterface
                 ->search(
                     (new Query($query))
                         ->setSize($size)
-                        ->setFrom($from))
+                        ->setFrom($from)
+                )
         );
     }
 
