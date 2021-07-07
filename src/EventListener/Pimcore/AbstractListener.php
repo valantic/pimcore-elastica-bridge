@@ -58,10 +58,16 @@ abstract class AbstractListener
      */
     protected function decideAction(AbstractElement $element): void
     {
-        foreach ($this->indexHelper->matchingIndicesForElement($this->indexRepository->all(), $element) as $index) {
+        foreach ($this->indexHelper->matchingIndicesForElement($this->indexRepository->flattened(), $element) as $index) {
             $indexDocument = $index->findIndexDocumentInstanceByPimcore($element);
 
-            if (!$indexDocument || !in_array(get_class($indexDocument), $index->subscribedDocuments(), true)) {
+            if (!$indexDocument) {
+                continue;
+            }
+
+            $this->documentHelper->setTenantIfNeeded($indexDocument, $index);
+
+            if (!in_array(get_class($indexDocument), $index->subscribedDocuments(), true)) {
                 continue;
             }
 
@@ -89,10 +95,16 @@ abstract class AbstractListener
 
     protected function ensurePresent(AbstractElement $element): void
     {
-        foreach ($this->indexHelper->matchingIndicesForElement($this->indexRepository->all(), $element) as $index) {
+        foreach ($this->indexHelper->matchingIndicesForElement($this->indexRepository->flattened(), $element) as $index) {
             $indexDocument = $index->findIndexDocumentInstanceByPimcore($element);
 
-            if (!$indexDocument || !in_array(get_class($indexDocument), $index->subscribedDocuments(), true) || !$indexDocument->shouldIndex($element)) {
+            if (!$indexDocument) {
+                continue;
+            }
+
+            $this->documentHelper->setTenantIfNeeded($indexDocument, $index);
+
+            if (!in_array(get_class($indexDocument), $index->subscribedDocuments(), true) || !$indexDocument->shouldIndex($element)) {
                 continue;
             }
 
@@ -107,10 +119,16 @@ abstract class AbstractListener
 
     protected function ensureMissing(AbstractElement $element): void
     {
-        foreach ($this->indexHelper->matchingIndicesForElement($this->indexRepository->all(), $element) as $index) {
+        foreach ($this->indexHelper->matchingIndicesForElement($this->indexRepository->flattened(), $element) as $index) {
             $indexDocument = $index->findIndexDocumentInstanceByPimcore($element);
 
-            if (!$indexDocument || !in_array(get_class($indexDocument), $index->subscribedDocuments(), true)) {
+            if (!$indexDocument) {
+                continue;
+            }
+
+            $this->documentHelper->setTenantIfNeeded($indexDocument, $index);
+
+            if (!in_array(get_class($indexDocument), $index->subscribedDocuments(), true)) {
                 continue;
             }
 

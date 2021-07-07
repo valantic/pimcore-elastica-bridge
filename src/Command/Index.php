@@ -88,7 +88,7 @@ class Index extends BaseCommand
     {
         $skippedIndices = [];
 
-        foreach ($this->indexRepository->all() as $indexConfig) {
+        foreach ($this->indexRepository->flattened() as $indexConfig) {
             if (
                 !empty($this->input->getArgument(self::ARGUMENT_INDEX))
                 && !in_array($indexConfig->getName(), $this->input->getArgument(self::ARGUMENT_INDEX), true)
@@ -97,45 +97,7 @@ class Index extends BaseCommand
                 continue;
             }
 
-            $this->output->writeln(sprintf('<info>Index: %s</info>', $indexConfig->getName()));
-
-            $index = $this->esClient->getIndex($indexConfig->getName());
-            $currentIndex = $index;
-            $this->ensureCorrectIndexSetup($indexConfig);
-
-            if ($indexConfig->usesBlueGreenIndices()) {
-                $currentIndex = $indexConfig->getBlueGreenInactiveElasticaIndex();
-            }
-
-            if ($this->input->getOption(self::OPTION_POPULATE)) {
-                if ($indexConfig->usesBlueGreenIndices()) {
-                    $this->output->writeln('<comment>-> Re-created inactive blue/green index</comment>');
-                    $currentIndex->delete();
-                    $currentIndex->create($indexConfig->getCreateArguments());
-                }
-
-                $this->populateIndex($indexConfig, $currentIndex);
-
-                $currentIndex->refresh();
-                $indexCount = $currentIndex->count();
-                $this->output->writeln(sprintf('<comment>-> %d documents</comment>', $indexCount));
-
-                if ($indexCount > 0 && $this->input->getOption(self::OPTION_CHECK)) {
-                    $this->checkRandomDocument($currentIndex, $indexConfig);
-                }
-
-                if ($indexConfig->usesBlueGreenIndices()) {
-                    $oldIndex = $indexConfig->getBlueGreenActiveElasticaIndex();
-                    $newIndex = $indexConfig->getBlueGreenInactiveElasticaIndex();
-
-                    $newIndex->flush();
-                    $oldIndex->removeAlias($indexConfig->getName());
-                    $newIndex->addAlias($indexConfig->getName());
-                    $oldIndex->flush();
-                }
-            }
-
-            $this->output->writeln('');
+            $this->processIndex($indexConfig);
         }
 
         if (count($skippedIndices)) {
@@ -146,7 +108,50 @@ class Index extends BaseCommand
         return 0;
     }
 
-    protected function populateIndex(IndexInterface $indexConfig, ElasticaIndex $index): void
+    protected function processIndex(IndexInterface $indexConfig): void
+    {
+        $this->output->writeln(sprintf('<info>Index: %s</info>', $indexConfig->getName()));
+
+        $index = $this->esClient->getIndex($indexConfig->getName());
+        $currentIndex = $index;
+        $this->ensureCorrectIndexSetup($indexConfig);
+
+        if ($indexConfig->usesBlueGreenIndices()) {
+            $currentIndex = $indexConfig->getBlueGreenInactiveElasticaIndex();
+        }
+
+        if ($this->input->getOption(self::OPTION_POPULATE)) {
+            if ($indexConfig->usesBlueGreenIndices()) {
+                $this->output->writeln('<comment>-> Re-created inactive blue/green index</comment>');
+                $currentIndex->delete();
+                $currentIndex->create($indexConfig->getCreateArguments());
+            }
+
+            $this->populateIndex($indexConfig, $currentIndex);
+
+            $currentIndex->refresh();
+            $indexCount = $currentIndex->count();
+            $this->output->writeln(sprintf('<comment>-> %d documents</comment>', $indexCount));
+
+            if ($indexCount > 0 && $this->input->getOption(self::OPTION_CHECK)) {
+                $this->checkRandomDocument($currentIndex, $indexConfig);
+            }
+
+            if ($indexConfig->usesBlueGreenIndices()) {
+                $oldIndex = $indexConfig->getBlueGreenActiveElasticaIndex();
+                $newIndex = $indexConfig->getBlueGreenInactiveElasticaIndex();
+
+                $newIndex->flush();
+                $oldIndex->removeAlias($indexConfig->getName());
+                $newIndex->addAlias($indexConfig->getName());
+                $oldIndex->flush();
+            }
+        }
+
+        $this->output->writeln('');
+    }
+
+    protected function populateIndex(IndexInterface $indexConfig, ElasticaIndex $esIndex): void
     {
         self::$isPopulating = true;
         ProgressBar::setFormatDefinition('custom', "%percent%%\t%remaining%\t%memory%\n%message%");
@@ -161,6 +166,9 @@ class Index extends BaseCommand
                 $progressBar->setMessage($indexDocument);
 
                 $indexDocumentInstance = $this->indexDocumentRepository->get($indexDocument);
+
+                $this->documentHelper->setTenantIfNeeded($indexDocumentInstance, $indexConfig);
+
                 $listingCount = $indexDocumentInstance->getListingInstance($indexConfig)->count();
                 $progressBar->setMaxSteps($listingCount > 0 ? $listingCount : 1);
                 $esDocuments = [];
@@ -181,17 +189,17 @@ class Index extends BaseCommand
                     }
 
                     if (count($esDocuments) > 0) {
-                        $index->addDocuments($esDocuments);
+                        $esIndex->addDocuments($esDocuments);
                         $esDocuments = [];
                     }
                 }
 
                 if (count($esDocuments) > 0) {
-                    $index->addDocuments($esDocuments);
+                    $esIndex->addDocuments($esDocuments);
                 }
 
                 if ($indexConfig->refreshIndexAfterEveryIndexDocumentWhenPopulating()) {
-                    $index->refresh();
+                    $esIndex->refresh();
                 }
             }
         } catch (Throwable $throwable) {

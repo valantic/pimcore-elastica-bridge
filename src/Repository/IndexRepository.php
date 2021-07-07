@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Repository;
 
+use Generator;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
+use Valantic\ElasticaBridgeBundle\Index\TenantAwareInterface;
 use Valantic\ElasticaBridgeBundle\Service\BridgeHelper;
 
 /**
@@ -25,11 +27,32 @@ class IndexRepository
     }
 
     /**
+     * @internal generally, usage is discouraged
+     *
+     * @see IndexRepository::flattened()
+     *
      * @return IndexInterface[]
      */
     public function all(): array
     {
         return $this->indices;
+    }
+
+    /**
+     * @return Generator<string,IndexInterface,void,void>
+     */
+    public function flattened(): Generator
+    {
+        foreach ($this->all() as $indexConfig) {
+            if ($indexConfig instanceof TenantAwareInterface) {
+                foreach ($indexConfig->getTenants() as $tenant) {
+                    $indexConfig->setTenant($tenant);
+                    yield $indexConfig->getName() => $indexConfig;
+                }
+            } else {
+                yield $indexConfig->getName() => $indexConfig;
+            }
+        }
     }
 
     public function get(string $key): IndexInterface

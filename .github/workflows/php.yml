@@ -40,7 +40,7 @@ jobs:
         run: composer install --no-progress --prefer-dist --optimize-autoloader
 
       - name: Static analysis using phpstan
-        run: composer run phpstan
+        run: composer run phpstan -- --error-format=github
 
   phpcs:
 
