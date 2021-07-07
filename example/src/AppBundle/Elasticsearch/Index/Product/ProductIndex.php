@@ -14,10 +14,14 @@ use Pimcore\Model\DataObject\Product;
 use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Index\AbstractIndex;
+use Valantic\ElasticaBridgeBundle\Index\TenantAwareInterface;
+use Valantic\ElasticaBridgeBundle\Index\TenantAwareTrait;
 use Valantic\ElasticaBridgeBundle\Repository\IndexDocumentRepository;
 
-class ProductIndex extends AbstractIndex
+class ProductIndex extends AbstractIndex implements TenantAwareInterface
 {
+    use TenantAwareTrait;
+
     public const ATTRIBUTE_CATEGORIES = 'categories';
     protected CategoryIndex $categoryIndex;
 
@@ -28,7 +32,7 @@ class ProductIndex extends AbstractIndex
         $this->categoryIndex = $categoryIndex;
     }
 
-    public function getName(): string
+    public function getTenantUnawareName(): string
     {
         return 'product';
     }
@@ -56,5 +60,20 @@ class ProductIndex extends AbstractIndex
             )
             ->addFilter(new Match(IndexDocumentInterface::META_TYPE, IndexDocumentInterface::TYPE_OBJECT))
             ->addFilter(new Match(IndexDocumentInterface::META_SUB_TYPE, Product::class));
+    }
+
+    public function getTenants(): array
+    {
+        return ['acme'];
+    }
+
+    public function hasDefaultTenant(): bool
+    {
+        return true;
+    }
+
+    public function getDefaultTenant(): string
+    {
+        return 'acme';
     }
 }

@@ -11,11 +11,14 @@ use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\DocumentType\Index\DataObjectNormalizerTrait;
 use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
 use Valantic\ElasticaBridgeBundle\DocumentType\Index\ListingTrait;
+use Valantic\ElasticaBridgeBundle\DocumentType\Index\TenantAwareInterface;
+use Valantic\ElasticaBridgeBundle\DocumentType\Index\TenantAwareTrait;
 
-class ProductIndexDocument extends ProductDocument implements IndexDocumentInterface
+class ProductIndexDocument extends ProductDocument implements IndexDocumentInterface, TenantAwareInterface
 {
     use DataObjectNormalizerTrait;
     use ListingTrait;
+    use TenantAwareTrait;
 
     public function __construct()
     {
