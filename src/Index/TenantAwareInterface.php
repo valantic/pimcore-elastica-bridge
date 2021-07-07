@@ -41,6 +41,7 @@ interface TenantAwareInterface
      * name of the tenant in Elasticsearch. This method creates the base name for the tenant-specific name.
      *
      * @return string
+     *
      * @see IndexInterface::getName()
      */
     public function getTenantUnawareName(): string;
