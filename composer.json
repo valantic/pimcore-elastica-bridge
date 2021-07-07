@@ -51,7 +51,7 @@
       "vendor/bin/phpstan analyse src --memory-limit=1G"
     ],
     "phpcs": [
-      "vendor/bin/php-cs-fixer fix --diff --diff-format udiff"
+      "vendor/bin/php-cs-fixer fix --diff"
     ],
     "phpcs-check": [
       "vendor/bin/php-cs-fixer fix --diff --dry-run"

@@ -5,3 +5,4 @@
 /node_modules/
 .DS_STORE
 /.php_cs.cache
+.php-cs-fixer.cache
