@@ -91,11 +91,7 @@ class Status extends BaseCommand
 
     protected function formatBoolean(bool $val): string
     {
-        if ($val) {
-            return '✓';
-        }
-
-        return '✗';
+        return $val ? '✓' : '✗';
     }
 
     /**

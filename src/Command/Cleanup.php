@@ -39,9 +39,11 @@ class Cleanup extends BaseCommand
 
         foreach ($indices as $index) {
             $client = $this->esClient->getIndex($index);
+
             foreach ($client->getAliases() as $alias) {
                 $client->removeAlias($alias);
             }
+
             $client->delete();
         }
 

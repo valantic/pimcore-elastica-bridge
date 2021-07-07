@@ -96,6 +96,7 @@ class Index extends BaseCommand
                 $skippedIndices[] = $indexConfig->getName();
                 continue;
             }
+
             $this->processIndex($indexConfig);
         }
 

@@ -10,6 +10,6 @@ class TenantNotSetException extends BaseException
 {
     public function __construct()
     {
-        parent::__construct('Tenant has not been set yet');
+        parent::__construct('Tenant has not yet been set');
     }
 }
