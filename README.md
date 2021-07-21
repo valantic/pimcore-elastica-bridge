@@ -20,6 +20,11 @@ This package is developed by [valantic CEC Schweiz](https://www.valantic.com/en/
     1. Edit `var/config/extensions.php`
     1. Add `"Valantic\\ElasticaBridgeBundle\\ValanticElasticaBridgeBundle" => TRUE,`
 1. Configure the connection to your Elasticsearch cluster as seen in [`example/app/config/config.yml`](example/app/config/config.yml)
+1. Don't forget to register your newly created services (implementing `IndexInterface` etc.) in your `services.yml`
+   ```yml
+   AppBundle\Elasticsearch\:
+   resource: '../../Elasticsearch'
+   ```
 
 ## Usage
 
