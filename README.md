@@ -10,13 +10,20 @@ This package is developed by [valantic CEC Schweiz](https://www.valantic.com/en/
 
 ## Setup
 
-```
-composer require valantic/pimcore-elastica-bridge
-```
+1. `composer require valantic/pimcore-elastica-bridge`
+1. Use the Pimcore UI
+    1. Open the Tools -> Bundles screen in Pimcore
+    1. Enable the bundle
+1. Use the Pimcore CLI
+    1. `console pimcore:bundle:enable ValanticElasticaBridgeBundle`
+1. If all else fails
+    1. Edit `var/config/extensions.php`
+    1. Add `"Valantic\\ElasticaBridgeBundle\\ValanticElasticaBridgeBundle" => TRUE,`
+1. Configure the connection to your Elasticsearch cluster as seen in [`example/app/config/config.yml`](example/app/config/config.yml)
 
 ## Usage
 
-Please see the [`example/`](example) folder for a complete example.
+Please see the [`example/`](example/) folder for a complete example.
 
 Simplified, these are the steps to get the bundle up and running:
 
