@@ -1,4 +1,6 @@
 /.github export-ignore
+/.php-cs-fixer.dist.php export-ignore
+/.release-it.json export-ignore
 /example export-ignore
 /package.json export-ignore
 /phpstan-baseline.neon export-ignore
