@@ -4,9 +4,9 @@ on: [ push, pull_request ]
 
 
 jobs:
-  phpstan:
+  phpstan_pimcore6:
 
-    name: phpstan (PHP ${{ matrix.php-versions }} on ${{ matrix.operating-system }})
+    name: phpstan for Pimcore 6 (PHP ${{ matrix.php-versions }} on ${{ matrix.operating-system }})
     runs-on: ${{ matrix.operating-system }}
 
     strategy:
@@ -35,6 +35,50 @@ jobs:
           path: ${{ steps.composer-cache.outputs.dir }}
           key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: ${{ runner.os }}-composer-
+
+      - name: Require Pimcore 6.x
+        run: composer require pimcore/pimcore:^6.7 --no-progress --prefer-dist
+
+      - name: Install Composer dependencies
+        run: composer install --no-progress --prefer-dist --optimize-autoloader
+
+      - name: Static analysis using phpstan
+        run: composer run phpstan -- --error-format=github
+
+  phpstan_pimcore10:
+
+    name: phpstan for Pimcore 10 (PHP ${{ matrix.php-versions }} on ${{ matrix.operating-system }})
+    runs-on: ${{ matrix.operating-system }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        operating-system: [ ubuntu-latest ]
+        php-versions: [ '8.0' ]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup PHP, with composer and extensions
+        uses: shivammathur/setup-php@v2 #https://github.com/shivammathur/setup-php
+        with:
+          php-version: ${{ matrix.php-versions }}
+          extensions: curl
+          coverage: xdebug
+
+      - name: Get composer cache directory
+        id: composer-cache
+        run: echo "::set-output name=dir::$(composer config cache-files-dir)"
+
+      - name: Cache composer dependencies
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Require Pimcore 10.x
+        run: composer require pimcore/pimcore:^10.0 --no-progress --prefer-dist
 
       - name: Install Composer dependencies
         run: composer install --no-progress --prefer-dist --optimize-autoloader

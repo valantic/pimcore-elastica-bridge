@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b7d7a77e44199cbf8ab19363902692dc",
+    "content-hash": "eca12ef037dd1a2e69398cd7bf37c65d",
     "packages": [
         {
             "name": "amnuts/opcache-gui",
@@ -2861,20 +2861,21 @@
         },
         {
             "name": "http-interop/http-factory-guzzle",
-            "version": "1.1.0",
+            "version": "1.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/http-interop/http-factory-guzzle.git",
-                "reference": "f69b581de4a224b534484c5b777a73cad3412074"
+                "reference": "8f06e92b95405216b237521cc64c804dd44c4a81"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/http-interop/http-factory-guzzle/zipball/f69b581de4a224b534484c5b777a73cad3412074",
-                "reference": "f69b581de4a224b534484c5b777a73cad3412074",
+                "url": "https://api.github.com/repos/http-interop/http-factory-guzzle/zipball/8f06e92b95405216b237521cc64c804dd44c4a81",
+                "reference": "8f06e92b95405216b237521cc64c804dd44c4a81",
                 "shasum": ""
             },
             "require": {
-                "guzzlehttp/psr7": "^1.4.2||^2.0",
+                "guzzlehttp/psr7": "^1.7||^2.0",
+                "php": ">=7.3",
                 "psr/http-factory": "^1.0"
             },
             "provide": {
@@ -2882,7 +2883,10 @@
             },
             "require-dev": {
                 "http-interop/http-factory-tests": "^0.9",
-                "phpunit/phpunit": "^8.5"
+                "phpunit/phpunit": "^9.5"
+            },
+            "suggest": {
+                "guzzlehttp/psr7": "Includes an HTTP factory starting in version 2.0"
             },
             "type": "library",
             "autoload": {
@@ -2909,9 +2913,9 @@
             ],
             "support": {
                 "issues": "https://github.com/http-interop/http-factory-guzzle/issues",
-                "source": "https://github.com/http-interop/http-factory-guzzle/tree/1.1.0"
+                "source": "https://github.com/http-interop/http-factory-guzzle/tree/1.2.0"
             },
-            "time": "2021-07-19T15:00:13+00:00"
+            "time": "2021-07-21T13:50:14+00:00"
         },
         {
             "name": "hybridauth/hybridauth",
@@ -4164,16 +4168,16 @@
         },
         {
             "name": "mpratt/embera",
-            "version": "2.0.19",
+            "version": "2.0.20",
             "source": {
                 "type": "git",
                 "url": "https://github.com/mpratt/Embera.git",
-                "reference": "2d12e16d9c4d3b9f026f3537512fd16869604cab"
+                "reference": "2e15c4bc3e79fd95bbf9de3d6d80fab1475347e3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/mpratt/Embera/zipball/2d12e16d9c4d3b9f026f3537512fd16869604cab",
-                "reference": "2d12e16d9c4d3b9f026f3537512fd16869604cab",
+                "url": "https://api.github.com/repos/mpratt/Embera/zipball/2e15c4bc3e79fd95bbf9de3d6d80fab1475347e3",
+                "reference": "2e15c4bc3e79fd95bbf9de3d6d80fab1475347e3",
                 "shasum": ""
             },
             "require": {
@@ -4221,9 +4225,9 @@
             ],
             "support": {
                 "issues": "https://github.com/mpratt/Embera/issues",
-                "source": "https://github.com/mpratt/Embera/tree/2.0.19"
+                "source": "https://github.com/mpratt/Embera/tree/2.0.20"
             },
-            "time": "2021-05-28T00:35:13+00:00"
+            "time": "2021-07-22T21:48:58+00:00"
         },
         {
             "name": "mustangostang/spyc",
@@ -4436,22 +4440,23 @@
         },
         {
             "name": "nesbot/carbon",
-            "version": "2.50.0",
+            "version": "2.51.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/briannesbitt/Carbon.git",
-                "reference": "f47f17d17602b2243414a44ad53d9f8b9ada5fdb"
+                "reference": "8619c299d1e0d4b344e1f98ca07a1ce2cfbf1922"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/briannesbitt/Carbon/zipball/f47f17d17602b2243414a44ad53d9f8b9ada5fdb",
-                "reference": "f47f17d17602b2243414a44ad53d9f8b9ada5fdb",
+                "url": "https://api.github.com/repos/briannesbitt/Carbon/zipball/8619c299d1e0d4b344e1f98ca07a1ce2cfbf1922",
+                "reference": "8619c299d1e0d4b344e1f98ca07a1ce2cfbf1922",
                 "shasum": ""
             },
             "require": {
                 "ext-json": "*",
                 "php": "^7.1.8 || ^8.0",
                 "symfony/polyfill-mbstring": "^1.0",
+                "symfony/polyfill-php80": "^1.16",
                 "symfony/translation": "^3.4 || ^4.0 || ^5.0"
             },
             "require-dev": {
@@ -4470,8 +4475,8 @@
             "type": "library",
             "extra": {
                 "branch-alias": {
-                    "dev-master": "2.x-dev",
-                    "dev-3.x": "3.x-dev"
+                    "dev-3.x": "3.x-dev",
+                    "dev-master": "2.x-dev"
                 },
                 "laravel": {
                     "providers": [
@@ -4525,7 +4530,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2021-06-28T22:38:45+00:00"
+            "time": "2021-07-28T13:16:28+00:00"
         },
         {
             "name": "nyholm/dsn",
@@ -7738,16 +7743,16 @@
         },
         {
             "name": "symfony/polyfill-mbstring",
-            "version": "v1.23.0",
+            "version": "v1.23.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/polyfill-mbstring.git",
-                "reference": "2df51500adbaebdc4c38dea4c89a2e131c45c8a1"
+                "reference": "9174a3d80210dca8daa7f31fec659150bbeabfc6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/2df51500adbaebdc4c38dea4c89a2e131c45c8a1",
-                "reference": "2df51500adbaebdc4c38dea4c89a2e131c45c8a1",
+                "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/9174a3d80210dca8daa7f31fec659150bbeabfc6",
+                "reference": "9174a3d80210dca8daa7f31fec659150bbeabfc6",
                 "shasum": ""
             },
             "require": {
@@ -7798,7 +7803,7 @@
                 "shim"
             ],
             "support": {
-                "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.23.0"
+                "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.23.1"
             },
             "funding": [
                 {
@@ -7814,7 +7819,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2021-05-27T09:27:20+00:00"
+            "time": "2021-05-27T12:26:48+00:00"
         },
         {
             "name": "symfony/polyfill-php72",
@@ -7973,16 +7978,16 @@
         },
         {
             "name": "symfony/polyfill-php80",
-            "version": "v1.23.0",
+            "version": "v1.23.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/polyfill-php80.git",
-                "reference": "eca0bf41ed421bed1b57c4958bab16aa86b757d0"
+                "reference": "1100343ed1a92e3a38f9ae122fc0eb21602547be"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/polyfill-php80/zipball/eca0bf41ed421bed1b57c4958bab16aa86b757d0",
-                "reference": "eca0bf41ed421bed1b57c4958bab16aa86b757d0",
+                "url": "https://api.github.com/repos/symfony/polyfill-php80/zipball/1100343ed1a92e3a38f9ae122fc0eb21602547be",
+                "reference": "1100343ed1a92e3a38f9ae122fc0eb21602547be",
                 "shasum": ""
             },
             "require": {
@@ -8036,7 +8041,7 @@
                 "shim"
             ],
             "support": {
-                "source": "https://github.com/symfony/polyfill-php80/tree/v1.23.0"
+                "source": "https://github.com/symfony/polyfill-php80/tree/v1.23.1"
             },
             "funding": [
                 {
@@ -8052,7 +8057,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2021-02-19T12:13:01+00:00"
+            "time": "2021-07-28T13:41:28+00:00"
         },
         {
             "name": "symfony/polyfill-php81",
@@ -8215,16 +8220,16 @@
         },
         {
             "name": "symfony/symfony",
-            "version": "v4.4.26",
+            "version": "v4.4.29",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/symfony.git",
-                "reference": "8df2da89fbaa0bdcc1b9338047f0ecef9a15ba23"
+                "reference": "ce674b31b6c76abae3cc33b5766256ecf1d417a0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/symfony/zipball/8df2da89fbaa0bdcc1b9338047f0ecef9a15ba23",
-                "reference": "8df2da89fbaa0bdcc1b9338047f0ecef9a15ba23",
+                "url": "https://api.github.com/repos/symfony/symfony/zipball/ce674b31b6c76abae3cc33b5766256ecf1d417a0",
+                "reference": "ce674b31b6c76abae3cc33b5766256ecf1d417a0",
                 "shasum": ""
             },
             "require": {
@@ -8236,7 +8241,7 @@
                 "psr/cache": "^1.0|^2.0",
                 "psr/container": "^1.0",
                 "psr/link": "^1.0",
-                "psr/log": "~1.0",
+                "psr/log": "^1|^2",
                 "symfony/contracts": "^1.1.8",
                 "symfony/polyfill-ctype": "~1.8",
                 "symfony/polyfill-intl-icu": "~1.0",
@@ -8244,7 +8249,7 @@
                 "symfony/polyfill-mbstring": "~1.0",
                 "symfony/polyfill-php72": "~1.5",
                 "symfony/polyfill-php73": "^1.11",
-                "symfony/polyfill-php80": "^1.15",
+                "symfony/polyfill-php80": "^1.16",
                 "symfony/polyfill-php81": "^1.22",
                 "twig/twig": "^1.43|^2.13|^3.0.4"
             },
@@ -8265,7 +8270,7 @@
                 "psr/event-dispatcher-implementation": "1.0",
                 "psr/http-client-implementation": "1.0",
                 "psr/link-implementation": "1.0",
-                "psr/log-implementation": "1.0",
+                "psr/log-implementation": "1.0|2.0",
                 "psr/simple-cache-implementation": "1.0",
                 "symfony/cache-implementation": "1.0|2.0",
                 "symfony/event-dispatcher-implementation": "1.1",
@@ -8401,7 +8406,7 @@
             ],
             "support": {
                 "issues": "https://github.com/symfony/symfony/issues",
-                "source": "https://github.com/symfony/symfony/tree/v4.4.26"
+                "source": "https://github.com/symfony/symfony/tree/v4.4.29"
             },
             "funding": [
                 {
@@ -8417,7 +8422,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2021-06-30T08:18:25+00:00"
+            "time": "2021-07-29T06:45:19+00:00"
         },
         {
             "name": "tijsverkoyen/css-to-inline-styles",
@@ -9164,16 +9169,16 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "0.12.93",
+            "version": "0.12.94",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpstan/phpstan.git",
-                "reference": "7b7602f05d340ffa418c59299f8c053ac6c3e7ea"
+                "reference": "3d0ba4c198a24e3c3fc489f3ec6ac9612c4be5d6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/7b7602f05d340ffa418c59299f8c053ac6c3e7ea",
-                "reference": "7b7602f05d340ffa418c59299f8c053ac6c3e7ea",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/3d0ba4c198a24e3c3fc489f3ec6ac9612c4be5d6",
+                "reference": "3d0ba4c198a24e3c3fc489f3ec6ac9612c4be5d6",
                 "shasum": ""
             },
             "require": {
@@ -9204,7 +9209,7 @@
             "description": "PHPStan - PHP Static Analysis Tool",
             "support": {
                 "issues": "https://github.com/phpstan/phpstan/issues",
-                "source": "https://github.com/phpstan/phpstan/tree/0.12.93"
+                "source": "https://github.com/phpstan/phpstan/tree/0.12.94"
             },
             "funding": [
                 {
@@ -9224,7 +9229,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2021-07-20T10:49:53+00:00"
+            "time": "2021-07-30T09:05:27+00:00"
         }
     ],
     "aliases": [],
@@ -9233,7 +9238,7 @@
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
-        "php": "^7.4",
+        "php": "^7.4 || ^8.0",
         "ext-json": "*"
     },
     "platform-dev": [],

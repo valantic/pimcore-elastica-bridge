@@ -4,9 +4,9 @@
   "description": "Elastica bridge for Pimcore",
   "type": "pimcore-bundle",
   "require": {
-    "php": "^7.4",
+    "php": "^7.4 || ^8.0",
     "ext-json": "*",
-    "pimcore/pimcore": "^6.7.0",
+    "pimcore/pimcore": "^6.7.0 || ^10.0",
     "ruflin/elastica": "^7.1"
   },
   "require-dev": {
