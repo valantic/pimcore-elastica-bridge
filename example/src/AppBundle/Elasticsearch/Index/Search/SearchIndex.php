@@ -108,7 +108,7 @@ class SearchIndex extends AbstractIndex
             );
     }
 
-    public function filterByLocale(string $locale): Match
+    public function filterByLocale(string $locale): MatchQuery
     {
         return (new MatchQuery())
             ->setField(
