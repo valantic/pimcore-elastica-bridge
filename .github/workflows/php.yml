@@ -88,14 +88,13 @@ jobs:
 
   phpcs:
 
-    name: phpcs (PHP ${{ matrix.php-versions }} on ${{ matrix.operating-system }})
+    name: phpcs
     runs-on: ${{ matrix.operating-system }}
 
     strategy:
       fail-fast: false
       matrix:
         operating-system: [ ubuntu-latest ]
-        php-versions: [ '7.4' ]
 
     steps:
       - uses: actions/checkout@v2
@@ -103,7 +102,7 @@ jobs:
       - name: Setup PHP, with composer and extensions
         uses: shivammathur/setup-php@v2 #https://github.com/shivammathur/setup-php
         with:
-          php-version: ${{ matrix.php-versions }}
+          php-version: 8.0
           extensions: curl
           coverage: xdebug
 
