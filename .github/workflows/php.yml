@@ -33,14 +33,11 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-
+          key: ${{ runner.os }}-composer-pimcore6
+          restore-keys: ${{ runner.os }}-composer-pimcore6
 
       - name: Require Pimcore 6.x
         run: composer require pimcore/pimcore:^6.7 --no-progress --prefer-dist
-
-      - name: Install Composer dependencies
-        run: composer install --no-progress --prefer-dist --optimize-autoloader
 
       - name: Static analysis using phpstan
         run: composer run phpstan -- --error-format=github
@@ -74,14 +71,11 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-
+          key: ${{ runner.os }}-composer-pimcore10
+          restore-keys: ${{ runner.os }}-composer-pimcore10
 
       - name: Require Pimcore 10.x
         run: composer require pimcore/pimcore:^10.0 --no-progress --prefer-dist
-
-      - name: Install Composer dependencies
-        run: composer install --no-progress --prefer-dist --optimize-autoloader
 
       - name: Static analysis using phpstan
         run: composer run phpstan -- --error-format=github
