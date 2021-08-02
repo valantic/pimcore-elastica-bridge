@@ -1,9 +1,5 @@
 parameters:
 	ignoreErrors:
-		-
-			message: "#^Parameter \\#2 \\$haystack of function in_array expects array, array\\<string\\>\\|string given\\.$#"
-			count: 1
-			path: src/Command/Index.php
 
 		-
 			message: "#^Comparison operation \"\\>\" between 0 and 0 is always false\\.$#"
