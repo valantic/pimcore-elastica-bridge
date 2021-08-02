@@ -7,7 +7,7 @@ namespace AppBundle\Elasticsearch\Index\Product;
 use AppBundle\Elasticsearch\Index\Category\CategoryIndex;
 use AppBundle\Elasticsearch\Index\Product\Document\ProductIndexDocument;
 use Elastica\Query\BoolQuery;
-use Elastica\Query\Match;
+use Elastica\Query\MatchQuery;
 use Elastica\Query\MultiMatch;
 use Pimcore\Model\DataObject\Category;
 use Pimcore\Model\DataObject\Product;
@@ -45,7 +45,7 @@ class ProductIndex extends AbstractIndex implements TenantAwareInterface
     public function filterByCategory(Category $category): BoolQuery
     {
         return (new BoolQuery())
-            ->addMust(new Match(self::ATTRIBUTE_CATEGORIES, $category->getId()));
+            ->addMust(new MatchQuery(self::ATTRIBUTE_CATEGORIES, $category->getId()));
     }
 
     public function filterByLocaleAndQuery(string $locale, string $query): BoolQuery
@@ -58,8 +58,8 @@ class ProductIndex extends AbstractIndex implements TenantAwareInterface
                     ])
                     ->setQuery($query)
             )
-            ->addFilter(new Match(IndexDocumentInterface::META_TYPE, IndexDocumentInterface::TYPE_OBJECT))
-            ->addFilter(new Match(IndexDocumentInterface::META_SUB_TYPE, Product::class));
+            ->addFilter(new MatchQuery(IndexDocumentInterface::META_TYPE, IndexDocumentInterface::TYPE_OBJECT))
+            ->addFilter(new MatchQuery(IndexDocumentInterface::META_SUB_TYPE, Product::class));
     }
 
     public function getTenants(): array

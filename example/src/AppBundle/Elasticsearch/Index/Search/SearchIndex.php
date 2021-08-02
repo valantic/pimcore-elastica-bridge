@@ -11,7 +11,7 @@ use AppBundle\Elasticsearch\Index\Search\Document\PageIndexDocument;
 use AppBundle\Elasticsearch\Index\Search\Document\ProductGroupIndexDocument;
 use AppBundle\Elasticsearch\SiteSettingLocalesTrait;
 use Elastica\Query\BoolQuery;
-use Elastica\Query\Match;
+use Elastica\Query\MatchQuery;
 use Elastica\Query\MultiMatch;
 use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
 use Valantic\ElasticaBridgeBundle\Index\AbstractIndex;
@@ -110,7 +110,7 @@ class SearchIndex extends AbstractIndex
 
     public function filterByLocale(string $locale): Match
     {
-        return (new Match())
+        return (new MatchQuery())
             ->setField(
                 self::ATTRIBUTE_LOCALE,
                 $locale
