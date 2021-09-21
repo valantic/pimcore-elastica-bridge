@@ -28,4 +28,8 @@ trait TenantAwareTrait
     {
         $this->activeTenant = $tenant;
     }
+
+    public function resetTenant(): void
+    {
+    }
 }

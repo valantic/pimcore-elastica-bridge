@@ -47,4 +47,17 @@ class DocumentHelper
             $indexDocument->setTenant($index->getTenant());
         }
     }
+
+    /**
+     * Reset the tenant (if needed) on the IndexDocument based on the Index tenant.
+     *
+     * @param IndexDocumentInterface $indexDocument
+     * @param IndexInterface $index
+     */
+    public function resetTenantIfNeeded(IndexDocumentInterface $indexDocument, IndexInterface $index): void
+    {
+        if ($index instanceof IndexTenantAwareInterfaceAlias && $indexDocument instanceof IndexDocumentTenantAwareInterface) {
+            $indexDocument->resetTenant();
+        }
+    }
 }

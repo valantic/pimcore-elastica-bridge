@@ -37,6 +37,17 @@ interface TenantAwareInterface
     public function setTenant(string $tenant): void;
 
     /**
+     * Reset the active tenant.
+     * Useful for resetting the tenant after processing the index, especially in the context
+     * of the event listener in combination with Pimcore Sites.
+     *
+     * The implementation (together with setTenant())
+     * is responsible for keeping track of the "old" tenant (which may not be $this->activeTenant but e.g.
+     * the currently active Site).
+     */
+    public function resetTenant(): void;
+
+    /**
      * Used instead of getName(). In a tenant context, getName() includes the tenant name and corresponds to the
      * name of the tenant in Elasticsearch. This method creates the base name for the tenant-specific name.
      *
