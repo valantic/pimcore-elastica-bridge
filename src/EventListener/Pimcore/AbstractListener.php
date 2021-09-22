@@ -68,10 +68,12 @@ abstract class AbstractListener
             $this->documentHelper->setTenantIfNeeded($indexDocument, $index);
 
             if (!in_array(get_class($indexDocument), $index->subscribedDocuments(), true)) {
+                $this->documentHelper->resetTenantIfNeeded($indexDocument, $index);
                 continue;
             }
 
             if ($element->getType() === AbstractObject::OBJECT_TYPE_VARIANT && !$indexDocument->treatObjectVariantsAsDocuments()) {
+                $this->documentHelper->resetTenantIfNeeded($indexDocument, $index);
                 continue;
             }
 
@@ -87,9 +89,12 @@ abstract class AbstractListener
                     $this->addElementToIndex($element, $index, $indexDocument);
                 }
             }
+
             if (!$indexDocument->shouldIndex($element) && $isPresent) {
                 $this->deleteElementFromIndex($element, $index, $indexDocument);
             }
+
+            $this->documentHelper->resetTenantIfNeeded($indexDocument, $index);
         }
     }
 
@@ -105,15 +110,18 @@ abstract class AbstractListener
             $this->documentHelper->setTenantIfNeeded($indexDocument, $index);
 
             if (!in_array(get_class($indexDocument), $index->subscribedDocuments(), true) || !$indexDocument->shouldIndex($element)) {
+                $this->documentHelper->resetTenantIfNeeded($indexDocument, $index);
                 continue;
             }
 
             if ($this->indexHelper->isIdInIndex($indexDocument->getElasticsearchId($element), $index)) {
                 $this->updateElementInIndex($element, $index, $indexDocument);
+                $this->documentHelper->resetTenantIfNeeded($indexDocument, $index);
                 continue;
             }
 
             $this->addElementToIndex($element, $index, $indexDocument);
+            $this->documentHelper->resetTenantIfNeeded($indexDocument, $index);
         }
     }
 
@@ -129,16 +137,19 @@ abstract class AbstractListener
             $this->documentHelper->setTenantIfNeeded($indexDocument, $index);
 
             if (!in_array(get_class($indexDocument), $index->subscribedDocuments(), true)) {
+                $this->documentHelper->resetTenantIfNeeded($indexDocument, $index);
                 continue;
             }
 
             $elasticsearchId = $indexDocument->getElasticsearchId($element);
 
             if (!$this->indexHelper->isIdInIndex($elasticsearchId, $index)) {
+                $this->documentHelper->resetTenantIfNeeded($indexDocument, $index);
                 continue;
             }
 
             $index->getElasticaIndex()->deleteById($elasticsearchId);
+            $this->documentHelper->resetTenantIfNeeded($indexDocument, $index);
         }
     }
 

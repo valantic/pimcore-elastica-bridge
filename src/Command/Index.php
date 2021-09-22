@@ -221,6 +221,10 @@ class Index extends BaseCommand
             $this->output->writeln('');
 
             throw new IndexingFailedException($throwable);
+        } finally {
+            if (isset($indexDocumentInstance)) {
+                $this->documentHelper->setTenantIfNeeded($indexDocumentInstance, $indexConfig);
+            }
         }
 
         $progressBar->finish();

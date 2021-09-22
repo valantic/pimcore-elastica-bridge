@@ -37,4 +37,9 @@ trait TenantAwareTrait
     {
         return sprintf('%s_%s', $this->getTenantUnawareName(), $this->getTenant());
     }
+
+    public function resetTenant(): void
+    {
+        // intentionally left blank
+    }
 }
