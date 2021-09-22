@@ -40,5 +40,6 @@ trait TenantAwareTrait
 
     public function resetTenant(): void
     {
+        // intentionally left blank
     }
 }
