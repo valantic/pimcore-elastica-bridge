@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Valantic\ElasticaBridgeBundle\Command;
 
 use Elastica\Index as ElasticaIndex;
+use Elastica\Request;
 use Pimcore\Model\Element\AbstractElement;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputArgument;
@@ -261,6 +262,16 @@ class Index extends BaseCommand
     protected function ensureCorrectBlueGreenIndexSetup(IndexInterface $indexConfig): void
     {
         $shouldDelete = $this->input->getOption(self::OPTION_DELETE);
+
+        $nonAliasIndex = $this->esClient->getIndex($indexConfig->getName());
+
+        // In case an index with the same name as the blue/green alias exists, delete it
+        if (
+            $nonAliasIndex->exists()
+            && !$this->esClient->request('_alias/' . $indexConfig->getName(), Request::HEAD)->isOk()
+        ) {
+            $nonAliasIndex->delete();
+        }
 
         foreach (IndexInterface::INDEX_SUFFIXES as $suffix) {
             $name = $indexConfig->getName() . $suffix;
