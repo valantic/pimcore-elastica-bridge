@@ -96,7 +96,7 @@ class PageIndexDocument extends PageDocument implements IndexDocumentInterface
             foreach ($contents->getChildren([Folder::OBJECT_TYPE_OBJECT]) as $child) {
                 /** @var Concrete $child */
                 $className = get_class($child);
-                $grouped[$className] = $grouped[$className] ?? [];
+                $grouped[$className] ??= [];
                 $grouped[$className][] = $child;
             }
 
