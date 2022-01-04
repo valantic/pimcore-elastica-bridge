@@ -73,7 +73,7 @@ interface IndexInterface
      * Defines the mapping to be used for this index.
      * Passed 1:1 to Elasticsearch.
      *
-     * @return array<array>
+     * @return array<array<mixed>>
      */
     public function getMapping(): array;
 
@@ -81,12 +81,12 @@ interface IndexInterface
      * Defines the settings to be used for this index.
      * Passed 1:1 to Elasticsearch.
      *
-     * @return array<array>
+     * @return array<array<mixed>>
      */
     public function getSettings(): array;
 
     /**
-     * @return array<array>
+     * @return array<string,array<mixed>>
      *
      * @internal
      */

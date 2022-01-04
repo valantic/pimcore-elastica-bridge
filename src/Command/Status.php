@@ -17,11 +17,11 @@ class Status extends BaseCommand
     protected ElasticsearchClient $esClient;
     protected IndexRepository $indexRepository;
     /**
-     * @var array<int,array>
+     * @var array<int,array<mixed>>
      */
     protected array $bundleIndices = [];
     /**
-     * @var array<int,array>
+     * @var array<int,array<mixed>>
      */
     protected array $otherIndices = [];
     /**
