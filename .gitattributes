@@ -6,4 +6,4 @@
 /phpstan-baseline.neon export-ignore
 /phpstan.neon export-ignore
 /vendor-bin export-ignore
-/yarn.lock export-ignore
+/package-lock.json export-ignore
