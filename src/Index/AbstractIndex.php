@@ -7,10 +7,9 @@ namespace Valantic\ElasticaBridgeBundle\Index;
 use Elastica\Document;
 use Elastica\Index;
 use Elastica\Query;
-use Elastica\Query\BoolQuery;
-use Elastica\Query\MatchQuery;
 use Elastica\ResultSet;
 use Pimcore\Model\Element\AbstractElement;
+use RuntimeException;
 use Valantic\ElasticaBridgeBundle\DocumentType\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
@@ -98,7 +97,6 @@ abstract class AbstractIndex implements IndexInterface
         return null;
     }
 
-    // TODO refactor to use client get($id)
     public function getDocumentFromElement(AbstractElement $element): ?Document
     {
         $documentInstance = $this->findIndexDocumentInstanceByPimcore($element);
@@ -107,18 +105,11 @@ abstract class AbstractIndex implements IndexInterface
             return null;
         }
 
-        $query = (new BoolQuery())
-            ->addMust(new MatchQuery(IndexDocumentInterface::META_ID, $element->getId()))
-            ->addMust(new MatchQuery(IndexDocumentInterface::META_TYPE, $documentInstance->getType()))
-            ->addMust(new MatchQuery(IndexDocumentInterface::META_SUB_TYPE, $documentInstance->getSubType()));
-
-        $search = $this->getElasticaIndex()->search(new Query($query));
-
-        if ($search->count() !== 1) {
+        try {
+            return $this->getElasticaIndex()->getDocument($documentInstance->getElasticsearchId($element));
+        } catch (RuntimeException $exception) {
             return null;
         }
-
-        return $search->getDocuments()[0];
     }
 
     public function findIndexDocumentInstanceByPimcore(AbstractElement $element): ?IndexDocumentInterface
