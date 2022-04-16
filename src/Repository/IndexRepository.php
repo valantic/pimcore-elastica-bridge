@@ -46,6 +46,7 @@ class IndexRepository
         foreach ($this->all() as $indexConfig) {
             if ($indexConfig instanceof TenantAwareInterface) {
                 foreach ($indexConfig->getTenants() as $tenant) {
+                    $indexConfig = clone $indexConfig;
                     $indexConfig->setTenant($tenant);
                     yield $indexConfig->getName() => $indexConfig;
                 }
