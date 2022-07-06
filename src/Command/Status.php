@@ -14,8 +14,6 @@ use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 
 class Status extends BaseCommand
 {
-    protected ElasticsearchClient $esClient;
-    protected IndexRepository $indexRepository;
     /**
      * @var array<int,array<mixed>>
      */
@@ -30,12 +28,10 @@ class Status extends BaseCommand
     protected array $skipOtherIndices = [];
 
     public function __construct(
-        IndexRepository $indexRepository,
-        ElasticsearchClient $esClient
+        protected IndexRepository $indexRepository,
+        protected ElasticsearchClient $esClient
     ) {
         parent::__construct();
-        $this->esClient = $esClient;
-        $this->indexRepository = $indexRepository;
     }
 
     protected function configure(): void
@@ -86,7 +82,7 @@ class Status extends BaseCommand
             ->setHeaderTitle('Other indices in this cluster');
         $table->render();
 
-        return 0;
+        return self::SUCCESS;
     }
 
     protected function formatBoolean(bool $val): string
@@ -95,10 +91,6 @@ class Status extends BaseCommand
     }
 
     /**
-     * @param int $bytes
-     *
-     * @return string
-     *
      * @see https://stackoverflow.com/a/2510540
      */
     protected function formatBytes(int $bytes): string
@@ -131,7 +123,7 @@ class Status extends BaseCommand
                 $activeBlueGreen = $indexConfig->getBlueGreenActiveElasticaIndex()->getName();
                 $this->skipOtherIndices[] = $indexConfig->getBlueGreenActiveElasticaIndex()->getName();
                 $this->skipOtherIndices[] = $indexConfig->getBlueGreenInactiveElasticaIndex()->getName();
-            } catch (BlueGreenIndicesIncorrectlySetupException $exception) {
+            } catch (BlueGreenIndicesIncorrectlySetupException) {
                 $hasBlueGreen = false;
             }
         }

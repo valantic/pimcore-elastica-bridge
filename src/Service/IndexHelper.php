@@ -15,7 +15,6 @@ class IndexHelper
      * Returns an array of indices that could contain $element.
      *
      * @param Generator<string,IndexInterface,void,void> $indices
-     * @param AbstractElement $element
      *
      * @return IndexInterface[]
      */
@@ -35,18 +34,13 @@ class IndexHelper
     /**
      * Checks whether a given ID is in an index.
      *
-     * @param string $id
-     * @param IndexInterface $index
-     *
-     * @return bool
-     *
      * @internal
      */
     public function isIdInIndex(string $id, IndexInterface $index): bool
     {
         try {
             $index->getElasticaIndex()->getDocument($id);
-        } catch (NotFoundException $e) {
+        } catch (NotFoundException) {
             return false;
         }
 

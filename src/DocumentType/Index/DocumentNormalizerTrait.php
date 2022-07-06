@@ -29,8 +29,6 @@ trait DocumentNormalizerTrait
      * This function converts all editables into an array of strings containing the contents of that editable.
      * The value can be overridden by overriding the editable...() methods in this trait.
      *
-     * @param Document\Page $document
-     *
      * @return string[]
      */
     protected function editables(Document\Page $document): array

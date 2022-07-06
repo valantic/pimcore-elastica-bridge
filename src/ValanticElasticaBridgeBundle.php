@@ -26,6 +26,6 @@ class ValanticElasticaBridgeBundle extends AbstractPimcoreBundle
             throw new RuntimeException();
         }
 
-        return json_decode($composer)->name;
+        return json_decode($composer, null, 512, \JSON_THROW_ON_ERROR)->name;
     }
 }

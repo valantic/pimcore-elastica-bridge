@@ -26,22 +26,14 @@ class Index extends BaseCommand
     protected const OPTION_POPULATE = 'populate';
     protected const OPTION_CHECK = 'check';
     public static bool $isPopulating = false;
-    protected ElasticsearchClient $esClient;
-    protected DocumentHelper $documentHelper;
-    protected IndexRepository $indexRepository;
-    protected IndexDocumentRepository $indexDocumentRepository;
 
     public function __construct(
-        IndexRepository $indexRepository,
-        IndexDocumentRepository $indexDocumentRepository,
-        ElasticsearchClient $esClient,
-        DocumentHelper $documentHelper
+        protected IndexRepository $indexRepository,
+        protected IndexDocumentRepository $indexDocumentRepository,
+        protected ElasticsearchClient $esClient,
+        protected DocumentHelper $documentHelper
     ) {
         parent::__construct();
-        $this->esClient = $esClient;
-        $this->documentHelper = $documentHelper;
-        $this->indexRepository = $indexRepository;
-        $this->indexDocumentRepository = $indexDocumentRepository;
     }
 
     protected function configure(): void
@@ -104,7 +96,7 @@ class Index extends BaseCommand
             $this->output->writeln(sprintf('<info>Skipped the following indices: %s</info>', implode(', ', $skippedIndices)));
         }
 
-        return 0;
+        return self::SUCCESS;
     }
 
     protected function processIndex(IndexInterface $indexConfig): void
@@ -226,7 +218,7 @@ class Index extends BaseCommand
 
         try {
             $indexConfig->getBlueGreenActiveSuffix();
-        } catch (BlueGreenIndicesIncorrectlySetupException $exception) {
+        } catch (BlueGreenIndicesIncorrectlySetupException) {
             $this->esClient->getIndex($indexConfig->getName() . IndexInterface::INDEX_SUFFIX_BLUE)->addAlias($indexConfig->getName());
         }
 

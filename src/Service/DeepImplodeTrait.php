@@ -11,10 +11,6 @@ trait DeepImplodeTrait
 {
     /**
      * Recursively implodes an array with the newline character. Useful for storing Page HTML in a string.
-     *
-     * @param array $arr
-     *
-     * @return string
      */
     protected function deepImplode(array $arr): string
     {
@@ -22,10 +18,6 @@ trait DeepImplodeTrait
     }
 
     /**
-     * @param array $arr
-     *
-     * @return array
-     *
      * @internal
      */
     protected function deepFlatten(array $arr): array

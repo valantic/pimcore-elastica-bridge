@@ -28,7 +28,6 @@ class ValanticElasticaBridgeExtension extends Extension
      * {@inheritDoc}
      *
      * @param array<mixed> $configs
-     * @param ContainerBuilder $container
      *
      * @throws Exception
      */

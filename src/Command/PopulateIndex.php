@@ -23,27 +23,21 @@ class PopulateIndex extends BaseCommand
     public const OPTION_CONFIG = 'config';
     public const OPTION_INDEX = 'index';
     protected ElasticsearchClient $esClient;
-    protected DocumentHelper $documentHelper;
-    protected IndexRepository $indexRepository;
-    protected IndexDocumentRepository $indexDocumentRepository;
 
     public function __construct(
-        IndexRepository $indexRepository,
-        IndexDocumentRepository $indexDocumentRepository,
-        DocumentHelper $documentHelper
+        protected IndexRepository $indexRepository,
+        protected IndexDocumentRepository $indexDocumentRepository,
+        protected DocumentHelper $documentHelper
     ) {
         parent::__construct();
-        $this->documentHelper = $documentHelper;
-        $this->indexRepository = $indexRepository;
-        $this->indexDocumentRepository = $indexDocumentRepository;
     }
 
     protected function configure(): void
     {
         $this->setName(self::COMMAND_NAMESPACE . 'populate-index')
             ->setDescription('[INTERNAL]')
-            ->addOption(self::OPTION_CONFIG, null, InputOption::VALUE_REQUIRED)
-            ->addOption(self::OPTION_INDEX, null, InputOption::VALUE_REQUIRED)
+            ->addOption(self::OPTION_CONFIG, mode: InputOption::VALUE_REQUIRED)
+            ->addOption(self::OPTION_INDEX, mode: InputOption::VALUE_REQUIRED)
         ;
     }
 
@@ -57,13 +51,13 @@ class PopulateIndex extends BaseCommand
         }
 
         if (!$indexConfig instanceof IndexInterface) {
-            return 1;
+            return self::FAILURE;
         }
 
         $index = $indexConfig->getBlueGreenInactiveElasticaIndex();
         $this->populateIndex($indexConfig, $index);
 
-        return 0;
+        return self::SUCCESS;
     }
 
     protected function populateIndex(IndexInterface $indexConfig, ElasticaIndex $esIndex): void
@@ -120,7 +114,7 @@ class PopulateIndex extends BaseCommand
             $this->output->writeln('');
             $this->output->writeln(sprintf(
                 '<fg=red;options=bold>Error while populating index %s, processing documents of type %s, last processed element ID %s.</>',
-                get_class($indexConfig),
+                $indexConfig::class,
                 $indexDocument ?? '(N/A)',
                 isset($dataObject) && $dataObject instanceof AbstractElement ? $dataObject->getId() : '(N/A)'
             ));

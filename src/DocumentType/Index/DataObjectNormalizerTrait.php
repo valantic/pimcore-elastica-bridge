@@ -21,8 +21,6 @@ trait DataObjectNormalizerTrait
     /**
      * Injects the LocaleService using Symfony's DI.
      *
-     * @param LocaleService $localeService
-     *
      * @required
      */
     public function setLocaleService(LocaleService $localeService): void
@@ -84,8 +82,6 @@ trait DataObjectNormalizerTrait
      * @param array $fields
      *
      * @throws Exception
-     *
-     * @return array
      */
     protected function plainAttributes(Concrete $element, array $fields): array
     {
@@ -108,8 +104,6 @@ trait DataObjectNormalizerTrait
      * @param array $fields
      *
      * @throws Exception
-     *
-     * @return array
      */
     protected function relationAttributes(Concrete $element, array $fields): array
     {
@@ -142,9 +136,6 @@ trait DataObjectNormalizerTrait
     /**
      * Returns a normalized array of IDs of the direct children of $element, optionally limited by $objectTypes.
      *
-     * @param Concrete $element
-     * @param array $objectTypes
-     *
      * @return array[]
      */
     protected function children(
@@ -163,10 +154,6 @@ trait DataObjectNormalizerTrait
 
     /**
      * Returns a normalized array of IDs of all (recursive) children of $element, optionally limited by $objectTypes.
-     *
-     * @param Concrete $element
-     * @param array $objectTypes
-     * @param array $carry
      *
      * @return array[]
      */
@@ -187,8 +174,6 @@ trait DataObjectNormalizerTrait
     /**
      * The locales to use for e.g. $this->localizedAttributes().
      * Can be overridden for customizing that list.
-     *
-     * @return array
      */
     protected function getLocales(): array
     {
@@ -196,10 +181,6 @@ trait DataObjectNormalizerTrait
     }
 
     /**
-     * @param array $fields
-     *
-     * @return array
-     *
      * @internal
      */
     private function expandFields(array $fields): array

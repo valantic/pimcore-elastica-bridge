@@ -19,13 +19,9 @@ use Valantic\ElasticaBridgeBundle\Repository\IndexDocumentRepository;
 abstract class AbstractIndex implements IndexInterface
 {
     protected bool $areGlobalFiltersEnabled = true;
-    protected ElasticsearchClient $client;
-    protected IndexDocumentRepository $indexDocumentRepository;
 
-    public function __construct(ElasticsearchClient $client, IndexDocumentRepository $indexDocumentRepository)
+    public function __construct(protected ElasticsearchClient $client, protected IndexDocumentRepository $indexDocumentRepository)
     {
-        $this->client = $client;
-        $this->indexDocumentRepository = $indexDocumentRepository;
     }
 
     public function getGlobalFilters(): array
@@ -107,7 +103,7 @@ abstract class AbstractIndex implements IndexInterface
 
         try {
             return $this->getElasticaIndex()->getDocument($documentInstance->getElasticsearchId($element));
-        } catch (RuntimeException $exception) {
+        } catch (RuntimeException) {
             return null;
         }
     }
@@ -121,7 +117,7 @@ abstract class AbstractIndex implements IndexInterface
                 DocumentInterface::TYPE_OBJECT,
                 DocumentInterface::TYPE_VARIANT,
                 DocumentInterface::TYPE_DOCUMENT,
-            ], true) && $documentInstance->getSubType() === get_class($element)) {
+            ], true) && $documentInstance->getSubType() === $element::class) {
                 return $documentInstance;
             }
         }
@@ -130,7 +126,6 @@ abstract class AbstractIndex implements IndexInterface
     }
 
     /**
-     * @param Query\AbstractQuery $query
      * @param int $size Max number of elements to be retrieved aka limit
      * @param int $from Number of elements to skip from the beginning aka offset
      *
@@ -149,8 +144,6 @@ abstract class AbstractIndex implements IndexInterface
     }
 
     /**
-     * @param ResultSet $result
-     *
      * @return AbstractElement[]
      */
     public function documentResultToElements(ResultSet $result): array
