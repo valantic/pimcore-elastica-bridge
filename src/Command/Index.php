@@ -11,6 +11,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Component\Process\Process;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
@@ -31,7 +32,8 @@ class Index extends BaseCommand
         protected IndexRepository $indexRepository,
         protected IndexDocumentRepository $indexDocumentRepository,
         protected ElasticsearchClient $esClient,
-        protected DocumentHelper $documentHelper
+        protected DocumentHelper $documentHelper,
+        protected KernelInterface $kernel,
     ) {
         parent::__construct();
     }
@@ -151,6 +153,7 @@ class Index extends BaseCommand
                 '--config', $indexConfig->getName(),
                 '--index', $esIndex->getName(),
             ],
+            $this->kernel->getProjectDir(),
         );
 
         $process->run(function($type, $buffer): void {
