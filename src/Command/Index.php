@@ -154,6 +154,7 @@ class Index extends BaseCommand
                 '--index', $esIndex->getName(),
             ],
             $this->kernel->getProjectDir(),
+            timeout: null
         );
 
         $process->run(function($type, $buffer): void {
