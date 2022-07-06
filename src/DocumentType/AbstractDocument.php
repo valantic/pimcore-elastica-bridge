@@ -33,7 +33,7 @@ abstract class AbstractDocument implements DocumentInterface
             PimcoreDocument\Printcontainer::class => 'printcontainer',
         ][$this->getSubType()] ?? null;
 
-        if ($candidate === null || !in_array($candidate, PimcoreDocument::$types, true)) {
+        if ($candidate === null || !in_array($candidate, PimcoreDocument::getTypes(), true)) {
             throw new UnknownPimcoreElementType($candidate);
         }
 
