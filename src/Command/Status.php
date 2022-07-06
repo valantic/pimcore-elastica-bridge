@@ -82,7 +82,7 @@ class Status extends BaseCommand
             ->setHeaderTitle('Other indices in this cluster');
         $table->render();
 
-        return 0;
+        return self::SUCCESS;
     }
 
     protected function formatBoolean(bool $val): string

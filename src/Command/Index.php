@@ -96,7 +96,7 @@ class Index extends BaseCommand
             $this->output->writeln(sprintf('<info>Skipped the following indices: %s</info>', implode(', ', $skippedIndices)));
         }
 
-        return 0;
+        return self::SUCCESS;
     }
 
     protected function processIndex(IndexInterface $indexConfig): void

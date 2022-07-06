@@ -36,8 +36,8 @@ class PopulateIndex extends BaseCommand
     {
         $this->setName(self::COMMAND_NAMESPACE . 'populate-index')
             ->setDescription('[INTERNAL]')
-            ->addOption(self::OPTION_CONFIG, null, InputOption::VALUE_REQUIRED)
-            ->addOption(self::OPTION_INDEX, null, InputOption::VALUE_REQUIRED)
+            ->addOption(self::OPTION_CONFIG, mode: InputOption::VALUE_REQUIRED)
+            ->addOption(self::OPTION_INDEX, mode: InputOption::VALUE_REQUIRED)
         ;
     }
 
@@ -51,13 +51,13 @@ class PopulateIndex extends BaseCommand
         }
 
         if (!$indexConfig instanceof IndexInterface) {
-            return 1;
+            return self::FAILURE;
         }
 
         $index = $indexConfig->getBlueGreenInactiveElasticaIndex();
         $this->populateIndex($indexConfig, $index);
 
-        return 0;
+        return self::SUCCESS;
     }
 
     protected function populateIndex(IndexInterface $indexConfig, ElasticaIndex $esIndex): void

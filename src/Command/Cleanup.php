@@ -29,7 +29,7 @@ class Cleanup extends BaseCommand
         $question = new ConfirmationQuestion('Are you sure you want to delete all indices and aliases? (y/n)', false);
 
         if (!$helper->ask($input, $output, $question)) {
-            return 1;
+            return self::FAILURE;
         }
 
         $indices = $this->esClient->getCluster()->getIndexNames();
@@ -44,6 +44,6 @@ class Cleanup extends BaseCommand
             $client->delete();
         }
 
-        return 0;
+        return self::SUCCESS;
     }
 }
