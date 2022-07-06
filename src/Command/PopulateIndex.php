@@ -59,7 +59,7 @@ class PopulateIndex extends BaseCommand
         if (!$indexConfig instanceof IndexInterface) {
             return self::FAILURE;
         }
-        
+
         $index = $indexConfig->getBlueGreenInactiveElasticaIndex();
         $this->populateIndex($indexConfig, $index);
 
