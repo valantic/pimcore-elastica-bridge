@@ -140,7 +140,7 @@ trait DataObjectNormalizerTrait
      */
     protected function children(
         Concrete $element,
-        array $objectTypes = [AbstractObject::OBJECT_TYPE_OBJECT, AbstractObject::OBJECT_TYPE_FOLDER]
+        array $objectTypes = [AbstractObject::OBJECT_TYPE_OBJECT, AbstractObject::OBJECT_TYPE_FOLDER],
     ): array {
         $ids = [];
 
@@ -160,7 +160,7 @@ trait DataObjectNormalizerTrait
     protected function childrenRecursive(
         Concrete $element,
         array $objectTypes = [AbstractObject::OBJECT_TYPE_OBJECT, AbstractObject::OBJECT_TYPE_FOLDER],
-        array $carry = []
+        array $carry = [],
     ): array {
         foreach ($element->getChildren($objectTypes) as $child) {
             /** @var Concrete $child */

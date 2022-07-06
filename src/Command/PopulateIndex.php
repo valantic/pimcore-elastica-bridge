@@ -27,7 +27,7 @@ class PopulateIndex extends BaseCommand
     public function __construct(
         protected IndexRepository $indexRepository,
         protected IndexDocumentRepository $indexDocumentRepository,
-        protected DocumentHelper $documentHelper
+        protected DocumentHelper $documentHelper,
     ) {
         parent::__construct();
     }

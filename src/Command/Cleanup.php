@@ -12,7 +12,7 @@ use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 class Cleanup extends BaseCommand
 {
     public function __construct(
-        protected ElasticsearchClient $esClient
+        protected ElasticsearchClient $esClient,
     ) {
         parent::__construct();
     }

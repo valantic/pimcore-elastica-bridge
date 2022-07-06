@@ -29,7 +29,7 @@ class Status extends BaseCommand
 
     public function __construct(
         protected IndexRepository $indexRepository,
-        protected ElasticsearchClient $esClient
+        protected ElasticsearchClient $esClient,
     ) {
         parent::__construct();
     }

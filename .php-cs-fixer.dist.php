@@ -35,6 +35,7 @@ return (new PhpCsFixer\Config())
         'return_assignment' => true,
         'strict_comparison' => true,
         'strict_param' => true,
+        'trailing_comma_in_multiline' => ['elements' => ['arrays', 'parameters']],
         'yoda_style' => false,
     ])
     ->setFinder($finder)

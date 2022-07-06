@@ -26,7 +26,7 @@ abstract class AbstractListener
         protected IndexRepository $indexRepository,
         protected ElasticsearchClient $esClient,
         protected DocumentHelper $documentHelper,
-        protected IndexHelper $indexHelper
+        protected IndexHelper $indexHelper,
     ) {
     }
 
