@@ -6,15 +6,13 @@ namespace Valantic\ElasticaBridgeBundle\Command;
 
 use Elastica\Index as ElasticaIndex;
 use Elastica\Request;
-use Pimcore\Model\Element\AbstractElement;
-use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\OutputInterface;
-use Throwable;
+use Symfony\Component\Process\Process;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
-use Valantic\ElasticaBridgeBundle\Exception\Command\IndexingFailedException;
 use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 use Valantic\ElasticaBridgeBundle\Repository\IndexDocumentRepository;
@@ -155,81 +153,21 @@ class Index extends BaseCommand
     protected function populateIndex(IndexInterface $indexConfig, ElasticaIndex $esIndex): void
     {
         self::$isPopulating = true;
-        ProgressBar::setFormatDefinition('custom', "%percent%%\t%remaining%\t%memory%\n%message%");
+        $process = new Process(
+            [
+                'bin/console', self::COMMAND_NAMESPACE . 'populate-index',
+                '--config', $indexConfig->getName(),
+                '--index', $esIndex->getName(),
+            ],
+        );
 
-        $progressBar = new ProgressBar($this->output, 1);
-        $progressBar->setMessage('');
-        $progressBar->setFormat('custom');
-
-        try {
-            foreach ($indexConfig->getAllowedDocuments() as $indexDocument) {
-                $progressBar->setProgress(0);
-                $progressBar->setMessage($indexDocument);
-
-                $indexDocumentInstance = $this->indexDocumentRepository->get($indexDocument);
-
-                $this->documentHelper->setTenantIfNeeded($indexDocumentInstance, $indexConfig);
-
-                $listingCount = $indexDocumentInstance->getListingInstance($indexConfig)->count();
-                $progressBar->setMaxSteps($listingCount > 0 ? $listingCount : 1);
-                $esDocuments = [];
-
-                for ($batchNumber = 0; $batchNumber < ceil($listingCount / $indexConfig->getBatchSize()); $batchNumber++) {
-                    $listing = $indexDocumentInstance->getListingInstance($indexConfig);
-                    $listing->setOffset($batchNumber * $indexConfig->getBatchSize());
-                    $listing->setLimit($indexConfig->getBatchSize());
-
-                    foreach ($listing->getData() as $dataObject) {
-                        $progressBar->advance();
-
-                        if (!$indexDocumentInstance->shouldIndex($dataObject)) {
-                            continue;
-                        }
-
-                        $esDocuments[] = $this->documentHelper->elementToIndexDocument($indexDocumentInstance, $dataObject);
-                    }
-
-                    if (count($esDocuments) > 0) {
-                        $esIndex->addDocuments($esDocuments);
-                        $esDocuments = [];
-                    }
-                }
-
-                if (count($esDocuments) > 0) {
-                    $esIndex->addDocuments($esDocuments);
-                }
-
-                if ($indexConfig->refreshIndexAfterEveryIndexDocumentWhenPopulating()) {
-                    $esIndex->refresh();
-                }
+        $process->run(function($type, $buffer): void {
+            if ($type === Process::ERR && $this->output instanceof ConsoleOutput) {
+                $this->output->getErrorOutput()->write($buffer);
+            } else {
+                $this->output->write($buffer);
             }
-        } catch (Throwable $throwable) {
-            $this->output->writeln('');
-            $this->output->writeln(sprintf(
-                '<fg=red;options=bold>Error while populating index %s, processing documents of type %s, last processed element ID %s.</>',
-                get_class($indexConfig),
-                $indexDocument ?? '(N/A)',
-                isset($dataObject) && $dataObject instanceof AbstractElement ? $dataObject->getId() : '(N/A)'
-            ));
-            $this->output->writeln('');
-            $this->output->writeln(sprintf('In %s line %d', $throwable->getFile(), $throwable->getLine()));
-            $this->output->writeln('');
-            if ($throwable->getMessage()) {
-                $this->output->writeln($throwable->getMessage());
-                $this->output->writeln('');
-            }
-            $this->output->writeln($throwable->getTraceAsString());
-            $this->output->writeln('');
-
-            throw new IndexingFailedException($throwable);
-        } finally {
-            if (isset($indexDocumentInstance)) {
-                $this->documentHelper->setTenantIfNeeded($indexDocumentInstance, $indexConfig);
-            }
-        }
-
-        $progressBar->finish();
-        $this->output->writeln('');
+        });
         self::$isPopulating = false;
     }
 
