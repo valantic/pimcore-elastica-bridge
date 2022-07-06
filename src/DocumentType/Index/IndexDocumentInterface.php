@@ -61,8 +61,6 @@ interface IndexDocumentInterface extends DocumentInterface
      * Returns the normalization of the Pimcore element.
      * This is how the Pimcore element will be stored in the Elasticsearch document.
      *
-     * @param AbstractElement $element
-     *
      * @return array<mixed>
      *
      * @see DocumentNormalizerTrait
@@ -74,35 +72,23 @@ interface IndexDocumentInterface extends DocumentInterface
     /**
      * Indicates whether a Pimcore element should be indexed.
      * E.g. return false when the element is not published.
-     *
-     * @param AbstractElement $element
-     *
-     * @return bool
      */
     public function shouldIndex(AbstractElement $element): bool;
 
     /**
      * Conditions to pass to the listing of Pimcore elements.
      *
-     * @return string|null
-     *
      * @see IndexCommand
      */
     public function getIndexListingCondition(): ?string; // TODO: refactor to use array of interfaces
 
     /**
-     * @param IndexInterface $index
-     *
-     * @return AbstractListing
-     *
      * @see ListingTrait
      */
     public function getListingInstance(IndexInterface $index): AbstractListing;
 
     /**
      * Whether Elasticsearch documents should be created for object variants.
-     *
-     * @return bool
      */
     public function treatObjectVariantsAsDocuments(): bool;
 }

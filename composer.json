@@ -4,14 +4,17 @@
   "description": "Elastica bridge for Pimcore",
   "type": "pimcore-bundle",
   "require": {
-    "php": "^7.4 || ^8.0",
+    "php": "^8.0",
     "ext-json": "*",
-    "pimcore/pimcore": "^6.7.0 || ^10.0",
+    "pimcore/pimcore": "^10.0",
     "ruflin/elastica": "^7.1"
   },
   "require-dev": {
     "bamarni/composer-bin-plugin": "^1.4",
-    "phpstan/phpstan": "^1.3.0"
+    "phpstan/extension-installer": "^1.1",
+    "phpstan/phpstan": "^1.3.0",
+    "phpstan/phpstan-deprecation-rules": "^1.0",
+    "rector/rector": "^0.13.7"
   },
   "license": "MIT",
   "authors": [
@@ -55,13 +58,17 @@
     ],
     "phpcs-check": [
       "vendor/bin/php-cs-fixer fix --diff --dry-run"
+    ],
+    "rector": [
+      "vendor/bin/rector process src"
     ]
   },
   "config": {
     "sort-packages": true,
     "allow-plugins": {
       "bamarni/composer-bin-plugin": true,
-      "ocramius/package-versions": true
+      "ocramius/package-versions": true,
+      "phpstan/extension-installer": true
     }
   }
 }

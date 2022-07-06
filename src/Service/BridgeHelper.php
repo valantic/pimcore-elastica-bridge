@@ -16,7 +16,7 @@ class BridgeHelper
         $arr = [];
 
         foreach ($iterables as $iterable) {
-            $arr[get_class($iterable)] = $iterable;
+            $arr[$iterable::class] = $iterable;
         }
 
         return $arr;

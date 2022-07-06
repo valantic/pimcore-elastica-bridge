@@ -21,21 +21,13 @@ use Valantic\ElasticaBridgeBundle\Service\IndexHelper;
 abstract class AbstractListener
 {
     protected static bool $isEnabled = true;
-    protected ElasticsearchClient $esClient;
-    protected DocumentHelper $documentHelper;
-    protected IndexHelper $indexHelper;
-    protected IndexRepository $indexRepository;
 
     public function __construct(
-        IndexRepository $indexRepository,
-        ElasticsearchClient $esClient,
-        DocumentHelper $documentHelper,
-        IndexHelper $indexHelper
+        protected IndexRepository $indexRepository,
+        protected ElasticsearchClient $esClient,
+        protected DocumentHelper $documentHelper,
+        protected IndexHelper $indexHelper
     ) {
-        $this->esClient = $esClient;
-        $this->documentHelper = $documentHelper;
-        $this->indexHelper = $indexHelper;
-        $this->indexRepository = $indexRepository;
     }
 
     public static function enableListener(): void
@@ -53,8 +45,6 @@ abstract class AbstractListener
      * 1. Which indices might need to be updated?
      * 2. Does the element need to be in Elasticsearch or not?
      * 3. Are there Elasticsearch documents to be created/updated or deleted?
-     *
-     * @param AbstractElement $element
      */
     protected function decideAction(AbstractElement $element): void
     {
@@ -67,7 +57,7 @@ abstract class AbstractListener
 
             $this->documentHelper->setTenantIfNeeded($indexDocument, $index);
 
-            if (!in_array(get_class($indexDocument), $index->subscribedDocuments(), true)) {
+            if (!in_array($indexDocument::class, $index->subscribedDocuments(), true)) {
                 $this->documentHelper->resetTenantIfNeeded($indexDocument, $index);
                 continue;
             }
@@ -109,7 +99,7 @@ abstract class AbstractListener
 
             $this->documentHelper->setTenantIfNeeded($indexDocument, $index);
 
-            if (!in_array(get_class($indexDocument), $index->subscribedDocuments(), true) || !$indexDocument->shouldIndex($element)) {
+            if (!in_array($indexDocument::class, $index->subscribedDocuments(), true) || !$indexDocument->shouldIndex($element)) {
                 $this->documentHelper->resetTenantIfNeeded($indexDocument, $index);
                 continue;
             }
@@ -136,7 +126,7 @@ abstract class AbstractListener
 
             $this->documentHelper->setTenantIfNeeded($indexDocument, $index);
 
-            if (!in_array(get_class($indexDocument), $index->subscribedDocuments(), true)) {
+            if (!in_array($indexDocument::class, $index->subscribedDocuments(), true)) {
                 $this->documentHelper->resetTenantIfNeeded($indexDocument, $index);
                 continue;
             }
