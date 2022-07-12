@@ -35,6 +35,7 @@ class PopulateIndex extends BaseCommand
     protected function configure(): void
     {
         $this->setName(self::COMMAND_NAMESPACE . 'populate-index')
+            ->setHidden(true)
             ->setDescription('[INTERNAL]')
             ->addOption(self::OPTION_CONFIG, mode: InputOption::VALUE_REQUIRED)
             ->addOption(self::OPTION_INDEX, mode: InputOption::VALUE_REQUIRED)
