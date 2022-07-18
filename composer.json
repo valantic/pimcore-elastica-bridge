@@ -41,6 +41,10 @@
       "bundles": [
         "Valantic\\ElasticaBridgeBundle\\ValanticElasticaBridgeBundle"
       ]
+    },
+    "bamarni-bin": {
+      "bin-links": false,
+      "forward-command": true
     }
   },
   "scripts": {
@@ -54,10 +58,10 @@
       "vendor/bin/phpstan analyse src --memory-limit=1G"
     ],
     "phpcs": [
-      "vendor/bin/php-cs-fixer fix --diff"
+      "vendor-bin/phpcs/vendor/bin/php-cs-fixer fix --diff"
     ],
     "phpcs-check": [
-      "vendor/bin/php-cs-fixer fix --diff --dry-run"
+      "vendor-bin/phpcs/vendor/bin/php-cs-fixer fix --diff --dry-run"
     ],
     "rector": [
       "vendor/bin/rector process src"
