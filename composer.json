@@ -1,6 +1,6 @@
 {
   "name": "valantic/pimcore-elastica-bridge",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Elastica bridge for Pimcore",
   "type": "pimcore-bundle",
   "require": {
@@ -37,11 +37,6 @@
     }
   },
   "extra": {
-    "pimcore": {
-      "bundles": [
-        "Valantic\\ElasticaBridgeBundle\\ValanticElasticaBridgeBundle"
-      ]
-    },
     "bamarni-bin": {
       "bin-links": false,
       "forward-command": true
@@ -73,12 +68,6 @@
       "bamarni/composer-bin-plugin": true,
       "ocramius/package-versions": true,
       "phpstan/extension-installer": true
-    }
-  },
-  "extra": {
-    "bamarni-bin": {
-      "bin-links": false,
-      "forward-command": true
     }
   }
 }
