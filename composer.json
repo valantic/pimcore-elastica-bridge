@@ -74,5 +74,11 @@
       "ocramius/package-versions": true,
       "phpstan/extension-installer": true
     }
+  },
+  "extra": {
+    "bamarni-bin": {
+      "bin-links": false,
+      "forward-command": true
+    }
   }
 }
