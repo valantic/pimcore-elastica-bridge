@@ -35,9 +35,9 @@ jobs:
       - name: Static analysis using phpstan
         run: composer run phpstan -- --error-format=github
 
-  phpcs:
+  php-cs-fixer:
 
-    name: phpcs
+    name: php-cs-fixer
     runs-on: ${{ matrix.operating-system }}
 
     strategy:
@@ -59,4 +59,4 @@ jobs:
         uses: ramsey/composer-install@v2
 
       - name: Ensure code style using php-cs-fixer
-        run: composer run phpcs-check
+        run: composer run php-cs-fixer-check
