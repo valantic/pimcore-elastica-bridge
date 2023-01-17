@@ -6,6 +6,26 @@ parameters:
 			path: src/Command/PopulateIndex.php
 
 		-
+			message: "#^Parameter \\#1 \\$asset of class Pimcore\\\\Event\\\\Model\\\\AssetEvent constructor expects Pimcore\\\\Model\\\\Asset, Pimcore\\\\Model\\\\Asset\\|Pimcore\\\\Model\\\\DataObject\\\\Concrete\\|Pimcore\\\\Model\\\\Document given\\.$#"
+			count: 1
+			path: src/Command/Refresh.php
+
+		-
+			message: "#^Parameter \\#1 \\$document of class Pimcore\\\\Event\\\\Model\\\\DocumentEvent constructor expects Pimcore\\\\Model\\\\Document, Pimcore\\\\Model\\\\Asset\\|Pimcore\\\\Model\\\\DataObject\\\\Concrete\\|Pimcore\\\\Model\\\\Document given\\.$#"
+			count: 1
+			path: src/Command/Refresh.php
+
+		-
+			message: "#^Parameter \\#1 \\$event of method Valantic\\\\ElasticaBridgeBundle\\\\EventListener\\\\Pimcore\\\\Asset\\:\\:updated\\(\\) expects Pimcore\\\\Event\\\\Model\\\\AssetEvent, Pimcore\\\\Event\\\\Model\\\\AssetEvent\\|Pimcore\\\\Event\\\\Model\\\\DataObjectEvent\\|Pimcore\\\\Event\\\\Model\\\\DocumentEvent given\\.$#"
+			count: 1
+			path: src/Command/Refresh.php
+
+		-
+			message: "#^Parameter \\#1 \\$object of class Pimcore\\\\Event\\\\Model\\\\DataObjectEvent constructor expects Pimcore\\\\Model\\\\DataObject\\\\AbstractObject, Pimcore\\\\Model\\\\Asset\\|Pimcore\\\\Model\\\\DataObject\\\\Concrete\\|Pimcore\\\\Model\\\\Document given\\.$#"
+			count: 1
+			path: src/Command/Refresh.php
+
+		-
 			message: "#^Method Valantic\\\\ElasticaBridgeBundle\\\\Repository\\\\DocumentRepository\\:\\:__construct\\(\\) has parameter \\$documents with no value type specified in iterable type iterable\\.$#"
 			count: 1
 			path: src/Repository/DocumentRepository.php
