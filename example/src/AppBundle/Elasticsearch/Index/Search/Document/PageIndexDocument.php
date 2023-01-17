@@ -13,7 +13,6 @@ use Pimcore\Model\DataObject\Folder;
 use Pimcore\Model\Document;
 use Pimcore\Model\Document\Page;
 use Pimcore\Model\Element\AbstractElement;
-use RuntimeException;
 use Valantic\ElasticaBridgeBundle\DocumentType\Index\DocumentNormalizerTrait;
 use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
 use Valantic\ElasticaBridgeBundle\DocumentType\Index\ListingTrait;
@@ -104,7 +103,7 @@ class PageIndexDocument extends PageDocument implements IndexDocumentInterface
                 $normalizer = $this->inlineDataObjectNormalizers[$className] ?? null;
 
                 if (!$normalizer) {
-                    throw new RuntimeException(sprintf('No normalizer for %s', $className));
+                    throw new \RuntimeException(sprintf('No normalizer for %s', $className));
                 }
 
                 $data .= $normalizer->normalizeObjectsInDocument($objects, $document);
@@ -113,6 +112,6 @@ class PageIndexDocument extends PageDocument implements IndexDocumentInterface
             return $data;
         }
 
-        throw new RuntimeException(sprintf('%s is not yet implemented for %s/%s (%s)', $editable->getType(), $editable->type, $editable->subtype, $editable->getName()));
+        throw new \RuntimeException(sprintf('%s is not yet implemented for %s/%s (%s)', $editable->getType(), $editable->type, $editable->subtype, $editable->getName()));
     }
 }

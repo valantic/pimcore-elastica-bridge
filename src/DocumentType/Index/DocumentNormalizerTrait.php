@@ -35,9 +35,9 @@ trait DocumentNormalizerTrait
     {
         $data = [];
         $editableNames = array_merge(
-            array_map(fn(Document\Editable $editable): string => $editable->getName(), $document->getEditables()),
+            array_map(fn (Document\Editable $editable): string => $editable->getName(), $document->getEditables()),
             $document->getContentMasterDocumentId() && $document->getContentMasterDocument() instanceof Document\PageSnippet
-                ? array_map(fn(Document\Editable $editable): string => $editable->getName(), $document->getContentMasterDocument()->getEditables())
+                ? array_map(fn (Document\Editable $editable): string => $editable->getName(), $document->getContentMasterDocument()->getEditables())
                 : []
         );
 
@@ -67,7 +67,7 @@ trait DocumentNormalizerTrait
             $this->relatedObjects = array_merge(
                 $this->relatedObjects,
                 [$contents->getId()],
-                array_map(fn(Concrete $obj): int => $obj->getId(), $contents->getChildren([Folder::OBJECT_TYPE_OBJECT]))
+                array_map(fn (Concrete $obj): int => $obj->getId(), $contents->getChildren([Folder::OBJECT_TYPE_OBJECT]))
             );
 
             return null;

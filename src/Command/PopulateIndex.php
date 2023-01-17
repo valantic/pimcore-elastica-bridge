@@ -10,7 +10,6 @@ use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Throwable;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Exception\Command\IndexingFailedException;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
@@ -111,7 +110,7 @@ class PopulateIndex extends BaseCommand
                     $esIndex->refresh();
                 }
             }
-        } catch (Throwable $throwable) {
+        } catch (\Throwable $throwable) {
             $this->output->writeln('');
             $this->output->writeln(sprintf(
                 '<fg=red;options=bold>Error while populating index %s, processing documents of type %s, last processed element ID %s.</>',

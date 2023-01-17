@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\DocumentType\Index;
 
-use Exception;
 use Pimcore\Localization\LocaleService;
 use Pimcore\Model\DataObject\AbstractObject;
 use Pimcore\Model\DataObject\Concrete;
@@ -39,7 +38,7 @@ trait DataObjectNormalizerTrait
      * @param array $fields
      * @param bool $useFallbackValues
      *
-     * @throws Exception
+     * @throws \Exception
      *
      * @return array[]
      */
@@ -81,7 +80,7 @@ trait DataObjectNormalizerTrait
      * @param Concrete $element
      * @param array $fields
      *
-     * @throws Exception
+     * @throws \Exception
      */
     protected function plainAttributes(Concrete $element, array $fields): array
     {
@@ -103,7 +102,7 @@ trait DataObjectNormalizerTrait
      * @param Concrete $element
      * @param array $fields
      *
-     * @throws Exception
+     * @throws \Exception
      */
     protected function relationAttributes(Concrete $element, array $fields): array
     {

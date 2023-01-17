@@ -181,10 +181,10 @@ abstract class AbstractIndex implements IndexInterface
     {
         return array_reduce(
             array_map(
-                fn(string $suffix): bool => $this->client->getIndex($this->getName() . $suffix)->exists(),
+                fn (string $suffix): bool => $this->client->getIndex($this->getName() . $suffix)->exists(),
                 self::INDEX_SUFFIXES
             ),
-            fn(bool $carry, bool $item): bool => $item && $carry,
+            fn (bool $carry, bool $item): bool => $item && $carry,
             true
         );
     }
@@ -197,7 +197,7 @@ abstract class AbstractIndex implements IndexInterface
 
         $aliases = array_filter(
             $this->client->request('_aliases')->getData(),
-            fn(array $datum): bool => in_array($this->getName(), array_keys($datum['aliases']), true)
+            fn (array $datum): bool => in_array($this->getName(), array_keys($datum['aliases']), true)
         );
 
         if (count($aliases) !== 1) {

@@ -6,7 +6,6 @@ namespace Valantic\ElasticaBridgeBundle;
 
 use Pimcore\Extension\Bundle\AbstractPimcoreBundle;
 use Pimcore\Extension\Bundle\Traits\PackageVersionTrait;
-use RuntimeException;
 
 class ValanticElasticaBridgeBundle extends AbstractPimcoreBundle
 {
@@ -23,7 +22,7 @@ class ValanticElasticaBridgeBundle extends AbstractPimcoreBundle
     {
         $composer = file_get_contents(__DIR__ . '/../composer.json');
         if ($composer === false) {
-            throw new RuntimeException();
+            throw new \RuntimeException();
         }
 
         return json_decode($composer, null, 512, \JSON_THROW_ON_ERROR)->name;

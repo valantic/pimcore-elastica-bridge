@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\DependencyInjection;
 
-use Exception;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader;
@@ -29,7 +28,7 @@ class ValanticElasticaBridgeExtension extends Extension
      *
      * @param array<mixed> $configs
      *
-     * @throws Exception
+     * @throws \Exception
      */
     public function load(array $configs, ContainerBuilder $container): void
     {
@@ -44,6 +43,6 @@ class ValanticElasticaBridgeExtension extends Extension
         $loader->load('services.yml');
 
         $clientConfig = $config['client'] ?? ['host' => 'localhost', 'port' => '9200'];
-        array_walk($clientConfig, fn($value, $key) => $container->setParameter('valantic_elastica_bridge.client.' . $key, $value));
+        array_walk($clientConfig, fn ($value, $key) => $container->setParameter('valantic_elastica_bridge.client.' . $key, $value));
     }
 }
