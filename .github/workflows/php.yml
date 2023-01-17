@@ -7,7 +7,7 @@ jobs:
 
   phpstan_pimcore10:
 
-    name: phpstan for Pimcore 10 (PHP ${{ matrix.php-versions }} on ${{ matrix.operating-system }})
+    name: phpstan (PHP ${{ matrix.php-versions }} on ${{ matrix.operating-system }})
     runs-on: ${{ matrix.operating-system }}
 
     strategy:
@@ -17,28 +17,20 @@ jobs:
         php-versions: [ '8.0', '8.1' ]
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
 
-      - name: Setup PHP, with composer and extensions
-        uses: shivammathur/setup-php@v2 #https://github.com/shivammathur/setup-php
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php-versions }}
           extensions: curl
           coverage: xdebug
 
-      - name: Get composer cache directory
-        id: composer-cache
-        run: echo "::set-output name=dir::$(composer config cache-files-dir)"
-
-      - name: Cache composer dependencies
-        uses: actions/cache@v3
-        with:
-          path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-composer-pimcore10
-          restore-keys: ${{ runner.os }}-composer-pimcore10
-
-      - name: Require Pimcore 10.x
-        run: composer require pimcore/pimcore:^10.0 --no-progress --prefer-dist
+      - name: Install composer dependencies
+        uses: ramsey/composer-install@v2
 
       - name: Static analysis using phpstan
         run: composer run phpstan -- --error-format=github
@@ -56,26 +48,15 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup PHP, with composer and extensions
-        uses: shivammathur/setup-php@v2 #https://github.com/shivammathur/setup-php
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.1
+          php-version: 8.0
           extensions: curl
           coverage: xdebug
 
-      - name: Get composer cache directory
-        id: composer-cache
-        run: echo "::set-output name=dir::$(composer config cache-files-dir)"
-
-      - name: Cache composer dependencies
-        uses: actions/cache@v3
-        with:
-          path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-
-
-      - name: Install Composer dependencies
-        run: composer install --no-progress --prefer-dist --optimize-autoloader
+      - name: Install composer dependencies
+        uses: ramsey/composer-install@v2
 
       - name: Ensure code style using php-cs-fixer
         run: composer run phpcs-check
