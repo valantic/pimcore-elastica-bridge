@@ -50,16 +50,16 @@
       "@composer bin all update --ansi"
     ],
     "phpstan": [
-      "vendor/bin/phpstan analyse src --memory-limit=1G"
+      "./vendor/bin/phpstan analyse --memory-limit=1G"
     ],
     "php-cs-fixer": [
-      "vendor-bin/phpcs/vendor/bin/php-cs-fixer fix --diff"
+      "./vendor-bin/phpcs/vendor/bin/php-cs-fixer fix --diff"
     ],
     "php-cs-fixer-check": [
-      "vendor-bin/phpcs/vendor/bin/php-cs-fixer fix --diff --dry-run"
+      "./vendor-bin/phpcs/vendor/bin/php-cs-fixer fix --diff --dry-run"
     ],
     "rector": [
-      "vendor/bin/rector process src"
+      "./vendor/bin/rector process src"
     ]
   },
   "config": {
