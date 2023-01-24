@@ -66,7 +66,7 @@ class Refresh extends BaseCommand
         $this->output->writeln('Documents');
         $this->handle(self::OPTION_DOCUMENTS);
 
-        $this->output->writeln('Object');
+        $this->output->writeln('Objects');
         $this->handle(self::OPTION_OBJECTS);
 
         return self::SUCCESS;
@@ -99,12 +99,22 @@ class Refresh extends BaseCommand
         foreach ($this->input->getOption($optionName) as $id) {
             $this->output->writeln($id);
             $element = $objClass::getById($id);
+
             if ($element === null) {
-                $this->output->writeln('-> not found, skipped');
+                $this->output->writeln(sprintf('-> ID %d of type %s not found, skipped', $id, $this->getShortName($objClass)));
                 continue;
             }
+
             $listener->updated(new $eventClass($element));
         }
         $this->output->writeln('');
+    }
+
+    /**
+     * @param class-string $className
+     */
+    private function getShortName(string $className): string
+    {
+        return basename(str_replace('\\', '/', $className));
     }
 }
