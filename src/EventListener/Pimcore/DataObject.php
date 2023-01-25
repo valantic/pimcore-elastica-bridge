@@ -14,7 +14,7 @@ class DataObject extends AbstractListener
             return;
         }
 
-        $this->ensurePresent($event->getObject());
+        $this->ensurePresent($this->getFreshElement($event->getObject()));
     }
 
     public function updated(DataObjectEvent $event): void
@@ -23,7 +23,7 @@ class DataObject extends AbstractListener
             return;
         }
 
-        $this->decideAction($event->getObject());
+        $this->decideAction($this->getFreshElement($event->getObject()));
     }
 
     public function deleted(DataObjectEvent $event): void
@@ -32,6 +32,6 @@ class DataObject extends AbstractListener
             return;
         }
 
-        $this->ensureMissing($event->getObject());
+        $this->ensureMissing($this->getFreshElement($event->getObject()));
     }
 }

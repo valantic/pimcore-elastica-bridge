@@ -14,7 +14,7 @@ class Asset extends AbstractListener
             return;
         }
 
-        $this->ensurePresent($event->getAsset());
+        $this->ensurePresent($this->getFreshElement($event->getAsset()));
     }
 
     public function updated(AssetEvent $event): void
@@ -23,7 +23,7 @@ class Asset extends AbstractListener
             return;
         }
 
-        $this->decideAction($event->getAsset());
+        $this->decideAction($this->getFreshElement($event->getAsset()));
     }
 
     public function deleted(AssetEvent $event): void
@@ -32,6 +32,6 @@ class Asset extends AbstractListener
             return;
         }
 
-        $this->ensureMissing($event->getAsset());
+        $this->ensureMissing($this->getFreshElement($event->getAsset()));
     }
 }

@@ -14,7 +14,7 @@ class Document extends AbstractListener
             return;
         }
 
-        $this->ensurePresent($event->getDocument());
+        $this->ensurePresent($this->getFreshElement($event->getDocument()));
     }
 
     public function updated(DocumentEvent $event): void
@@ -23,7 +23,7 @@ class Document extends AbstractListener
             return;
         }
 
-        $this->decideAction($event->getDocument());
+        $this->decideAction($this->getFreshElement($event->getDocument()));
     }
 
     public function deleted(DocumentEvent $event): void
@@ -32,6 +32,6 @@ class Document extends AbstractListener
             return;
         }
 
-        $this->ensureMissing($event->getDocument());
+        $this->ensureMissing($this->getFreshElement($event->getDocument()));
     }
 }
