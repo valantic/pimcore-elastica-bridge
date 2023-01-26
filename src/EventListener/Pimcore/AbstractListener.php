@@ -163,7 +163,7 @@ abstract class AbstractListener
     }
 
     /**
-     * The object passed via the event listener may be the a draft and not the latest published version.
+     * The object passed via the event listener may be a draft and not the latest published version.
      * This method retrieves the latest published version of that element.
      *
      * @template T of AbstractElement
