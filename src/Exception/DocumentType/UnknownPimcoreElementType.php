@@ -10,6 +10,6 @@ class UnknownPimcoreElementType extends BaseException
 {
     public function __construct(?string $name)
     {
-        parent::__construct(sprintf('Unknown Pimcore element of type %s', $name), 0, null);
+        parent::__construct(sprintf('Unknown Pimcore element of type %s', $name));
     }
 }

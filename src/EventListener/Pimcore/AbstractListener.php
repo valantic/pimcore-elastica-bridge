@@ -8,6 +8,7 @@ use Pimcore\Model\DataObject\AbstractObject;
 use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
+use Valantic\ElasticaBridgeBundle\Exception\EventListener\PimcoreElementNotFoundException;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 use Valantic\ElasticaBridgeBundle\Service\DocumentHelper;
@@ -159,5 +160,24 @@ abstract class AbstractListener
     {
         $elasticsearchId = $indexDocument->getElasticsearchId($element);
         $index->getElasticaIndex()->deleteById($elasticsearchId);
+    }
+
+    /**
+     * The object passed via the event listener may be a draft and not the latest published version.
+     * This method retrieves the latest published version of that element.
+     *
+     * @template T of AbstractElement
+     *
+     * @param T $element
+     *
+     * @return T
+     */
+    protected function getFreshElement(AbstractElement $element): AbstractElement
+    {
+        /** @var class-string<T> $elementClass */
+        $elementClass = $element::class;
+        $e = new PimcoreElementNotFoundException($element->getId(), $elementClass);
+
+        return $elementClass::getById($element->getId() ?: throw $e) ?: throw $e;
     }
 }
