@@ -1,0 +1,19 @@
+{
+  "name": "pimcore-elastica-bridge",
+  "private": true,
+  "scripts": {
+    "build": "slidev build",
+    "dev": "slidev --open",
+    "export": "slidev export"
+  },
+  "dependencies": {
+    "@slidev/cli": "^0.40.2",
+    "@slidev/theme-default": "*",
+    "@slidev/theme-seriph": "*",
+    "prism-theme-vars": "^0.2.4",
+    "slidev-theme-geist": "^0.8.1"
+  },
+  "devDependencies": {
+    "playwright-chromium": "^1.30.0"
+  }
+}
