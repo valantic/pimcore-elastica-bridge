@@ -2,7 +2,7 @@
 
 $finder = PhpCsFixer\Finder::create()
     ->in('src')
-    ->in('example');
+    ->in('docs/example');
 
 return (new PhpCsFixer\Config())
     ->setRules([

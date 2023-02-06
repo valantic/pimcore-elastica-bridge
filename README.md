@@ -28,7 +28,7 @@ This package is developed by [valantic CEC Schweiz](https://www.valantic.com/en/
 
 ## Usage
 
-Please see the [`example/`](example/) folder for a complete example.
+Please see the [`docs/example/`](docs/example/) folder for a complete example.
 
 Simplified, these are the steps to get the bundle up and running:
 
