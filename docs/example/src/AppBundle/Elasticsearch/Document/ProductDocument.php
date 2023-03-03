@@ -21,11 +21,6 @@ class ProductDocument extends AbstractDocument
         return Product::class;
     }
 
-    public function treatObjectVariantsAsDocuments(): bool
-    {
-        return false;
-    }
-
     public function getPimcoreElement(Document $document): Product
     {
         $el = parent::getPimcoreElement($document);

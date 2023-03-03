@@ -29,7 +29,7 @@ class ProductIndexDocument extends ProductDocument implements IndexDocumentInter
         /** @var Product $element */
         return array_merge(
             $this->plainAttributes($element, ['sku']),
-            $this->localizedAttributes($element, ['name', 'url']),
+            $this->localizedAttributes($element, ['name', 'url'], true),
             $this->relationAttributes(
                 $element,
                 [
@@ -43,5 +43,10 @@ class ProductIndexDocument extends ProductDocument implements IndexDocumentInter
     {
         /** @var Product $element */
         return $element->isPublished();
+    }
+
+    public function treatObjectVariantsAsDocuments(): bool
+    {
+        return false;
     }
 }
