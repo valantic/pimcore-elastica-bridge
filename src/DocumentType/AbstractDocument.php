@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Valantic\ElasticaBridgeBundle\DocumentType;
 
 use Elastica\Document as ElasticaDocument;
+use Pimcore\Model\Asset;
 use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Model\Document as PimcoreDocument;
 use Pimcore\Model\Document\Listing as DocumentListing;
@@ -46,6 +47,10 @@ abstract class AbstractDocument implements DocumentInterface
             return $element->getType() . $element->getId();
         }
 
+        if ($element instanceof Asset) {
+            return DocumentInterface::TYPE_ASSET . $element->getId();
+        }
+
         if ($element instanceof PimcoreDocument) {
             return DocumentInterface::TYPE_DOCUMENT . $element->getId();
         }
@@ -65,6 +70,10 @@ abstract class AbstractDocument implements DocumentInterface
     public function getListingClass(): string
     {
         if (in_array($this->getType(), [DocumentInterface::TYPE_OBJECT, DocumentInterface::TYPE_VARIANT], true)) {
+            return $this->getSubType() . '\Listing';
+        }
+
+        if (in_array($this->getType(), [DocumentInterface::TYPE_ASSET], true)) {
             return $this->getSubType() . '\Listing';
         }
 
