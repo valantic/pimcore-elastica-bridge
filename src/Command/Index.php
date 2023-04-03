@@ -138,6 +138,8 @@ class Index extends BaseCommand
                 $oldIndex->removeAlias($indexConfig->getName());
                 $newIndex->addAlias($indexConfig->getName());
                 $oldIndex->flush();
+
+                $this->output->writeln(sprintf('<comment>-> %s is now active</comment>', $newIndex->getName()));
             }
         }
 
