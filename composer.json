@@ -47,7 +47,9 @@
       "@composer bin all install --ansi"
     ],
     "post-update-cmd": [
-      "@composer bin all update --ansi"
+      "@composer bin all update --ansi",
+      "@composer bin all bump",
+      "@composer bump --dev-only"
     ],
     "phpstan": [
       "./vendor/bin/phpstan analyse --memory-limit=1G"
