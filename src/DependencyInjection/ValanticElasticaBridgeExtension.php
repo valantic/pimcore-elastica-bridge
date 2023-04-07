@@ -19,9 +19,9 @@ use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
  */
 class ValanticElasticaBridgeExtension extends Extension
 {
-    final public const TAG_INDEX = 'valantic.elastica_bridge.index';
-    final public const TAG_DOCUMENT = 'valantic.elastica_bridge.document';
-    final public const TAG_DOCUMENT_INDEX = 'valantic.elastica_bridge.document_index';
+    private const TAG_INDEX = 'valantic.elastica_bridge.index';
+    private const TAG_DOCUMENT = 'valantic.elastica_bridge.document';
+    private const TAG_DOCUMENT_INDEX = 'valantic.elastica_bridge.document_index';
 
     /**
      * {@inheritDoc}

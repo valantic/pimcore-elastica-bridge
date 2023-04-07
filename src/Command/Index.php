@@ -14,6 +14,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Component\Process\Process;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
+use Valantic\ElasticaBridgeBundle\Enum\IndexBlueGreenSuffix;
 use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 use Valantic\ElasticaBridgeBundle\Repository\IndexDocumentRepository;
@@ -188,8 +189,8 @@ class Index extends BaseCommand
             $nonAliasIndex->delete();
         }
 
-        foreach (IndexInterface::INDEX_SUFFIXES as $suffix) {
-            $name = $indexConfig->getName() . $suffix;
+        foreach (IndexBlueGreenSuffix::cases() as $suffix) {
+            $name = $indexConfig->getName() . $suffix->value;
             $aliasIndex = $this->esClient->getIndex($name);
 
             if ($shouldDelete && $aliasIndex->exists()) {
@@ -204,7 +205,7 @@ class Index extends BaseCommand
         try {
             $indexConfig->getBlueGreenActiveSuffix();
         } catch (BlueGreenIndicesIncorrectlySetupException) {
-            $this->esClient->getIndex($indexConfig->getName() . IndexInterface::INDEX_SUFFIX_BLUE)->addAlias($indexConfig->getName());
+            $this->esClient->getIndex($indexConfig->getName() . IndexBlueGreenSuffix::BLUE->value)->addAlias($indexConfig->getName());
         }
 
         $this->output->writeln('<comment>-> Ensured indices are correctly set up with alias</comment>');

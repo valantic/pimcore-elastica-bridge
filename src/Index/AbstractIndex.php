@@ -7,9 +7,10 @@ namespace Valantic\ElasticaBridgeBundle\Index;
 use Elastica\Document;
 use Elastica\Index;
 use Pimcore\Model\Element\AbstractElement;
-use Valantic\ElasticaBridgeBundle\DocumentType\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
+use Valantic\ElasticaBridgeBundle\Enum\DocumentType;
+use Valantic\ElasticaBridgeBundle\Enum\IndexBlueGreenSuffix;
 use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
 use Valantic\ElasticaBridgeBundle\Repository\IndexDocumentRepository;
 
@@ -95,11 +96,7 @@ abstract class AbstractIndex implements IndexInterface
         foreach ($this->getAllowedDocuments() as $allowedDocument) {
             $documentInstance = $this->indexDocumentRepository->get($allowedDocument);
 
-            if (in_array($documentInstance->getType(), [
-                DocumentInterface::TYPE_OBJECT,
-                DocumentInterface::TYPE_VARIANT,
-                DocumentInterface::TYPE_DOCUMENT,
-            ], true) && $documentInstance->getSubType() === $element::class) {
+            if (in_array($documentInstance->getType(), DocumentType::cases(), true) && $documentInstance->getSubType() === $element::class) {
                 return $documentInstance;
             }
         }
@@ -126,15 +123,15 @@ abstract class AbstractIndex implements IndexInterface
     {
         return array_reduce(
             array_map(
-                fn (string $suffix): bool => $this->client->getIndex($this->getName() . $suffix)->exists(),
-                self::INDEX_SUFFIXES
+                fn (IndexBlueGreenSuffix $suffix): bool => $this->client->getIndex($this->getName() . $suffix->value)->exists(),
+                IndexBlueGreenSuffix::cases()
             ),
             fn (bool $carry, bool $item): bool => $item && $carry,
             true
         );
     }
 
-    final public function getBlueGreenActiveSuffix(): string
+    final public function getBlueGreenActiveSuffix(): IndexBlueGreenSuffix
     {
         if (!$this->hasBlueGreenIndices()) {
             throw new BlueGreenIndicesIncorrectlySetupException();
@@ -151,35 +148,24 @@ abstract class AbstractIndex implements IndexInterface
 
         $suffix = substr(array_keys($aliases)[0], strlen($this->getName()));
 
-        if (!in_array($suffix, self::INDEX_SUFFIXES, true)) {
-            throw new BlueGreenIndicesIncorrectlySetupException();
-        }
-
-        return $suffix;
+        return IndexBlueGreenSuffix::tryFrom($suffix) ?? throw new BlueGreenIndicesIncorrectlySetupException();
     }
 
-    final public function getBlueGreenInactiveSuffix(): string
+    final public function getBlueGreenInactiveSuffix(): IndexBlueGreenSuffix
     {
-        $active = $this->getBlueGreenActiveSuffix();
-
-        if ($active === self::INDEX_SUFFIX_BLUE) {
-            return self::INDEX_SUFFIX_GREEN;
-        }
-
-        if ($active === self::INDEX_SUFFIX_GREEN) {
-            return self::INDEX_SUFFIX_BLUE;
-        }
-
-        throw new BlueGreenIndicesIncorrectlySetupException();
+        return match ($this->getBlueGreenActiveSuffix()) {
+            IndexBlueGreenSuffix::BLUE => IndexBlueGreenSuffix::GREEN,
+            IndexBlueGreenSuffix::GREEN => IndexBlueGreenSuffix::BLUE,
+        };
     }
 
     final public function getBlueGreenActiveElasticaIndex(): Index
     {
-        return $this->client->getIndex($this->getName() . $this->getBlueGreenActiveSuffix());
+        return $this->client->getIndex($this->getName() . $this->getBlueGreenActiveSuffix()->value);
     }
 
     final public function getBlueGreenInactiveElasticaIndex(): Index
     {
-        return $this->client->getIndex($this->getName() . $this->getBlueGreenInactiveSuffix());
+        return $this->client->getIndex($this->getName() . $this->getBlueGreenInactiveSuffix()->value);
     }
 }

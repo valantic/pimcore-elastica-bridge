@@ -19,8 +19,8 @@ use Valantic\ElasticaBridgeBundle\Service\DocumentHelper;
 
 class PopulateIndex extends BaseCommand
 {
-    final public const OPTION_CONFIG = 'config';
-    final public const OPTION_INDEX = 'index';
+    private const OPTION_CONFIG = 'config';
+    private const OPTION_INDEX = 'index';
     protected ElasticsearchClient $esClient;
 
     public function __construct(

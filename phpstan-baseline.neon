@@ -36,6 +36,11 @@ parameters:
 			path: src/Command/Refresh.php
 
 		-
+			message: "#^Method Valantic\\\\ElasticaBridgeBundle\\\\DocumentType\\\\AbstractDocument\\:\\:getListingClass\\(\\) should return class\\-string but returns string\\.$#"
+			count: 1
+			path: src/DocumentType/AbstractDocument.php
+
+		-
 			message: "#^Method Valantic\\\\ElasticaBridgeBundle\\\\Repository\\\\DocumentRepository\\:\\:__construct\\(\\) has parameter \\$documents with no value type specified in iterable type iterable\\.$#"
 			count: 1
 			path: src/Repository/DocumentRepository.php

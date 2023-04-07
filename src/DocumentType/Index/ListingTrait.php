@@ -6,7 +6,7 @@ namespace Valantic\ElasticaBridgeBundle\DocumentType\Index;
 
 use Pimcore\Model\DataObject;
 use Pimcore\Model\Listing\AbstractListing;
-use Valantic\ElasticaBridgeBundle\DocumentType\DocumentInterface;
+use Valantic\ElasticaBridgeBundle\Enum\DocumentType;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 
 /**
@@ -14,7 +14,7 @@ use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
  */
 trait ListingTrait
 {
-    abstract public function getType(): string;
+    abstract public function getType(): DocumentType;
 
     abstract public function getSubType(): string;
 
@@ -43,15 +43,15 @@ trait ListingTrait
         $listingInstance = new $listingClass();
         $listingInstance->setCondition($this->getIndexListingCondition());
 
-        if (in_array($this->getType(), [DocumentInterface::TYPE_OBJECT, DocumentInterface::TYPE_DOCUMENT], true)) {
+        if (in_array($this->getType(), DocumentType::casesPublishedState(), true)) {
             $listingInstance->setUnpublished($this->includeUnpublishedElementsInListing());
         }
 
-        if ($this->getType() === DocumentInterface::TYPE_OBJECT && $this->treatObjectVariantsAsDocuments()) {
+        if ($this->getType() === DocumentType::DATA_OBJECT && $this->treatObjectVariantsAsDocuments()) {
             $listingInstance->setObjectTypes([DataObject\AbstractObject::OBJECT_TYPE_OBJECT, DataObject\AbstractObject::OBJECT_TYPE_VARIANT]);
         }
 
-        if (in_array($this->getType(), [DocumentInterface::TYPE_DOCUMENT, DocumentInterface::TYPE_ASSET], true)) {
+        if (in_array($this->getType(), DocumentType::casesSubTypeListing(), true)) {
             $typeCondition = sprintf("`type` = '%s'", $this->getDocumentType());
             if ($this->getIndexListingCondition() !== null) {
                 $listingInstance->setCondition(sprintf('%s AND (%s)', $typeCondition, $this->getIndexListingCondition()));

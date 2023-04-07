@@ -4,26 +4,26 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\DocumentType;
 
-use Elastica\Document as ElasticaDocument;
 use Pimcore\Model\Asset;
 use Pimcore\Model\Document as PimcoreDocument;
 use Pimcore\Model\Document\Listing as DocumentListing;
 use Pimcore\Model\Asset\Listing as AssetListing;
 use Pimcore\Model\Element\AbstractElement;
-use Valantic\ElasticaBridgeBundle\Exception\DocumentType\ElasticsearchDocumentNotFoundException;
+use UnhandledMatchError;
+use Valantic\ElasticaBridgeBundle\Enum\DocumentType;
 use Valantic\ElasticaBridgeBundle\Exception\DocumentType\UnknownPimcoreElementType;
 
 abstract class AbstractDocument implements DocumentInterface
 {
     public function getDocumentType(): ?string
     {
-        if (!in_array($this->getType(), [DocumentInterface::TYPE_DOCUMENT, DocumentInterface::TYPE_ASSET], true)) {
+        if (!in_array($this->getType(), DocumentType::casesSubTypeListing(), true)) {
             return null;
         }
 
         $candidate = null;
 
-        if ($this->getType() === DocumentInterface::TYPE_DOCUMENT) {
+        if ($this->getType() === DocumentType::DOCUMENT) {
             $candidate = [
                 PimcoreDocument\Folder::class => 'folder',
                 PimcoreDocument\Page::class => 'page',
@@ -41,7 +41,7 @@ abstract class AbstractDocument implements DocumentInterface
             }
         }
 
-        if ($this->getType() === DocumentInterface::TYPE_ASSET) {
+        if ($this->getType() === DocumentType::ASSET) {
             $candidate = [
                 Asset\Archive::class => 'archive',
                 Asset\Audio::class => 'audio',
@@ -67,44 +67,36 @@ abstract class AbstractDocument implements DocumentInterface
 
     final public function getElasticsearchId(AbstractElement $element): string
     {
-        if (in_array($element->getType(), DocumentInterface::TYPES, true)) {
-            return $element->getType() . $element->getId();
-        }
+        $documentType = DocumentType::tryFrom($element->getType());
 
         if ($element instanceof Asset) {
-            return DocumentInterface::TYPE_ASSET . $element->getId();
+            return DocumentType::ASSET->value . $element->getId();
         }
 
         if ($element instanceof PimcoreDocument) {
-            return DocumentInterface::TYPE_DOCUMENT . $element->getId();
+            return DocumentType::DOCUMENT->value . $element->getId();
         }
 
-        throw new UnknownPimcoreElementType($element->getType());
-    }
-
-    final public function getPimcoreId(ElasticaDocument $document): int
-    {
-        if ($document->getId() === null) {
-            throw new ElasticsearchDocumentNotFoundException($document->getId());
+        if (in_array($documentType, DocumentType::casesDataObjects(), true)) {
+            return $documentType->value . $element->getId();
         }
 
-        return (int) str_replace(DocumentInterface::TYPES, '', $document->getId());
+        throw new UnknownPimcoreElementType($documentType?->value);
     }
 
+    /**
+     * @return class-string
+     */
     public function getListingClass(): string
     {
-        if (in_array($this->getType(), [DocumentInterface::TYPE_OBJECT, DocumentInterface::TYPE_VARIANT], true)) {
-            return $this->getSubType() . '\Listing';
+        try {
+            return match ($this->getType()) {
+                DocumentType::ASSET => AssetListing::class,
+                DocumentType::DOCUMENT => DocumentListing::class,
+                DocumentType::DATA_OBJECT, DocumentType::VARIANT => $this->getSubType() . '\Listing',
+            };
+        } catch (UnhandledMatchError) {
+            throw new UnknownPimcoreElementType($this->getType()->value);
         }
-
-        if ($this->getType() === DocumentInterface::TYPE_ASSET) {
-            return AssetListing::class;
-        }
-
-        if ($this->getType() === DocumentInterface::TYPE_DOCUMENT) {
-            return DocumentListing::class;
-        }
-
-        throw new UnknownPimcoreElementType($this->getType());
     }
 }

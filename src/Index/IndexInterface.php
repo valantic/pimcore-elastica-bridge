@@ -11,23 +11,11 @@ use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\Command\Index as IndexCommand;
 use Valantic\ElasticaBridgeBundle\DocumentType\Index\DocumentNormalizerTrait;
 use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
+use Valantic\ElasticaBridgeBundle\Enum\IndexBlueGreenSuffix;
 use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
 
 interface IndexInterface
 {
-    /**
-     * The suffix for the blue index.
-     */
-    public const INDEX_SUFFIX_BLUE = '--blue';
-    /**
-     * The suffix for the green index.
-     */
-    public const INDEX_SUFFIX_GREEN = '--green';
-    /**
-     * List of valid index suffixes.
-     */
-    public const INDEX_SUFFIXES = [self::INDEX_SUFFIX_BLUE, self::INDEX_SUFFIX_GREEN];
-
     /**
      * The name of the Elasticsearch index.
      *
@@ -187,22 +175,18 @@ interface IndexInterface
      *
      * @throws BlueGreenIndicesIncorrectlySetupException
      *
-     * @return string
-     *
      * @internal
      */
-    public function getBlueGreenActiveSuffix(): string;
+    public function getBlueGreenActiveSuffix(): IndexBlueGreenSuffix;
 
     /**
      * Returns the currently inactive blue/green suffix.
      *
      * @throws BlueGreenIndicesIncorrectlySetupException
      *
-     * @return string
-     *
      * @internal
      */
-    public function getBlueGreenInactiveSuffix(): string;
+    public function getBlueGreenInactiveSuffix(): IndexBlueGreenSuffix;
 
     /**
      * Returns the currently active blue/green Elastica index.
