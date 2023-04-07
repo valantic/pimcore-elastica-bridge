@@ -51,7 +51,7 @@ interface DocumentInterface
     /**
      * The name of the class to use for listing all the associated Pimcore elements.
      *
-     * @return string
+     * @return class-string
      *
      * @see IndexCommand
      *
