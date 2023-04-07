@@ -29,8 +29,8 @@ trait DocumentRelationAwareDataObjectTrait
         )
             ->search(
                 (new BoolQuery())
-                    ->addFilter(new MatchQuery(IndexDocumentInterface::META_TYPE, IndexDocumentInterface::TYPE_DOCUMENT))
-                    ->addFilter(new MatchQuery(IndexDocumentInterface::ATTRIBUTE_RELATED_OBJECTS, $element->getId()))
+                    ->addFilter(new MatchQuery(DocumentInterface::META_TYPE, DocumentInterface::TYPE_DOCUMENT))
+                    ->addFilter(new MatchQuery(DocumentInterface::ATTRIBUTE_RELATED_OBJECTS, $element->getId()))
             );
 
         return $result->count() > 0;

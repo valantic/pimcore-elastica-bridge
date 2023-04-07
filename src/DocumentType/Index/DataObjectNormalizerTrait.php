@@ -69,7 +69,7 @@ trait DataObjectNormalizerTrait
             Localizedfield::setGetFallbackValues($getFallbackValuesOrig);
         }
 
-        return [IndexDocumentInterface::ATTRIBUTE_LOCALIZED => $result];
+        return [DocumentInterface::ATTRIBUTE_LOCALIZED => $result];
     }
 
     /**
@@ -150,7 +150,7 @@ trait DataObjectNormalizerTrait
             $ids[] = $child->getId();
         }
 
-        return [IndexDocumentInterface::ATTRIBUTE_CHILDREN => $ids];
+        return [DocumentInterface::ATTRIBUTE_CHILDREN => $ids];
     }
 
     /**
@@ -166,10 +166,10 @@ trait DataObjectNormalizerTrait
         foreach ($element->getChildren($objectTypes) as $child) {
             /** @var Concrete $child */
             $carry[] = $child->getId();
-            $carry = $this->childrenRecursive($child, $objectTypes, $carry)[IndexDocumentInterface::ATTRIBUTE_CHILDREN_RECURSIVE];
+            $carry = $this->childrenRecursive($child, $objectTypes, $carry)[DocumentInterface::ATTRIBUTE_CHILDREN_RECURSIVE];
         }
 
-        return [IndexDocumentInterface::ATTRIBUTE_CHILDREN_RECURSIVE => $carry];
+        return [DocumentInterface::ATTRIBUTE_CHILDREN_RECURSIVE => $carry];
     }
 
     /**

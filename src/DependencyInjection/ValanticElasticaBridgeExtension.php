@@ -8,7 +8,7 @@ use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader;
 use Symfony\Component\HttpKernel\DependencyInjection\Extension;
-use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
+use Valantic\ElasticaBridgeBundle\DocumentType\Index\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 
 /**
@@ -19,7 +19,7 @@ use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 class ValanticElasticaBridgeExtension extends Extension
 {
     private const TAG_INDEX = 'valantic.elastica_bridge.index';
-    private const TAG_DOCUMENT_INDEX = 'valantic.elastica_bridge.document_index';
+    private const TAG_DOCUMENT_INDEX = 'valantic.elastica_bridge.document';
 
     /**
      * {@inheritDoc}
@@ -31,7 +31,7 @@ class ValanticElasticaBridgeExtension extends Extension
     public function load(array $configs, ContainerBuilder $container): void
     {
         $container->registerForAutoconfiguration(IndexInterface::class)->addTag(self::TAG_INDEX);
-        $container->registerForAutoconfiguration(IndexDocumentInterface::class)->addTag(self::TAG_DOCUMENT_INDEX);
+        $container->registerForAutoconfiguration(DocumentInterface::class)->addTag(self::TAG_DOCUMENT_INDEX);
 
         $configuration = new Configuration();
         $config = $this->processConfiguration($configuration, $configs);

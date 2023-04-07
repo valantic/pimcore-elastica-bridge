@@ -13,7 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Exception\Command\IndexingFailedException;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
-use Valantic\ElasticaBridgeBundle\Repository\IndexDocumentRepository;
+use Valantic\ElasticaBridgeBundle\Repository\DocumentRepository;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 use Valantic\ElasticaBridgeBundle\Service\DocumentHelper;
 
@@ -25,7 +25,7 @@ class PopulateIndex extends BaseCommand
 
     public function __construct(
         protected IndexRepository $indexRepository,
-        protected IndexDocumentRepository $indexDocumentRepository,
+        protected DocumentRepository $documentRepository,
         protected DocumentHelper $documentHelper,
     ) {
         parent::__construct();
@@ -70,31 +70,31 @@ class PopulateIndex extends BaseCommand
         $progressBar->setFormat('custom');
 
         try {
-            foreach ($indexConfig->getAllowedDocuments() as $indexDocument) {
+            foreach ($indexConfig->getAllowedDocuments() as $document) {
                 $progressBar->setProgress(0);
-                $progressBar->setMessage($indexDocument);
+                $progressBar->setMessage($document);
 
-                $indexDocumentInstance = $this->indexDocumentRepository->get($indexDocument);
+                $documentInstance = $this->documentRepository->get($document);
 
-                $this->documentHelper->setTenantIfNeeded($indexDocumentInstance, $indexConfig);
+                $this->documentHelper->setTenantIfNeeded($documentInstance, $indexConfig);
 
-                $listingCount = $indexDocumentInstance->getListingInstance($indexConfig)->count();
+                $listingCount = $documentInstance->getListingInstance($indexConfig)->count();
                 $progressBar->setMaxSteps($listingCount > 0 ? $listingCount : 1);
                 $esDocuments = [];
 
                 for ($batchNumber = 0; $batchNumber < ceil($listingCount / $indexConfig->getBatchSize()); $batchNumber++) {
-                    $listing = $indexDocumentInstance->getListingInstance($indexConfig);
+                    $listing = $documentInstance->getListingInstance($indexConfig);
                     $listing->setOffset($batchNumber * $indexConfig->getBatchSize());
                     $listing->setLimit($indexConfig->getBatchSize());
 
                     foreach ($listing->getData() as $dataObject) {
                         $progressBar->advance();
 
-                        if (!$indexDocumentInstance->shouldIndex($dataObject)) {
+                        if (!$documentInstance->shouldIndex($dataObject)) {
                             continue;
                         }
 
-                        $esDocuments[] = $this->documentHelper->elementToIndexDocument($indexDocumentInstance, $dataObject);
+                        $esDocuments[] = $this->documentHelper->elementToDocument($documentInstance, $dataObject);
                     }
 
                     if (count($esDocuments) > 0) {
@@ -107,7 +107,7 @@ class PopulateIndex extends BaseCommand
                     $esIndex->addDocuments($esDocuments);
                 }
 
-                if ($indexConfig->refreshIndexAfterEveryIndexDocumentWhenPopulating()) {
+                if ($indexConfig->refreshIndexAfterEveryDocumentWhenPopulating()) {
                     $esIndex->refresh();
                 }
             }
@@ -116,7 +116,7 @@ class PopulateIndex extends BaseCommand
             $this->output->writeln(sprintf(
                 '<fg=red;options=bold>Error while populating index %s, processing documents of type %s, last processed element ID %s.</>',
                 $indexConfig::class,
-                $indexDocument ?? '(N/A)',
+                $document ?? '(N/A)',
                 isset($dataObject) && $dataObject instanceof AbstractElement ? $dataObject->getId() : '(N/A)'
             ));
             $this->output->writeln('');
@@ -132,8 +132,8 @@ class PopulateIndex extends BaseCommand
 
             throw new IndexingFailedException($throwable);
         } finally {
-            if (isset($indexDocumentInstance)) {
-                $this->documentHelper->setTenantIfNeeded($indexDocumentInstance, $indexConfig);
+            if (isset($documentInstance)) {
+                $this->documentHelper->setTenantIfNeeded($documentInstance, $indexConfig);
             }
         }
 

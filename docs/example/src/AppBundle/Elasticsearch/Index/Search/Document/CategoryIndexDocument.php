@@ -9,10 +9,10 @@ use AppBundle\Elasticsearch\Index\Search\SearchIndex;
 use Pimcore\Model\DataObject\Category;
 use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\DocumentType\Index\DataObjectNormalizerTrait;
-use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
+use Valantic\ElasticaBridgeBundle\DocumentType\Index\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\DocumentType\Index\ListingTrait;
 
-class CategoryIndexDocument extends CategoryDocument implements IndexDocumentInterface
+class CategoryIndexDocument extends CategoryDocument implements DocumentInterface
 {
     use DataObjectNormalizerTrait;
     use ListingTrait;

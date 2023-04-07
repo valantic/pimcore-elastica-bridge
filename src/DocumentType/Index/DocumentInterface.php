@@ -18,7 +18,7 @@ use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
  *
  * @see AbstractDocument
  */
-interface IndexDocumentInterface
+interface DocumentInterface
 {
     /**
      * Every Elasticsearch document will contain a __type field, corresponding to DocumentInterface::getType().

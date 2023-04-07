@@ -6,7 +6,7 @@ namespace Valantic\ElasticaBridgeBundle\EventListener\Pimcore;
 
 use Pimcore\Model\DataObject\AbstractObject;
 use Pimcore\Model\Element\AbstractElement;
-use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
+use Valantic\ElasticaBridgeBundle\DocumentType\Index\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Exception\EventListener\PimcoreElementNotFoundException;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
@@ -50,122 +50,122 @@ abstract class AbstractListener
     protected function decideAction(AbstractElement $element): void
     {
         foreach ($this->indexHelper->matchingIndicesForElement($this->indexRepository->flattened(), $element) as $index) {
-            $indexDocument = $index->findIndexDocumentInstanceByPimcore($element);
+            $document = $index->findDocumentInstanceByPimcore($element);
 
-            if (!$indexDocument instanceof IndexDocumentInterface) {
+            if (!$document instanceof DocumentInterface) {
                 continue;
             }
 
-            $this->documentHelper->setTenantIfNeeded($indexDocument, $index);
+            $this->documentHelper->setTenantIfNeeded($document, $index);
 
-            if (!in_array($indexDocument::class, $index->subscribedDocuments(), true)) {
-                $this->documentHelper->resetTenantIfNeeded($indexDocument, $index);
-
-                continue;
-            }
-
-            if ($element->getType() === AbstractObject::OBJECT_TYPE_VARIANT && !$indexDocument->treatObjectVariantsAsDocuments()) {
-                $this->documentHelper->resetTenantIfNeeded($indexDocument, $index);
+            if (!in_array($document::class, $index->subscribedDocuments(), true)) {
+                $this->documentHelper->resetTenantIfNeeded($document, $index);
 
                 continue;
             }
 
-            $elasticsearchId = $indexDocument::getElasticsearchId($element);
+            if ($element->getType() === AbstractObject::OBJECT_TYPE_VARIANT && !$document->treatObjectVariantsAsDocuments()) {
+                $this->documentHelper->resetTenantIfNeeded($document, $index);
+
+                continue;
+            }
+
+            $elasticsearchId = $document::getElasticsearchId($element);
 
             $isPresent = $this->indexHelper->isIdInIndex($elasticsearchId, $index);
 
-            if ($indexDocument->shouldIndex($element)) {
+            if ($document->shouldIndex($element)) {
                 if ($isPresent) {
-                    $this->updateElementInIndex($element, $index, $indexDocument);
+                    $this->updateElementInIndex($element, $index, $document);
                 }
 
                 if (!$isPresent) {
-                    $this->addElementToIndex($element, $index, $indexDocument);
+                    $this->addElementToIndex($element, $index, $document);
                 }
             }
 
-            if (!$indexDocument->shouldIndex($element) && $isPresent) {
-                $this->deleteElementFromIndex($element, $index, $indexDocument);
+            if (!$document->shouldIndex($element) && $isPresent) {
+                $this->deleteElementFromIndex($element, $index, $document);
             }
 
-            $this->documentHelper->resetTenantIfNeeded($indexDocument, $index);
+            $this->documentHelper->resetTenantIfNeeded($document, $index);
         }
     }
 
     protected function ensurePresent(AbstractElement $element): void
     {
         foreach ($this->indexHelper->matchingIndicesForElement($this->indexRepository->flattened(), $element) as $index) {
-            $indexDocument = $index->findIndexDocumentInstanceByPimcore($element);
+            $document = $index->findDocumentInstanceByPimcore($element);
 
-            if (!$indexDocument instanceof IndexDocumentInterface) {
+            if (!$document instanceof DocumentInterface) {
                 continue;
             }
 
-            $this->documentHelper->setTenantIfNeeded($indexDocument, $index);
+            $this->documentHelper->setTenantIfNeeded($document, $index);
 
-            if (!in_array($indexDocument::class, $index->subscribedDocuments(), true) || !$indexDocument->shouldIndex($element)) {
-                $this->documentHelper->resetTenantIfNeeded($indexDocument, $index);
-
-                continue;
-            }
-
-            if ($this->indexHelper->isIdInIndex($indexDocument::getElasticsearchId($element), $index)) {
-                $this->updateElementInIndex($element, $index, $indexDocument);
-                $this->documentHelper->resetTenantIfNeeded($indexDocument, $index);
+            if (!in_array($document::class, $index->subscribedDocuments(), true) || !$document->shouldIndex($element)) {
+                $this->documentHelper->resetTenantIfNeeded($document, $index);
 
                 continue;
             }
 
-            $this->addElementToIndex($element, $index, $indexDocument);
-            $this->documentHelper->resetTenantIfNeeded($indexDocument, $index);
+            if ($this->indexHelper->isIdInIndex($document::getElasticsearchId($element), $index)) {
+                $this->updateElementInIndex($element, $index, $document);
+                $this->documentHelper->resetTenantIfNeeded($document, $index);
+
+                continue;
+            }
+
+            $this->addElementToIndex($element, $index, $document);
+            $this->documentHelper->resetTenantIfNeeded($document, $index);
         }
     }
 
     protected function ensureMissing(AbstractElement $element): void
     {
         foreach ($this->indexHelper->matchingIndicesForElement($this->indexRepository->flattened(), $element) as $index) {
-            $indexDocument = $index->findIndexDocumentInstanceByPimcore($element);
+            $document = $index->findDocumentInstanceByPimcore($element);
 
-            if (!$indexDocument instanceof IndexDocumentInterface) {
+            if (!$document instanceof DocumentInterface) {
                 continue;
             }
 
-            $this->documentHelper->setTenantIfNeeded($indexDocument, $index);
+            $this->documentHelper->setTenantIfNeeded($document, $index);
 
-            if (!in_array($indexDocument::class, $index->subscribedDocuments(), true)) {
-                $this->documentHelper->resetTenantIfNeeded($indexDocument, $index);
+            if (!in_array($document::class, $index->subscribedDocuments(), true)) {
+                $this->documentHelper->resetTenantIfNeeded($document, $index);
 
                 continue;
             }
 
-            $elasticsearchId = $indexDocument::getElasticsearchId($element);
+            $elasticsearchId = $document::getElasticsearchId($element);
 
             if (!$this->indexHelper->isIdInIndex($elasticsearchId, $index)) {
-                $this->documentHelper->resetTenantIfNeeded($indexDocument, $index);
+                $this->documentHelper->resetTenantIfNeeded($document, $index);
 
                 continue;
             }
 
             $index->getElasticaIndex()->deleteById($elasticsearchId);
-            $this->documentHelper->resetTenantIfNeeded($indexDocument, $index);
+            $this->documentHelper->resetTenantIfNeeded($document, $index);
         }
     }
 
-    protected function addElementToIndex(AbstractElement $element, IndexInterface $index, IndexDocumentInterface $indexDocument): void
+    protected function addElementToIndex(AbstractElement $element, IndexInterface $index, DocumentInterface $document): void
     {
-        $document = $this->documentHelper->elementToIndexDocument($indexDocument, $element);
+        $document = $this->documentHelper->elementToDocument($document, $element);
         $index->getElasticaIndex()->addDocument($document);
     }
 
-    protected function updateElementInIndex(AbstractElement $element, IndexInterface $index, IndexDocumentInterface $indexDocument): void
+    protected function updateElementInIndex(AbstractElement $element, IndexInterface $index, DocumentInterface $document): void
     {
-        $document = $this->documentHelper->elementToIndexDocument($indexDocument, $element);
+        $document = $this->documentHelper->elementToDocument($document, $element);
         $index->getElasticaIndex()->addDocument($document); // updateDocument() allows partial updates, hence the full replace here
     }
 
-    protected function deleteElementFromIndex(AbstractElement $element, IndexInterface $index, IndexDocumentInterface $indexDocument): void
+    protected function deleteElementFromIndex(AbstractElement $element, IndexInterface $index, DocumentInterface $document): void
     {
-        $elasticsearchId = $indexDocument::getElasticsearchId($element);
+        $elasticsearchId = $document::getElasticsearchId($element);
         $index->getElasticaIndex()->deleteById($elasticsearchId);
     }
 

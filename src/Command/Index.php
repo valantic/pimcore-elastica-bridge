@@ -17,7 +17,7 @@ use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Enum\IndexBlueGreenSuffix;
 use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
-use Valantic\ElasticaBridgeBundle\Repository\IndexDocumentRepository;
+use Valantic\ElasticaBridgeBundle\Repository\DocumentRepository;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 use Valantic\ElasticaBridgeBundle\Service\DocumentHelper;
 
@@ -30,7 +30,7 @@ class Index extends BaseCommand
 
     public function __construct(
         protected IndexRepository $indexRepository,
-        protected IndexDocumentRepository $indexDocumentRepository,
+        protected DocumentRepository $documentRepository,
         protected ElasticsearchClient $esClient,
         protected DocumentHelper $documentHelper,
         protected KernelInterface $kernel,

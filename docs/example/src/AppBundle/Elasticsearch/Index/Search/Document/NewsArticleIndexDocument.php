@@ -10,11 +10,11 @@ use Pimcore\Model\DataObject\NewsArticle;
 use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\DocumentType\Index\DataObjectNormalizerTrait;
 use Valantic\ElasticaBridgeBundle\DocumentType\Index\DocumentRelationAwareDataObjectTrait;
-use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
+use Valantic\ElasticaBridgeBundle\DocumentType\Index\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\DocumentType\Index\ListingTrait;
 use Valantic\ElasticaBridgeBundle\Service\DeepImplodeTrait;
 
-class NewsArticleIndexDocument extends NewsArticleDocument implements IndexDocumentInterface
+class NewsArticleIndexDocument extends NewsArticleDocument implements DocumentInterface
 {
     use DataObjectNormalizerTrait;
     use DeepImplodeTrait;

@@ -10,7 +10,7 @@ use Elastica\Query;
 use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\Command\Index as IndexCommand;
 use Valantic\ElasticaBridgeBundle\DocumentType\Index\DocumentNormalizerTrait;
-use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
+use Valantic\ElasticaBridgeBundle\DocumentType\Index\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Enum\IndexBlueGreenSuffix;
 use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
 
@@ -81,20 +81,20 @@ interface IndexInterface
     public function getCreateArguments(): array;
 
     /**
-     * Defines the types of documents found in this index. Array of classes implementing IndexDocumentInterface.
+     * Defines the types of documents found in this index. Array of classes implementing DocumentInterface.
      *
-     * @return string[] Class names of IndexDocumentInterface classes
+     * @return string[] Class names of DocumentInterface classes
      *
-     * @see IndexDocumentInterface
+     * @see DocumentInterface
      */
     public function getAllowedDocuments(): array;
 
     /**
      * The documents this index subscribes to i.e. the documents which are updated using event listeners.
      *
-     * @return string[] Class names of IndexDocumentInterface instances
+     * @return string[] Class names of DocumentInterface instances
      *
-     * @see IndexDocumentInterface
+     * @see DocumentInterface
      */
     public function subscribedDocuments(): array;
 
@@ -110,15 +110,15 @@ interface IndexInterface
     public function isElementAllowedInIndex(AbstractElement $element): bool;
 
     /**
-     * Given an Elasticsearch document, returns the associated IndexDocumentInterface.
+     * Given an Elasticsearch document, returns the associated DocumentInterface.
      *
      * @param Document $document
      *
-     * @return IndexDocumentInterface|null
+     * @return DocumentInterface|null
      *
      * @internal
      */
-    public function getIndexDocumentInstance(Document $document): ?IndexDocumentInterface;
+    public function getDocumentInstance(Document $document): ?DocumentInterface;
 
     /**
      * Exposes a pre-configured Elastica client for this index.
@@ -128,13 +128,13 @@ interface IndexInterface
     public function getElasticaIndex(): Index;
 
     /**
-     * Given a Pimcore element, returns the corresponding IndexDocumentInterface.
+     * Given a Pimcore element, returns the corresponding DocumentInterface.
      *
      * @param AbstractElement $element
      *
-     * @return IndexDocumentInterface|null
+     * @return DocumentInterface|null
      */
-    public function findIndexDocumentInstanceByPimcore(AbstractElement $element): ?IndexDocumentInterface;
+    public function findDocumentInstanceByPimcore(AbstractElement $element): ?DocumentInterface;
 
     /**
      * When indexing DataObjects based on usage in Pimcore Documents, the index is queried during indexing.
@@ -149,7 +149,7 @@ interface IndexInterface
      * @see IndexCommand::$isPopulating
      * @see IndexInterface::getBlueGreenInactiveElasticaIndex()
      */
-    public function refreshIndexAfterEveryIndexDocumentWhenPopulating(): bool;
+    public function refreshIndexAfterEveryDocumentWhenPopulating(): bool;
 
     /**
      * Indicates whether this index uses a blue-green setup to ensure re-populating the index doesn't result

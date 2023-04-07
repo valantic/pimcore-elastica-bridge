@@ -13,7 +13,7 @@ use AppBundle\Elasticsearch\SiteSettingLocalesTrait;
 use Elastica\Query\BoolQuery;
 use Elastica\Query\MatchQuery;
 use Elastica\Query\MultiMatch;
-use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
+use Valantic\ElasticaBridgeBundle\DocumentType\Index\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Index\AbstractIndex;
 
 class SearchIndex extends AbstractIndex
@@ -53,7 +53,7 @@ class SearchIndex extends AbstractIndex
 
         return [
             'properties' => [
-                IndexDocumentInterface::ATTRIBUTE_LOCALIZED => [
+                DocumentInterface::ATTRIBUTE_LOCALIZED => [
                     'properties' => $localizedProperties,
                 ],
             ],
@@ -91,7 +91,7 @@ class SearchIndex extends AbstractIndex
         ];
     }
 
-    public function refreshIndexAfterEveryIndexDocumentWhenPopulating(): bool
+    public function refreshIndexAfterEveryDocumentWhenPopulating(): bool
     {
         return true;
     }
@@ -102,8 +102,8 @@ class SearchIndex extends AbstractIndex
             ->addMust(
                 (new MultiMatch())
                     ->setFields([
-                        sprintf('%s.%s.*', IndexDocumentInterface::ATTRIBUTE_LOCALIZED, $locale),
-                        sprintf('%s.%s.%s^3', IndexDocumentInterface::ATTRIBUTE_LOCALIZED, $locale, self::ATTRIBUTE_TITLE),
+                        sprintf('%s.%s.*', DocumentInterface::ATTRIBUTE_LOCALIZED, $locale),
+                        sprintf('%s.%s.%s^3', DocumentInterface::ATTRIBUTE_LOCALIZED, $locale, self::ATTRIBUTE_TITLE),
                     ])
                     ->setQuery($query)
             );

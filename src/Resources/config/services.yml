@@ -46,6 +46,6 @@ services:
       - !tagged_iterator valantic.elastica_bridge.index
 
 
-  Valantic\ElasticaBridgeBundle\Repository\IndexDocumentRepository:
+  Valantic\ElasticaBridgeBundle\Repository\DocumentRepository:
     arguments:
-      - !tagged_iterator valantic.elastica_bridge.document_index
+      - !tagged_iterator valantic.elastica_bridge.document

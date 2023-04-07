@@ -17,7 +17,7 @@ use UnhandledMatchError;
 use Valantic\ElasticaBridgeBundle\Enum\DocumentType;
 use Valantic\ElasticaBridgeBundle\Exception\DocumentType\UnknownPimcoreElementType;
 
-abstract class AbstractIndexDocument implements IndexDocumentInterface
+abstract class AbstractDocument implements DocumentInterface
 {
     public function getDocumentType(): ?string
     {

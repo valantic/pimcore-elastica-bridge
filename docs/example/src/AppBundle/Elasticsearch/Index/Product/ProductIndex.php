@@ -11,12 +11,12 @@ use Elastica\Query\MatchQuery;
 use Elastica\Query\MultiMatch;
 use Pimcore\Model\DataObject\Category;
 use Pimcore\Model\DataObject\Product;
-use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
+use Valantic\ElasticaBridgeBundle\DocumentType\Index\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Index\AbstractIndex;
 use Valantic\ElasticaBridgeBundle\Index\TenantAwareInterface;
 use Valantic\ElasticaBridgeBundle\Index\TenantAwareTrait;
-use Valantic\ElasticaBridgeBundle\Repository\IndexDocumentRepository;
+use Valantic\ElasticaBridgeBundle\Repository\DocumentRepository;
 
 class ProductIndex extends AbstractIndex implements TenantAwareInterface
 {
@@ -25,7 +25,7 @@ class ProductIndex extends AbstractIndex implements TenantAwareInterface
     public const ATTRIBUTE_CATEGORIES = 'categories';
     protected CategoryIndex $categoryIndex;
 
-    public function __construct(ElasticsearchClient $client, IndexDocumentRepository $indexDocumentRepository, CategoryIndex $categoryIndex)
+    public function __construct(ElasticsearchClient $client, DocumentRepository $indexDocumentRepository, CategoryIndex $categoryIndex)
     {
         parent::__construct($client, $indexDocumentRepository);
 
@@ -54,12 +54,12 @@ class ProductIndex extends AbstractIndex implements TenantAwareInterface
             ->addMust(
                 (new MultiMatch())
                     ->setFields([
-                        sprintf('%s.%s.*', IndexDocumentInterface::ATTRIBUTE_LOCALIZED, $locale),
+                        sprintf('%s.%s.*', DocumentInterface::ATTRIBUTE_LOCALIZED, $locale),
                     ])
                     ->setQuery($query)
             )
-            ->addFilter(new MatchQuery(IndexDocumentInterface::META_TYPE, IndexDocumentInterface::TYPE_OBJECT))
-            ->addFilter(new MatchQuery(IndexDocumentInterface::META_SUB_TYPE, Product::class));
+            ->addFilter(new MatchQuery(DocumentInterface::META_TYPE, DocumentInterface::TYPE_OBJECT))
+            ->addFilter(new MatchQuery(DocumentInterface::META_SUB_TYPE, Product::class));
     }
 
     public function getTenants(): array

@@ -7,19 +7,21 @@ namespace Valantic\ElasticaBridgeBundle\Index;
 use Elastica\Document;
 use Elastica\Index;
 use Pimcore\Model\Element\AbstractElement;
-use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
+use Valantic\ElasticaBridgeBundle\DocumentType\Index\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Enum\DocumentType;
 use Valantic\ElasticaBridgeBundle\Enum\IndexBlueGreenSuffix;
 use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
-use Valantic\ElasticaBridgeBundle\Repository\IndexDocumentRepository;
+use Valantic\ElasticaBridgeBundle\Repository\DocumentRepository;
 
 abstract class AbstractIndex implements IndexInterface
 {
     protected bool $areGlobalFiltersEnabled = true;
 
-    public function __construct(protected ElasticsearchClient $client, protected IndexDocumentRepository $indexDocumentRepository)
-    {
+    public function __construct(
+        protected ElasticsearchClient $client,
+        protected DocumentRepository $documentRepository,
+    ) {
     }
 
     public function getGlobalFilters(): array
@@ -72,16 +74,16 @@ abstract class AbstractIndex implements IndexInterface
 
     public function isElementAllowedInIndex(AbstractElement $element): bool
     {
-        return $this->findIndexDocumentInstanceByPimcore($element) instanceof IndexDocumentInterface;
+        return $this->findDocumentInstanceByPimcore($element) instanceof DocumentInterface;
     }
 
-    public function getIndexDocumentInstance(Document $document): ?IndexDocumentInterface
+    public function getDocumentInstance(Document $document): ?DocumentInterface
     {
-        $type = $document->get(IndexDocumentInterface::META_TYPE);
-        $subType = $document->get(IndexDocumentInterface::META_SUB_TYPE);
+        $type = $document->get(DocumentInterface::META_TYPE);
+        $subType = $document->get(DocumentInterface::META_SUB_TYPE);
 
         foreach ($this->getAllowedDocuments() as $allowedDocument) {
-            $documentInstance = $this->indexDocumentRepository->get($allowedDocument);
+            $documentInstance = $this->documentRepository->get($allowedDocument);
 
             if ($documentInstance->getType() === $type && $documentInstance->getSubType() === $subType) {
                 return $documentInstance;
@@ -91,10 +93,10 @@ abstract class AbstractIndex implements IndexInterface
         return null;
     }
 
-    public function findIndexDocumentInstanceByPimcore(AbstractElement $element): ?IndexDocumentInterface
+    public function findDocumentInstanceByPimcore(AbstractElement $element): ?DocumentInterface
     {
         foreach ($this->getAllowedDocuments() as $allowedDocument) {
-            $documentInstance = $this->indexDocumentRepository->get($allowedDocument);
+            $documentInstance = $this->documentRepository->get($allowedDocument);
 
             if (in_array($documentInstance->getType(), DocumentType::cases(), true) && $documentInstance->getSubType() === $element::class) {
                 return $documentInstance;
@@ -109,7 +111,7 @@ abstract class AbstractIndex implements IndexInterface
         return $this->getAllowedDocuments();
     }
 
-    public function refreshIndexAfterEveryIndexDocumentWhenPopulating(): bool
+    public function refreshIndexAfterEveryDocumentWhenPopulating(): bool
     {
         return false;
     }

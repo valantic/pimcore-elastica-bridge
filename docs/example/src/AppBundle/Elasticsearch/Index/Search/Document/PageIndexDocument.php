@@ -14,11 +14,11 @@ use Pimcore\Model\Document;
 use Pimcore\Model\Document\Page;
 use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\DocumentType\Index\DocumentNormalizerTrait;
-use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
+use Valantic\ElasticaBridgeBundle\DocumentType\Index\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\DocumentType\Index\ListingTrait;
 use Valantic\ElasticaBridgeBundle\Service\DeepImplodeTrait;
 
-class PageIndexDocument extends PageDocument implements IndexDocumentInterface
+class PageIndexDocument extends PageDocument implements DocumentInterface
 {
     use DeepImplodeTrait;
     use DocumentNormalizerTrait {
@@ -49,14 +49,14 @@ class PageIndexDocument extends PageDocument implements IndexDocumentInterface
         $locale = $element->getProperty(DocumentPropertyConstants::LANGUAGE);
 
         return [
-            IndexDocumentInterface::ATTRIBUTE_LOCALIZED => [
+            DocumentInterface::ATTRIBUTE_LOCALIZED => [
                 $locale => [
                     SearchIndex::ATTRIBUTE_TITLE => $element->getTitle(),
                     SearchIndex::ATTRIBUTE_URL => $element->getFullPath(),
                     SearchIndex::ATTRIBUTE_HTML => $html,
                 ],
             ],
-            IndexDocumentInterface::ATTRIBUTE_RELATED_OBJECTS => array_values($relatedObjects),
+            DocumentInterface::ATTRIBUTE_RELATED_OBJECTS => array_values($relatedObjects),
             SearchIndex::ATTRIBUTE_LOCALE => $locale,
         ];
     }
