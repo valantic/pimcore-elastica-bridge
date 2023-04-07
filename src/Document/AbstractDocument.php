@@ -19,80 +19,9 @@ use Valantic\ElasticaBridgeBundle\Exception\DocumentType\UnknownPimcoreElementTy
 
 abstract class AbstractDocument implements DocumentInterface
 {
-    public function getDocumentType(): ?string
-    {
-        if (!in_array($this->getType(), DocumentType::casesSubTypeListing(), true)) {
-            return null;
-        }
-
-        $candidate = null;
-
-        if ($this->getType() === DocumentType::DOCUMENT) {
-            $candidate = [
-                PimcoreDocument\Folder::class => 'folder',
-                PimcoreDocument\Page::class => 'page',
-                PimcoreDocument\Snippet::class => 'snippet',
-                PimcoreDocument\Link::class => 'link',
-                PimcoreDocument\Hardlink::class => 'hardlink',
-                PimcoreDocument\Email::class => 'email',
-                PimcoreDocument\Newsletter::class => 'newsletter',
-                PimcoreDocument\Printpage::class => 'printpage',
-                PimcoreDocument\Printcontainer::class => 'printcontainer',
-            ][$this->getSubType()] ?? null;
-
-            if (!in_array($candidate, PimcoreDocument::getTypes(), true)) {
-                throw new UnknownPimcoreElementType($candidate);
-            }
-        }
-
-        if ($this->getType() === DocumentType::ASSET) {
-            $candidate = [
-                Asset\Archive::class => 'archive',
-                Asset\Audio::class => 'audio',
-                Asset\Document::class => 'document',
-                Asset\Folder::class => 'folder',
-                Asset\Image::class => 'image',
-                Asset\Text::class => 'text',
-                Asset\Unknown::class => 'unknown',
-                Asset\Video::class => 'video',
-            ][$this->getSubType()] ?? null;
-
-            if (!in_array($candidate, Asset::getTypes(), true)) {
-                throw new UnknownPimcoreElementType($candidate);
-            }
-        }
-
-        if ($candidate === null) {
-            throw new UnknownPimcoreElementType($candidate);
-        }
-
-        return $candidate;
-    }
-
-    /**
-     * @return class-string
-     */
-    public function getListingClass(): string
-    {
-        try {
-            return match ($this->getType()) {
-                DocumentType::ASSET => AssetListing::class,
-                DocumentType::DOCUMENT => DocumentListing::class,
-                DocumentType::DATA_OBJECT, DocumentType::VARIANT => $this->getSubType() . '\Listing',
-            };
-        } catch (UnhandledMatchError) {
-            throw new UnknownPimcoreElementType($this->getType()->value);
-        }
-    }
-
     public function treatObjectVariantsAsDocuments(): bool
     {
         return false;
-    }
-
-    public function getIndexListingCondition(): ?string
-    {
-        return null;
     }
 
     public function getListingInstance(IndexInterface $index): AbstractListing
@@ -147,6 +76,77 @@ abstract class AbstractDocument implements DocumentInterface
         }
 
         throw new UnknownPimcoreElementType($documentType?->value);
+    }
+
+    protected function getDocumentType(): ?string
+    {
+        if (!in_array($this->getType(), DocumentType::casesSubTypeListing(), true)) {
+            return null;
+        }
+
+        $candidate = null;
+
+        if ($this->getType() === DocumentType::DOCUMENT) {
+            $candidate = [
+                PimcoreDocument\Folder::class => 'folder',
+                PimcoreDocument\Page::class => 'page',
+                PimcoreDocument\Snippet::class => 'snippet',
+                PimcoreDocument\Link::class => 'link',
+                PimcoreDocument\Hardlink::class => 'hardlink',
+                PimcoreDocument\Email::class => 'email',
+                PimcoreDocument\Newsletter::class => 'newsletter',
+                PimcoreDocument\Printpage::class => 'printpage',
+                PimcoreDocument\Printcontainer::class => 'printcontainer',
+            ][$this->getSubType()] ?? null;
+
+            if (!in_array($candidate, PimcoreDocument::getTypes(), true)) {
+                throw new UnknownPimcoreElementType($candidate);
+            }
+        }
+
+        if ($this->getType() === DocumentType::ASSET) {
+            $candidate = [
+                Asset\Archive::class => 'archive',
+                Asset\Audio::class => 'audio',
+                Asset\Document::class => 'document',
+                Asset\Folder::class => 'folder',
+                Asset\Image::class => 'image',
+                Asset\Text::class => 'text',
+                Asset\Unknown::class => 'unknown',
+                Asset\Video::class => 'video',
+            ][$this->getSubType()] ?? null;
+
+            if (!in_array($candidate, Asset::getTypes(), true)) {
+                throw new UnknownPimcoreElementType($candidate);
+            }
+        }
+
+        if ($candidate === null) {
+            throw new UnknownPimcoreElementType($candidate);
+        }
+
+        return $candidate;
+    }
+
+    /**
+     * @return class-string
+     */
+    protected function getListingClass(): string
+    {
+        try {
+            return match ($this->getType()) {
+                DocumentType::ASSET => AssetListing::class,
+                DocumentType::DOCUMENT => DocumentListing::class,
+                DocumentType::DATA_OBJECT, DocumentType::VARIANT => $this->getSubType() . '\Listing',
+            };
+        } catch (UnhandledMatchError) {
+            throw new UnknownPimcoreElementType($this->getType()->value);
+        }
+    }
+
+    protected function getIndexListingCondition(): ?string
+    {
+        return null;
     }
 
     protected function includeUnpublishedElementsInListing(): bool

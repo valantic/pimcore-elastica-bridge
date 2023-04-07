@@ -7,13 +7,10 @@ namespace Valantic\ElasticaBridgeBundle\Document;
 use Valantic\ElasticaBridgeBundle\Enum\DocumentType;
 use Pimcore\Model\Element\AbstractElement;
 use Pimcore\Model\Listing\AbstractListing;
-use Valantic\ElasticaBridgeBundle\Command\Index as IndexCommand;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 
 /**
  * Describes how a Pimcore element relates to an Elasticsearch in the context of this index.
- *
- * @see AbstractDocument
  */
 interface DocumentInterface
 {
@@ -67,24 +64,6 @@ interface DocumentInterface
     public function getSubType(): string;
 
     /**
-     * @return string|null
-     *
-     * @internal
-     */
-    public function getDocumentType(): ?string;
-
-    /**
-     * The name of the class to use for listing all the associated Pimcore elements.
-     *
-     * @return class-string
-     *
-     * @see IndexCommand
-     *
-     * @internal
-     */
-    public function getListingClass(): string;
-
-    /**
      * Returns the normalization of the Pimcore element.
      * This is how the Pimcore element will be stored in the Elasticsearch document.
      *
@@ -103,13 +82,6 @@ interface DocumentInterface
     public function shouldIndex(AbstractElement $element): bool;
 
     /**
-     * Conditions to pass to the listing of Pimcore elements.
-     *
-     * @see IndexCommand
-     */
-    public function getIndexListingCondition(): ?string; // TODO: refactor to use array of interfaces
-
-    /**
      * @see ListingTrait
      */
     public function getListingInstance(IndexInterface $index): AbstractListing;
@@ -121,8 +93,6 @@ interface DocumentInterface
 
     /**
      * Returns the Elasticsearch ID for a Pimcore element.
-     *
-     * @param AbstractElement $element
      *
      * @return string
      *
