@@ -140,15 +140,6 @@ interface IndexInterface
     public function getElasticaIndex(): Index;
 
     /**
-     * Given a Pimcore element, returns the corresponding Elasticsearch document (if available).
-     *
-     * @param AbstractElement $element
-     *
-     * @return Document|null
-     */
-    public function getDocumentFromElement(AbstractElement $element): ?Document;
-
-    /**
      * Given a Pimcore element, returns the corresponding IndexDocumentInterface.
      *
      * @param AbstractElement $element

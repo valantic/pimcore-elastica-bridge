@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AppBundle\Elasticsearch\Document;
 
-use Elastica\Document;
 use Pimcore\Model\Document\Page;
 use Valantic\ElasticaBridgeBundle\DocumentType\AbstractDocument;
 use Valantic\ElasticaBridgeBundle\DocumentType\DocumentInterface;
@@ -24,16 +23,5 @@ class PageDocument extends AbstractDocument
     public function treatObjectVariantsAsDocuments(): bool
     {
         return false;
-    }
-
-    public function getPimcoreElement(Document $document): Page
-    {
-        $el = parent::getPimcoreElement($document);
-
-        if (!($el instanceof Page)) {
-            throw new \InvalidArgumentException();
-        }
-
-        return $el;
     }
 }

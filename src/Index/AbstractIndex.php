@@ -6,10 +6,7 @@ namespace Valantic\ElasticaBridgeBundle\Index;
 
 use Elastica\Document;
 use Elastica\Index;
-use Elastica\Query;
-use Elastica\ResultSet;
 use Pimcore\Model\Element\AbstractElement;
-use RuntimeException;
 use Valantic\ElasticaBridgeBundle\DocumentType\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
@@ -93,21 +90,6 @@ abstract class AbstractIndex implements IndexInterface
         return null;
     }
 
-    public function getDocumentFromElement(AbstractElement $element): ?Document
-    {
-        $documentInstance = $this->findIndexDocumentInstanceByPimcore($element);
-
-        if (!$documentInstance instanceof IndexDocumentInterface) {
-            return null;
-        }
-
-        try {
-            return $this->getElasticaIndex()->getDocument($documentInstance->getElasticsearchId($element));
-        } catch (RuntimeException) {
-            return null;
-        }
-    }
-
     public function findIndexDocumentInstanceByPimcore(AbstractElement $element): ?IndexDocumentInterface
     {
         foreach ($this->getAllowedDocuments() as $allowedDocument) {
@@ -123,43 +105,6 @@ abstract class AbstractIndex implements IndexInterface
         }
 
         return null;
-    }
-
-    /**
-     * @param int $size Max number of elements to be retrieved aka limit
-     * @param int $from Number of elements to skip from the beginning aka offset
-     *
-     * @return AbstractElement[]
-     */
-    public function searchForElements(Query\AbstractQuery $query, int $size = 10, int $from = 0): array
-    {
-        return $this->documentResultToElements(
-            $this->getElasticaIndex()
-                ->search(
-                    (new Query($query))
-                        ->setSize($size)
-                        ->setFrom($from)
-                )
-        );
-    }
-
-    /**
-     * @return AbstractElement[]
-     */
-    public function documentResultToElements(ResultSet $result): array
-    {
-        $elements = [];
-        foreach ($result->getDocuments() as $esDoc) {
-            $instance = $this->getIndexDocumentInstance($esDoc);
-
-            if (!$instance instanceof IndexDocumentInterface) {
-                continue;
-            }
-
-            $elements[] = $instance->getPimcoreElement($esDoc);
-        }
-
-        return $elements;
     }
 
     public function subscribedDocuments(): array

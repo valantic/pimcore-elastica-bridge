@@ -92,14 +92,4 @@ interface DocumentInterface
      * @internal
      */
     public function getListingClass(): string;
-
-    /**
-     * Given an Elasticsearch document, return the corresponding Pimcore element.
-     * This method can be overridden to use the correct return type for that instance.
-     *
-     * @param Document $document
-     *
-     * @return AbstractElement
-     */
-    public function getPimcoreElement(Document $document): AbstractElement;
 }

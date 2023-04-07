@@ -6,13 +6,11 @@ namespace Valantic\ElasticaBridgeBundle\DocumentType;
 
 use Elastica\Document as ElasticaDocument;
 use Pimcore\Model\Asset;
-use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Model\Document as PimcoreDocument;
 use Pimcore\Model\Document\Listing as DocumentListing;
 use Pimcore\Model\Asset\Listing as AssetListing;
 use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\Exception\DocumentType\ElasticsearchDocumentNotFoundException;
-use Valantic\ElasticaBridgeBundle\Exception\DocumentType\PimcoreElementNotFoundException;
 use Valantic\ElasticaBridgeBundle\Exception\DocumentType\UnknownPimcoreElementType;
 
 abstract class AbstractDocument implements DocumentInterface
@@ -105,35 +103,6 @@ abstract class AbstractDocument implements DocumentInterface
 
         if ($this->getType() === DocumentInterface::TYPE_DOCUMENT) {
             return DocumentListing::class;
-        }
-
-        throw new UnknownPimcoreElementType($this->getType());
-    }
-
-    public function getPimcoreElement(ElasticaDocument $document): AbstractElement
-    {
-        if (in_array($this->getType(), [DocumentInterface::TYPE_OBJECT, DocumentInterface::TYPE_VARIANT], true)) {
-            $pimcoreId = $this->getPimcoreId($document);
-            $element = Concrete::getById($pimcoreId);
-
-            if (!$element instanceof Concrete) {
-                throw new PimcoreElementNotFoundException($pimcoreId);
-            }
-
-            return $element;
-        }
-
-        if ($this->getType() === DocumentInterface::TYPE_DOCUMENT) {
-            /** @var PimcoreDocument $documentTypeClass */
-            $documentTypeClass = $this->getSubType();
-            $pimcoreId = $this->getPimcoreId($document);
-            $element = $documentTypeClass::getById($pimcoreId);
-
-            if (!$element instanceof PimcoreDocument) {
-                throw new PimcoreElementNotFoundException($pimcoreId);
-            }
-
-            return $element;
         }
 
         throw new UnknownPimcoreElementType($this->getType());
