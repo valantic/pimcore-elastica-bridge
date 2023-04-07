@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Valantic\ElasticaBridgeBundle\DocumentType;
 
 use Elastica\Document as ElasticaDocument;
+use Pimcore\Model\Asset;
 use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Model\Document as PimcoreDocument;
 use Pimcore\Model\Document\Listing as DocumentListing;
+use Pimcore\Model\Asset\Listing as AssetListing;
 use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\Exception\DocumentType\ElasticsearchDocumentNotFoundException;
 use Valantic\ElasticaBridgeBundle\Exception\DocumentType\PimcoreElementNotFoundException;
@@ -17,23 +19,48 @@ abstract class AbstractDocument implements DocumentInterface
 {
     public function getDocumentType(): ?string
     {
-        if ($this->getType() !== DocumentInterface::TYPE_DOCUMENT) {
+        if (!in_array($this->getType(), [DocumentInterface::TYPE_DOCUMENT, DocumentInterface::TYPE_ASSET], true)) {
             return null;
         }
 
-        $candidate = [
-            PimcoreDocument\Folder::class => 'folder',
-            PimcoreDocument\Page::class => 'page',
-            PimcoreDocument\Snippet::class => 'snippet',
-            PimcoreDocument\Link::class => 'link',
-            PimcoreDocument\Hardlink::class => 'hardlink',
-            PimcoreDocument\Email::class => 'email',
-            PimcoreDocument\Newsletter::class => 'newsletter',
-            PimcoreDocument\Printpage::class => 'printpage',
-            PimcoreDocument\Printcontainer::class => 'printcontainer',
-        ][$this->getSubType()] ?? null;
+        $candidate = null;
 
-        if ($candidate === null || !in_array($candidate, PimcoreDocument::getTypes(), true)) {
+        if ($this->getType() === DocumentInterface::TYPE_DOCUMENT) {
+            $candidate = [
+                PimcoreDocument\Folder::class => 'folder',
+                PimcoreDocument\Page::class => 'page',
+                PimcoreDocument\Snippet::class => 'snippet',
+                PimcoreDocument\Link::class => 'link',
+                PimcoreDocument\Hardlink::class => 'hardlink',
+                PimcoreDocument\Email::class => 'email',
+                PimcoreDocument\Newsletter::class => 'newsletter',
+                PimcoreDocument\Printpage::class => 'printpage',
+                PimcoreDocument\Printcontainer::class => 'printcontainer',
+            ][$this->getSubType()] ?? null;
+
+            if (!in_array($candidate, PimcoreDocument::getTypes(), true)) {
+                throw new UnknownPimcoreElementType($candidate);
+            }
+        }
+
+        if ($this->getType() === DocumentInterface::TYPE_ASSET) {
+            $candidate = [
+                Asset\Archive::class => 'archive',
+                Asset\Audio::class => 'audio',
+                Asset\Document::class => 'document',
+                Asset\Folder::class => 'folder',
+                Asset\Image::class => 'image',
+                Asset\Text::class => 'text',
+                Asset\Unknown::class => 'unknown',
+                Asset\Video::class => 'video',
+            ][$this->getSubType()] ?? null;
+
+            if (!in_array($candidate, Asset::getTypes(), true)) {
+                throw new UnknownPimcoreElementType($candidate);
+            }
+        }
+
+        if ($candidate === null) {
             throw new UnknownPimcoreElementType($candidate);
         }
 
@@ -44,6 +71,10 @@ abstract class AbstractDocument implements DocumentInterface
     {
         if (in_array($element->getType(), DocumentInterface::TYPES, true)) {
             return $element->getType() . $element->getId();
+        }
+
+        if ($element instanceof Asset) {
+            return DocumentInterface::TYPE_ASSET . $element->getId();
         }
 
         if ($element instanceof PimcoreDocument) {
@@ -68,8 +99,11 @@ abstract class AbstractDocument implements DocumentInterface
             return $this->getSubType() . '\Listing';
         }
 
+        if (in_array($this->getType(), [DocumentInterface::TYPE_ASSET], true)) {
+            return AssetListing::class;
+        }
+
         if ($this->getType() === DocumentInterface::TYPE_DOCUMENT) {
-            // TODO: this listing doesn't seem to have an option to e.g. only list Hardlinks
             return DocumentListing::class;
         }
 

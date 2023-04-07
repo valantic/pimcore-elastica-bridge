@@ -51,7 +51,7 @@ trait ListingTrait
             $listingInstance->setObjectTypes([DataObject\AbstractObject::OBJECT_TYPE_OBJECT, DataObject\AbstractObject::OBJECT_TYPE_VARIANT]);
         }
 
-        if ($this->getType() === DocumentInterface::TYPE_DOCUMENT) {
+        if (in_array($this->getType(), [DocumentInterface::TYPE_DOCUMENT, DocumentInterface::TYPE_ASSET], true)) {
             $typeCondition = sprintf("`type` = '%s'", $this->getDocumentType());
             if ($this->getIndexListingCondition() !== null) {
                 $listingInstance->setCondition(sprintf('%s AND (%s)', $typeCondition, $this->getIndexListingCondition()));
