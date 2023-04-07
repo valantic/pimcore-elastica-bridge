@@ -13,6 +13,7 @@ use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Component\Process\Process;
+use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
@@ -236,6 +237,11 @@ class Index extends BaseCommand
         $esDocs = $index->search();
         $esDoc = $esDocs[random_int(0, $esDocs->count() - 1)]->getDocument();
         $indexDocumentInstance = $indexConfig->getIndexDocumentInstance($esDoc);
-        $this->output->writeln(sprintf('<comment>-> ES %s -> %s %s</comment>', $esDoc->getId(), $indexDocumentInstance ? $indexDocumentInstance->getPimcoreElement($esDoc)->getType() : 'FAILED', $indexDocumentInstance ? $indexDocumentInstance->getPimcoreElement($esDoc)->getId() : 'FAILED'));
+        $this->output->writeln(sprintf(
+            '<comment>-> ES %s -> %s %s</comment>',
+            $esDoc->getId(),
+            $indexDocumentInstance instanceof IndexDocumentInterface ? $indexDocumentInstance->getPimcoreElement($esDoc)->getType() : 'FAILED',
+            $indexDocumentInstance instanceof IndexDocumentInterface ? $indexDocumentInstance->getPimcoreElement($esDoc)->getId() : 'FAILED'
+        ));
     }
 }

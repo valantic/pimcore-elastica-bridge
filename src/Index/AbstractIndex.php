@@ -74,7 +74,7 @@ abstract class AbstractIndex implements IndexInterface
 
     public function isElementAllowedInIndex(AbstractElement $element): bool
     {
-        return $this->findIndexDocumentInstanceByPimcore($element) !== null;
+        return $this->findIndexDocumentInstanceByPimcore($element) instanceof IndexDocumentInterface;
     }
 
     public function getIndexDocumentInstance(Document $document): ?IndexDocumentInterface
@@ -97,7 +97,7 @@ abstract class AbstractIndex implements IndexInterface
     {
         $documentInstance = $this->findIndexDocumentInstanceByPimcore($element);
 
-        if (!$documentInstance) {
+        if (!$documentInstance instanceof IndexDocumentInterface) {
             return null;
         }
 
@@ -152,7 +152,7 @@ abstract class AbstractIndex implements IndexInterface
         foreach ($result->getDocuments() as $esDoc) {
             $instance = $this->getIndexDocumentInstance($esDoc);
 
-            if (!$instance) {
+            if (!$instance instanceof IndexDocumentInterface) {
                 continue;
             }
 
@@ -197,7 +197,7 @@ abstract class AbstractIndex implements IndexInterface
 
         $aliases = array_filter(
             $this->client->request('_aliases')->getData(),
-            fn (array $datum): bool => in_array($this->getName(), array_keys($datum['aliases']), true)
+            fn (array $datum): bool => array_key_exists($this->getName(), $datum['aliases'])
         );
 
         if (count($aliases) !== 1) {

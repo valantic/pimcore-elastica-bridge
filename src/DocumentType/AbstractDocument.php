@@ -99,7 +99,7 @@ abstract class AbstractDocument implements DocumentInterface
             return $this->getSubType() . '\Listing';
         }
 
-        if (in_array($this->getType(), [DocumentInterface::TYPE_ASSET], true)) {
+        if ($this->getType() === DocumentInterface::TYPE_ASSET) {
             return AssetListing::class;
         }
 
@@ -116,7 +116,7 @@ abstract class AbstractDocument implements DocumentInterface
             $pimcoreId = $this->getPimcoreId($document);
             $element = Concrete::getById($pimcoreId);
 
-            if ($element === null) {
+            if (!$element instanceof Concrete) {
                 throw new PimcoreElementNotFoundException($pimcoreId);
             }
 
@@ -129,7 +129,7 @@ abstract class AbstractDocument implements DocumentInterface
             $pimcoreId = $this->getPimcoreId($document);
             $element = $documentTypeClass::getById($pimcoreId);
 
-            if ($element === null) {
+            if (!$element instanceof PimcoreDocument) {
                 throw new PimcoreElementNotFoundException($pimcoreId);
             }
 

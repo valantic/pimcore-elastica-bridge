@@ -52,7 +52,7 @@ abstract class AbstractListener
         foreach ($this->indexHelper->matchingIndicesForElement($this->indexRepository->flattened(), $element) as $index) {
             $indexDocument = $index->findIndexDocumentInstanceByPimcore($element);
 
-            if (!$indexDocument) {
+            if (!$indexDocument instanceof IndexDocumentInterface) {
                 continue;
             }
 
@@ -94,7 +94,7 @@ abstract class AbstractListener
         foreach ($this->indexHelper->matchingIndicesForElement($this->indexRepository->flattened(), $element) as $index) {
             $indexDocument = $index->findIndexDocumentInstanceByPimcore($element);
 
-            if (!$indexDocument) {
+            if (!$indexDocument instanceof IndexDocumentInterface) {
                 continue;
             }
 
@@ -121,7 +121,7 @@ abstract class AbstractListener
         foreach ($this->indexHelper->matchingIndicesForElement($this->indexRepository->flattened(), $element) as $index) {
             $indexDocument = $index->findIndexDocumentInstanceByPimcore($element);
 
-            if (!$indexDocument) {
+            if (!$indexDocument instanceof IndexDocumentInterface) {
                 continue;
             }
 

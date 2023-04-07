@@ -121,7 +121,7 @@ class PopulateIndex extends BaseCommand
             $this->output->writeln('');
             $this->output->writeln(sprintf('In %s line %d', $throwable->getFile(), $throwable->getLine()));
             $this->output->writeln('');
-            if ($throwable->getMessage()) {
+            if (!empty($throwable->getMessage())) {
                 $this->output->writeln($throwable->getMessage());
                 $this->output->writeln('');
             }
