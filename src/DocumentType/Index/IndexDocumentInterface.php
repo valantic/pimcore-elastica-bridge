@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\DocumentType\Index;
 
+use Elastica\Document;
+use Valantic\ElasticaBridgeBundle\Enum\DocumentType;
 use Pimcore\Model\Element\AbstractElement;
 use Pimcore\Model\Listing\AbstractListing;
 use Valantic\ElasticaBridgeBundle\Command\Index as IndexCommand;
@@ -13,12 +15,10 @@ use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 
 /**
  * Describes how a Pimcore element relates to an Elasticsearch in the context of this index.
- * Classes implementing this interface may extend an AbstractDocument and certain methods could be implemented there
- * to result in DRYer code.
  *
  * @see AbstractDocument
  */
-interface IndexDocumentInterface extends DocumentInterface
+interface IndexDocumentInterface
 {
     /**
      * Every Elasticsearch document will contain a __type field, corresponding to DocumentInterface::getType().
@@ -56,6 +56,47 @@ interface IndexDocumentInterface extends DocumentInterface
      * @see DocumentNormalizerTrait::$relatedObjects
      */
     public const ATTRIBUTE_RELATED_OBJECTS = 'relatedObjects';
+
+    /**
+     * Defines the Pimcore type of this document.
+     */
+    public function getType(): DocumentType;
+
+    /**
+     * The subtype, e.g. the DataObject class or Document\Page.
+     *
+     * @return class-string
+     */
+    public function getSubType(): string;
+
+    /**
+     * @return string|null
+     *
+     * @internal
+     */
+    public function getDocumentType(): ?string;
+
+    /**
+     * Returns the Elasticsearch ID for a Pimcore element.
+     *
+     * @param AbstractElement $element
+     *
+     * @return string
+     *
+     * @internal
+     */
+    public static function getElasticsearchId(AbstractElement $element): string;
+
+    /**
+     * The name of the class to use for listing all the associated Pimcore elements.
+     *
+     * @return class-string
+     *
+     * @see IndexCommand
+     *
+     * @internal
+     */
+    public function getListingClass(): string;
 
     /**
      * Returns the normalization of the Pimcore element.

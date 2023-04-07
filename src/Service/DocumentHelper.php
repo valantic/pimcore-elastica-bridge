@@ -21,7 +21,7 @@ class DocumentHelper
     public function elementToIndexDocument(IndexDocumentInterface $indexDocumentInstance, AbstractElement $dataObject): Document
     {
         return new Document(
-            $indexDocumentInstance->getElasticsearchId($dataObject),
+            $indexDocumentInstance::getElasticsearchId($dataObject),
             array_merge($indexDocumentInstance->getNormalized($dataObject), [
                 IndexDocumentInterface::META_TYPE => $indexDocumentInstance->getType(),
                 IndexDocumentInterface::META_SUB_TYPE => $indexDocumentInstance->getSubType(),

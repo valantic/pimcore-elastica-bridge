@@ -68,7 +68,7 @@ abstract class AbstractListener
                 continue;
             }
 
-            $elasticsearchId = $indexDocument->getElasticsearchId($element);
+            $elasticsearchId = $indexDocument::getElasticsearchId($element);
 
             $isPresent = $this->indexHelper->isIdInIndex($elasticsearchId, $index);
 
@@ -105,7 +105,7 @@ abstract class AbstractListener
                 continue;
             }
 
-            if ($this->indexHelper->isIdInIndex($indexDocument->getElasticsearchId($element), $index)) {
+            if ($this->indexHelper->isIdInIndex($indexDocument::getElasticsearchId($element), $index)) {
                 $this->updateElementInIndex($element, $index, $indexDocument);
                 $this->documentHelper->resetTenantIfNeeded($indexDocument, $index);
                 continue;
@@ -132,7 +132,7 @@ abstract class AbstractListener
                 continue;
             }
 
-            $elasticsearchId = $indexDocument->getElasticsearchId($element);
+            $elasticsearchId = $indexDocument::getElasticsearchId($element);
 
             if (!$this->indexHelper->isIdInIndex($elasticsearchId, $index)) {
                 $this->documentHelper->resetTenantIfNeeded($indexDocument, $index);
@@ -158,7 +158,7 @@ abstract class AbstractListener
 
     protected function deleteElementFromIndex(AbstractElement $element, IndexInterface $index, IndexDocumentInterface $indexDocument): void
     {
-        $elasticsearchId = $indexDocument->getElasticsearchId($element);
+        $elasticsearchId = $indexDocument::getElasticsearchId($element);
         $index->getElasticaIndex()->deleteById($elasticsearchId);
     }
 

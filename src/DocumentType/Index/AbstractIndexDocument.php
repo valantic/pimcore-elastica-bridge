@@ -2,9 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Valantic\ElasticaBridgeBundle\DocumentType;
+namespace Valantic\ElasticaBridgeBundle\DocumentType\Index;
 
+use Pimcore\Model\DataObject;
+use Pimcore\Model\Listing\AbstractListing;
+use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 use Pimcore\Model\Asset;
+use Pimcore\Model\DataObject\Listing as DataObjectListing;
 use Pimcore\Model\Document as PimcoreDocument;
 use Pimcore\Model\Document\Listing as DocumentListing;
 use Pimcore\Model\Asset\Listing as AssetListing;
@@ -13,7 +17,7 @@ use UnhandledMatchError;
 use Valantic\ElasticaBridgeBundle\Enum\DocumentType;
 use Valantic\ElasticaBridgeBundle\Exception\DocumentType\UnknownPimcoreElementType;
 
-abstract class AbstractDocument implements DocumentInterface
+abstract class AbstractIndexDocument implements IndexDocumentInterface
 {
     public function getDocumentType(): ?string
     {
@@ -65,7 +69,7 @@ abstract class AbstractDocument implements DocumentInterface
         return $candidate;
     }
 
-    final public function getElasticsearchId(AbstractElement $element): string
+    final public static function getElasticsearchId(AbstractElement $element): string
     {
         $documentType = DocumentType::tryFrom($element->getType());
 
@@ -98,5 +102,54 @@ abstract class AbstractDocument implements DocumentInterface
         } catch (UnhandledMatchError) {
             throw new UnknownPimcoreElementType($this->getType()->value);
         }
+    }
+
+    public function treatObjectVariantsAsDocuments(): bool
+    {
+        return false;
+    }
+
+    protected function includeUnpublishedElementsInListing(): bool
+    {
+        return false;
+    }
+
+    public function getIndexListingCondition(): ?string
+    {
+        return null;
+    }
+
+    public function getListingInstance(IndexInterface $index): AbstractListing
+    {
+        /** @var class-string<AbstractListing> $listingClass */
+        $listingClass = $this->getListingClass();
+
+        /** @var AbstractListing $listingInstance */
+        $listingInstance = new $listingClass();
+
+        if ($this->getIndexListingCondition() !== null) {
+            $listingInstance->setCondition($this->getIndexListingCondition());
+        }
+
+        if (in_array($this->getType(), DocumentType::casesPublishedState(), true)) {
+            /** @var DocumentListing|DataObjectListing $listingInstance */
+            $listingInstance->setUnpublished($this->includeUnpublishedElementsInListing());
+        }
+
+        if ($this->getType() === DocumentType::DATA_OBJECT && $this->treatObjectVariantsAsDocuments()) {
+            /** @var DataObjectListing $listingInstance */
+            $listingInstance->setObjectTypes([DataObject\AbstractObject::OBJECT_TYPE_OBJECT, DataObject\AbstractObject::OBJECT_TYPE_VARIANT]);
+        }
+
+        if (in_array($this->getType(), DocumentType::casesSubTypeListing(), true)) {
+            $typeCondition = sprintf("`type` = '%s'", $this->getDocumentType());
+            if ($this->getIndexListingCondition() !== null) {
+                $listingInstance->setCondition(sprintf('%s AND (%s)', $typeCondition, $this->getIndexListingCondition()));
+            } else {
+                $listingInstance->setCondition($typeCondition);
+            }
+        }
+
+        return $listingInstance;
     }
 }
