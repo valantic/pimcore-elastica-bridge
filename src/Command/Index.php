@@ -13,7 +13,6 @@ use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Component\Process\Process;
-use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
@@ -26,7 +25,6 @@ class Index extends BaseCommand
     protected const ARGUMENT_INDEX = 'index';
     protected const OPTION_DELETE = 'delete';
     protected const OPTION_POPULATE = 'populate';
-    protected const OPTION_CHECK = 'check';
     public static bool $isPopulating = false;
 
     public function __construct(
@@ -59,23 +57,7 @@ class Index extends BaseCommand
                 'p',
                 InputOption::VALUE_NONE,
                 'Populate indices'
-            )
-            ->addOption(
-                self::OPTION_CHECK,
-                'c',
-                InputOption::VALUE_NONE,
-                'Perform post-populate checks'
             );
-    }
-
-    protected function initialize(InputInterface $input, OutputInterface $output): void
-    {
-        parent::initialize($input, $output);
-
-        if ($this->input->getOption(self::OPTION_CHECK) === true && $this->input->getOption(self::OPTION_POPULATE) === false) {
-            $this->output->writeln(sprintf('<error>--%s without --%s has no effect</error>', self::OPTION_CHECK, self::OPTION_POPULATE));
-            $this->output->writeln('');
-        }
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -126,10 +108,6 @@ class Index extends BaseCommand
             $currentIndex->refresh();
             $indexCount = $currentIndex->count();
             $this->output->writeln(sprintf('<comment>-> %d documents</comment>', $indexCount));
-
-            if ($indexCount > 0 && $this->input->getOption(self::OPTION_CHECK) === true) {
-                $this->checkRandomDocument($currentIndex, $indexConfig);
-            }
 
             if ($indexConfig->usesBlueGreenIndices()) {
                 $oldIndex = $indexConfig->getBlueGreenActiveElasticaIndex();
@@ -230,18 +208,5 @@ class Index extends BaseCommand
         }
 
         $this->output->writeln('<comment>-> Ensured indices are correctly set up with alias</comment>');
-    }
-
-    protected function checkRandomDocument(ElasticaIndex $index, IndexInterface $indexConfig): void
-    {
-        $esDocs = $index->search();
-        $esDoc = $esDocs[random_int(0, $esDocs->count() - 1)]->getDocument();
-        $indexDocumentInstance = $indexConfig->getIndexDocumentInstance($esDoc);
-        $this->output->writeln(sprintf(
-            '<comment>-> ES %s -> %s %s</comment>',
-            $esDoc->getId(),
-            $indexDocumentInstance instanceof IndexDocumentInterface ? $indexDocumentInstance->getPimcoreElement($esDoc)->getType() : 'FAILED',
-            $indexDocumentInstance instanceof IndexDocumentInterface ? $indexDocumentInstance->getPimcoreElement($esDoc)->getId() : 'FAILED'
-        ));
     }
 }
