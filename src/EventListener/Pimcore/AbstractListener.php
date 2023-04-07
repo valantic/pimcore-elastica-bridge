@@ -178,6 +178,10 @@ abstract class AbstractListener
         $elementClass = $element::class;
         $e = new PimcoreElementNotFoundException($element->getId(), $elementClass);
 
-        return $elementClass::getById($element->getId() ?: throw $e) ?: throw $e;
+        if ($element->getId() === null) {
+            throw $e;
+        }
+
+        return $elementClass::getById($element->getId()) ?? throw $e;
     }
 }

@@ -72,7 +72,7 @@ class Index extends BaseCommand
     {
         parent::initialize($input, $output);
 
-        if ($this->input->getOption(self::OPTION_CHECK) && !$this->input->getOption(self::OPTION_POPULATE)) {
+        if ($this->input->getOption(self::OPTION_CHECK) === true && $this->input->getOption(self::OPTION_POPULATE) === false) {
             $this->output->writeln(sprintf('<error>--%s without --%s has no effect</error>', self::OPTION_CHECK, self::OPTION_POPULATE));
             $this->output->writeln('');
         }
@@ -94,7 +94,7 @@ class Index extends BaseCommand
             $this->processIndex($indexConfig);
         }
 
-        if (count($skippedIndices)) {
+        if (count($skippedIndices) > 0) {
             $this->output->writeln('');
             $this->output->writeln(sprintf('<info>Skipped the following indices: %s</info>', implode(', ', $skippedIndices)));
         }
@@ -114,7 +114,7 @@ class Index extends BaseCommand
             $currentIndex = $indexConfig->getBlueGreenInactiveElasticaIndex();
         }
 
-        if ($this->input->getOption(self::OPTION_POPULATE)) {
+        if ($this->input->getOption(self::OPTION_POPULATE) === true) {
             if ($indexConfig->usesBlueGreenIndices()) {
                 $this->output->writeln('<comment>-> Re-created inactive blue/green index</comment>');
                 $currentIndex->delete();
@@ -127,7 +127,7 @@ class Index extends BaseCommand
             $indexCount = $currentIndex->count();
             $this->output->writeln(sprintf('<comment>-> %d documents</comment>', $indexCount));
 
-            if ($indexCount > 0 && $this->input->getOption(self::OPTION_CHECK)) {
+            if ($indexCount > 0 && $this->input->getOption(self::OPTION_CHECK) === true) {
                 $this->checkRandomDocument($currentIndex, $indexConfig);
             }
 
@@ -185,7 +185,7 @@ class Index extends BaseCommand
     {
         $index = $indexConfig->getElasticaIndex();
 
-        if ($this->input->getOption(self::OPTION_DELETE) && $index->exists()) {
+        if ($this->input->getOption(self::OPTION_DELETE) === true && $index->exists()) {
             $index->delete();
             $this->output->writeln('<comment>-> Deleted index</comment>');
         }
@@ -198,7 +198,7 @@ class Index extends BaseCommand
 
     protected function ensureCorrectBlueGreenIndexSetup(IndexInterface $indexConfig): void
     {
-        $shouldDelete = $this->input->getOption(self::OPTION_DELETE);
+        $shouldDelete = $this->input->getOption(self::OPTION_DELETE) === true;
 
         $nonAliasIndex = $this->esClient->getIndex($indexConfig->getName());
 

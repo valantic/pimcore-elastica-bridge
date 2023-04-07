@@ -37,7 +37,7 @@ class Cleanup extends BaseCommand
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->output->writeln(
-            $this->input->getOption(self::OPTION_ONLY_KNOWN)
+            $this->input->getOption(self::OPTION_ONLY_KNOWN) === true
                 ? 'Only deleting KNOWN indices'
                 : 'Deleting ALL indices in the cluster'
         );
@@ -68,7 +68,7 @@ class Cleanup extends BaseCommand
      */
     private function getIndices(): array
     {
-        if ($this->input->getOption(self::OPTION_ONLY_KNOWN)) {
+        if ($this->input->getOption(self::OPTION_ONLY_KNOWN) === true) {
             $indices = [];
 
             foreach ($this->indexRepository->flattened() as $indexConfig) {
