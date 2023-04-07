@@ -7,7 +7,7 @@ namespace Valantic\ElasticaBridgeBundle\Index;
 use Elastica\Document;
 use Elastica\Index;
 use Pimcore\Model\Element\AbstractElement;
-use Valantic\ElasticaBridgeBundle\DocumentType\Index\DocumentInterface;
+use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Enum\DocumentType;
 use Valantic\ElasticaBridgeBundle\Enum\IndexBlueGreenSuffix;

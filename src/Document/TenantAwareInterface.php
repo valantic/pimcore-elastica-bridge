@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Valantic\ElasticaBridgeBundle\DocumentType\Index;
+namespace Valantic\ElasticaBridgeBundle\Document;
 
 interface TenantAwareInterface
 {

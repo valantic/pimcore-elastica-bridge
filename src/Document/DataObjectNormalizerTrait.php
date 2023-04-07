@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Valantic\ElasticaBridgeBundle\DocumentType\Index;
+namespace Valantic\ElasticaBridgeBundle\Document;
 
 use Pimcore\Localization\LocaleService;
 use Pimcore\Model\DataObject\AbstractObject;

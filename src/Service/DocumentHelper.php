@@ -6,8 +6,8 @@ namespace Valantic\ElasticaBridgeBundle\Service;
 
 use Elastica\Document;
 use Pimcore\Model\Element\AbstractElement;
-use Valantic\ElasticaBridgeBundle\DocumentType\Index\DocumentInterface;
-use Valantic\ElasticaBridgeBundle\DocumentType\Index\TenantAwareInterface as DocumentTenantAwareInterface;
+use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
+use Valantic\ElasticaBridgeBundle\Document\TenantAwareInterface as DocumentTenantAwareInterface;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 use Valantic\ElasticaBridgeBundle\Index\TenantAwareInterface as IndexTenantAwareInterfaceAlias;
 

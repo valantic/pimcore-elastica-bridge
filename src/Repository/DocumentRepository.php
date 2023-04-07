@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Repository;
 
-use Valantic\ElasticaBridgeBundle\DocumentType\Index\DocumentInterface;
+use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Service\BridgeHelper;
 
 /**

@@ -6,7 +6,7 @@ namespace Valantic\ElasticaBridgeBundle\EventListener\Pimcore;
 
 use Pimcore\Model\DataObject\AbstractObject;
 use Pimcore\Model\Element\AbstractElement;
-use Valantic\ElasticaBridgeBundle\DocumentType\Index\DocumentInterface;
+use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Exception\EventListener\PimcoreElementNotFoundException;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;

@@ -2,15 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Valantic\ElasticaBridgeBundle\DocumentType\Index;
+namespace Valantic\ElasticaBridgeBundle\Document;
 
-use Elastica\Document;
 use Valantic\ElasticaBridgeBundle\Enum\DocumentType;
 use Pimcore\Model\Element\AbstractElement;
 use Pimcore\Model\Listing\AbstractListing;
 use Valantic\ElasticaBridgeBundle\Command\Index as IndexCommand;
-use Valantic\ElasticaBridgeBundle\DocumentType\AbstractDocument;
-use Valantic\ElasticaBridgeBundle\DocumentType\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 
 /**
@@ -21,15 +18,15 @@ use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 interface DocumentInterface
 {
     /**
-     * Every Elasticsearch document will contain a __type field, corresponding to DocumentInterface::getType().
+     * Every Elasticsearch document will contain a __type field, corresponding to self::getType().
      */
     public const META_TYPE = '__type';
     /**
-     * Every Elasticsearch document will contain a __subType field, corresponding to DocumentInterface::getSubType().
+     * Every Elasticsearch document will contain a __subType field, corresponding to self::getSubType().
      */
     public const META_SUB_TYPE = '__subType';
     /**
-     * Every Elasticsearch document will contain an __id field, corresponding to DocumentInterface::getPimcoreId().
+     * Every Elasticsearch document will contain an __id field, corresponding to self::getPimcoreId().
      */
     public const META_ID = '__id';
     /**
