@@ -102,6 +102,7 @@ class Refresh extends BaseCommand
 
             if ($element === null) {
                 $this->output->writeln(sprintf('-> ID %d of type %s not found, skipped', $id, $this->getShortName($objClass)));
+
                 continue;
             }
 

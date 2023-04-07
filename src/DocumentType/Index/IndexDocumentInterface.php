@@ -77,17 +77,6 @@ interface IndexDocumentInterface
     public function getDocumentType(): ?string;
 
     /**
-     * Returns the Elasticsearch ID for a Pimcore element.
-     *
-     * @param AbstractElement $element
-     *
-     * @return string
-     *
-     * @internal
-     */
-    public static function getElasticsearchId(AbstractElement $element): string;
-
-    /**
      * The name of the class to use for listing all the associated Pimcore elements.
      *
      * @return class-string
@@ -132,4 +121,15 @@ interface IndexDocumentInterface
      * Whether Elasticsearch documents should be created for object variants.
      */
     public function treatObjectVariantsAsDocuments(): bool;
+
+    /**
+     * Returns the Elasticsearch ID for a Pimcore element.
+     *
+     * @param AbstractElement $element
+     *
+     * @return string
+     *
+     * @internal
+     */
+    public static function getElasticsearchId(AbstractElement $element): string;
 }

@@ -71,6 +71,7 @@ class Index extends BaseCommand
                 && !in_array($indexConfig->getName(), $this->input->getArgument(self::ARGUMENT_INDEX), true)
             ) {
                 $skippedIndices[] = $indexConfig->getName();
+
                 continue;
             }
 

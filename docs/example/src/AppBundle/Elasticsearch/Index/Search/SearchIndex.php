@@ -33,6 +33,7 @@ class SearchIndex extends AbstractIndex
     public function getMapping(): array
     {
         $localizedProperties = [];
+
         foreach ($this->getLocales() as $locale) {
             $localizedProperties[$locale] = [
                 'properties' => [

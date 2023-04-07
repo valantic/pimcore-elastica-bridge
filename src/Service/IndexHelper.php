@@ -20,6 +20,7 @@ class IndexHelper
     public function matchingIndicesForElement(\Generator $indices, AbstractElement $element): array
     {
         $matching = [];
+
         foreach ($indices as $index) {
             /** @var IndexInterface $index */
             if ($index->isElementAllowedInIndex($element)) {

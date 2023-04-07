@@ -69,25 +69,6 @@ abstract class AbstractIndexDocument implements IndexDocumentInterface
         return $candidate;
     }
 
-    final public static function getElasticsearchId(AbstractElement $element): string
-    {
-        $documentType = DocumentType::tryFrom($element->getType());
-
-        if ($element instanceof Asset) {
-            return DocumentType::ASSET->value . $element->getId();
-        }
-
-        if ($element instanceof PimcoreDocument) {
-            return DocumentType::DOCUMENT->value . $element->getId();
-        }
-
-        if (in_array($documentType, DocumentType::casesDataObjects(), true)) {
-            return $documentType->value . $element->getId();
-        }
-
-        throw new UnknownPimcoreElementType($documentType?->value);
-    }
-
     /**
      * @return class-string
      */
@@ -105,11 +86,6 @@ abstract class AbstractIndexDocument implements IndexDocumentInterface
     }
 
     public function treatObjectVariantsAsDocuments(): bool
-    {
-        return false;
-    }
-
-    protected function includeUnpublishedElementsInListing(): bool
     {
         return false;
     }
@@ -143,6 +119,7 @@ abstract class AbstractIndexDocument implements IndexDocumentInterface
 
         if (in_array($this->getType(), DocumentType::casesSubTypeListing(), true)) {
             $typeCondition = sprintf("`type` = '%s'", $this->getDocumentType());
+
             if ($this->getIndexListingCondition() !== null) {
                 $listingInstance->setCondition(sprintf('%s AND (%s)', $typeCondition, $this->getIndexListingCondition()));
             } else {
@@ -151,5 +128,29 @@ abstract class AbstractIndexDocument implements IndexDocumentInterface
         }
 
         return $listingInstance;
+    }
+
+    final public static function getElasticsearchId(AbstractElement $element): string
+    {
+        $documentType = DocumentType::tryFrom($element->getType());
+
+        if ($element instanceof Asset) {
+            return DocumentType::ASSET->value . $element->getId();
+        }
+
+        if ($element instanceof PimcoreDocument) {
+            return DocumentType::DOCUMENT->value . $element->getId();
+        }
+
+        if (in_array($documentType, DocumentType::casesDataObjects(), true)) {
+            return $documentType->value . $element->getId();
+        }
+
+        throw new UnknownPimcoreElementType($documentType?->value);
+    }
+
+    protected function includeUnpublishedElementsInListing(): bool
+    {
+        return false;
     }
 }

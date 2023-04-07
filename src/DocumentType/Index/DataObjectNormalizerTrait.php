@@ -58,6 +58,7 @@ trait DataObjectNormalizerTrait
             }
 
             $result[$locale] = [];
+
             foreach ($this->expandFields($fields) as $target => $source) {
                 $result[$locale][$target] = is_callable($source) ? $source($element, $locale) : $element->get($source, $locale);
             }
@@ -118,6 +119,7 @@ trait DataObjectNormalizerTrait
 
             if (!is_iterable($data)) {
                 $result[$target] = $data->getId();
+
                 continue;
             }
 

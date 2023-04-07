@@ -33,6 +33,7 @@ class SeminarNormalizer implements InlineDataObjectNormalizerInterface
     protected function doNormalizeObjectsInDocument(array $objs, Document\Page $document): ?string
     {
         $content = [];
+
         foreach ($objs as $obj) {
             $content[] = $obj->getDescription();
         }

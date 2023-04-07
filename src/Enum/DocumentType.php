@@ -7,8 +7,11 @@ namespace Valantic\ElasticaBridgeBundle\Enum;
 enum DocumentType: string
 {
     case ASSET = 'asset';
+
     case DOCUMENT = 'document';
+
     case DATA_OBJECT = 'object';
+
     case VARIANT = 'variant';
 
     /** @return self[] */

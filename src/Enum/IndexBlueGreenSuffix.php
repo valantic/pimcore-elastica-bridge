@@ -7,5 +7,6 @@ namespace Valantic\ElasticaBridgeBundle\Enum;
 enum IndexBlueGreenSuffix: string
 {
     case BLUE = '--blue';
+
     case GREEN = '--green';
 }

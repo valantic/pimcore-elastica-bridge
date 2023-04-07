@@ -60,11 +60,13 @@ abstract class AbstractListener
 
             if (!in_array($indexDocument::class, $index->subscribedDocuments(), true)) {
                 $this->documentHelper->resetTenantIfNeeded($indexDocument, $index);
+
                 continue;
             }
 
             if ($element->getType() === AbstractObject::OBJECT_TYPE_VARIANT && !$indexDocument->treatObjectVariantsAsDocuments()) {
                 $this->documentHelper->resetTenantIfNeeded($indexDocument, $index);
+
                 continue;
             }
 
@@ -76,6 +78,7 @@ abstract class AbstractListener
                 if ($isPresent) {
                     $this->updateElementInIndex($element, $index, $indexDocument);
                 }
+
                 if (!$isPresent) {
                     $this->addElementToIndex($element, $index, $indexDocument);
                 }
@@ -102,12 +105,14 @@ abstract class AbstractListener
 
             if (!in_array($indexDocument::class, $index->subscribedDocuments(), true) || !$indexDocument->shouldIndex($element)) {
                 $this->documentHelper->resetTenantIfNeeded($indexDocument, $index);
+
                 continue;
             }
 
             if ($this->indexHelper->isIdInIndex($indexDocument::getElasticsearchId($element), $index)) {
                 $this->updateElementInIndex($element, $index, $indexDocument);
                 $this->documentHelper->resetTenantIfNeeded($indexDocument, $index);
+
                 continue;
             }
 
@@ -129,6 +134,7 @@ abstract class AbstractListener
 
             if (!in_array($indexDocument::class, $index->subscribedDocuments(), true)) {
                 $this->documentHelper->resetTenantIfNeeded($indexDocument, $index);
+
                 continue;
             }
 
@@ -136,6 +142,7 @@ abstract class AbstractListener
 
             if (!$this->indexHelper->isIdInIndex($elasticsearchId, $index)) {
                 $this->documentHelper->resetTenantIfNeeded($indexDocument, $index);
+
                 continue;
             }
 

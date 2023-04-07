@@ -83,6 +83,7 @@ class Cleanup extends BaseCommand
             if ($indexConfig->usesBlueGreenIndices()) {
                 $indices[] = $indexConfig->getBlueGreenActiveElasticaIndex()->getName();
                 $indices[] = $indexConfig->getBlueGreenInactiveElasticaIndex()->getName();
+
                 continue;
             }
 

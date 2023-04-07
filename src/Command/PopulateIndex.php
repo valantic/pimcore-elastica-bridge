@@ -44,6 +44,7 @@ class PopulateIndex extends BaseCommand
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $indexConfig = null;
+
         foreach ($this->indexRepository->flattened() as $indexConfig) {
             if ($indexConfig->getName() === $this->input->getOption(self::OPTION_CONFIG)) {
                 break;
@@ -121,6 +122,7 @@ class PopulateIndex extends BaseCommand
             $this->output->writeln('');
             $this->output->writeln(sprintf('In %s line %d', $throwable->getFile(), $throwable->getLine()));
             $this->output->writeln('');
+
             if (!empty($throwable->getMessage())) {
                 $this->output->writeln($throwable->getMessage());
                 $this->output->writeln('');

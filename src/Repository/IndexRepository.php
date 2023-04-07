@@ -46,6 +46,7 @@ class IndexRepository
             if ($indexConfig instanceof TenantAwareInterface) {
                 foreach ($indexConfig->getTenants() as $tenant) {
                     $indexConfig->setTenant($tenant);
+
                     yield $indexConfig->getName() => clone $indexConfig;
                 }
             } else {

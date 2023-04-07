@@ -74,6 +74,7 @@ class PageIndexDocument extends PageDocument implements IndexDocumentInterface
     protected function normalizerIterableToArray(iterable $iterables): array
     {
         $arr = [];
+
         foreach ($iterables as $iterable) {
             /** @var $iterable InlineDataObjectNormalizerInterface */
             $arr[$iterable->getDataObjectClass()] = $iterable;
