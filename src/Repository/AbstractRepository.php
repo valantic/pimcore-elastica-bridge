@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Valantic\ElasticaBridgeBundle\Service;
+namespace Valantic\ElasticaBridgeBundle\Repository;
 
-class BridgeHelper
+abstract class AbstractRepository
 {
     /**
      * @param iterable<object> $iterables
      *
      * @return array<string,object>
      */
-    public function iterableToArray(iterable $iterables): array
+    protected function iterableToArray(iterable $iterables): array
     {
         $arr = [];
 

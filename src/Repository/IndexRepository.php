@@ -6,23 +6,22 @@ namespace Valantic\ElasticaBridgeBundle\Repository;
 
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 use Valantic\ElasticaBridgeBundle\Index\TenantAwareInterface;
-use Valantic\ElasticaBridgeBundle\Service\BridgeHelper;
 
 /**
  * Used for typehinting. Contains an array of all IndexInterface implementations.
  *
  * @see IndexInterface
  */
-class IndexRepository
+class IndexRepository extends AbstractRepository
 {
     /**
      * @var IndexInterface[]
      */
     protected array $indices;
 
-    public function __construct(iterable $indices, BridgeHelper $bridgeHelper)
+    public function __construct(iterable $indices)
     {
-        $this->indices = $bridgeHelper->iterableToArray($indices);
+        $this->indices = $this->iterableToArray($indices);
     }
 
     /**

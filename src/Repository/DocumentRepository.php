@@ -5,23 +5,22 @@ declare(strict_types=1);
 namespace Valantic\ElasticaBridgeBundle\Repository;
 
 use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
-use Valantic\ElasticaBridgeBundle\Service\BridgeHelper;
 
 /**
  * Used for typehinting. Contains an array of all DocumentInterface implementations.
  *
  * @see DocumentInterface
  */
-class DocumentRepository
+class DocumentRepository extends AbstractRepository
 {
     /**
      * @var DocumentInterface []
      */
     protected array $documents;
 
-    public function __construct(iterable $documents, BridgeHelper $bridgeHelper)
+    public function __construct(iterable $documents)
     {
-        $this->documents = $bridgeHelper->iterableToArray($documents);
+        $this->documents = $this->iterableToArray($documents);
     }
 
     /**
