@@ -4,18 +4,13 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Command;
 
-use Pimcore\Event\Model\AssetEvent;
-use Pimcore\Event\Model\DataObjectEvent;
-use Pimcore\Event\Model\DocumentEvent;
 use Pimcore\Model\Asset;
 use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Model\Document;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputOption;
-use Valantic\ElasticaBridgeBundle\EventListener\Pimcore\Asset as AssetListener;
-use Valantic\ElasticaBridgeBundle\EventListener\Pimcore\DataObject as DataObjectListener;
-use Valantic\ElasticaBridgeBundle\EventListener\Pimcore\Document as DocumentListener;
+use Valantic\ElasticaBridgeBundle\Service\PropagateChanges;
 
 class Refresh extends BaseCommand
 {
@@ -24,9 +19,7 @@ class Refresh extends BaseCommand
     protected const OPTION_OBJECTS = 'objects';
 
     public function __construct(
-        protected AssetListener $assetListener,
-        protected DataObjectListener $dataObjectListener,
-        protected DocumentListener $documentListener,
+        protected PropagateChanges $propagateChanges,
     ) {
         parent::__construct();
     }
@@ -78,18 +71,6 @@ class Refresh extends BaseCommand
     private function handle(
         string $optionName,
     ): void {
-        $listener = match ($optionName) {
-            self::OPTION_ASSETS => $this->assetListener,
-            self::OPTION_DOCUMENTS => $this->documentListener,
-            self::OPTION_OBJECTS => $this->dataObjectListener,
-        };
-
-        $eventClass = match ($optionName) {
-            self::OPTION_ASSETS => AssetEvent::class,
-            self::OPTION_DOCUMENTS => DocumentEvent::class,
-            self::OPTION_OBJECTS => DataObjectEvent::class,
-        };
-
         $objClass = match ($optionName) {
             self::OPTION_ASSETS => Asset::class,
             self::OPTION_DOCUMENTS => Document::class,
@@ -106,7 +87,7 @@ class Refresh extends BaseCommand
                 continue;
             }
 
-            $listener->updated(new $eventClass($element));
+            $this->propagateChanges->handle($element);
         }
         $this->output->writeln('');
     }

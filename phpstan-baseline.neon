@@ -21,21 +21,6 @@ parameters:
 			path: src/Command/PopulateIndex.php
 
 		-
-			message: "#^Parameter \\#1 \\$asset of class Pimcore\\\\Event\\\\Model\\\\AssetEvent constructor expects Pimcore\\\\Model\\\\Asset, Pimcore\\\\Model\\\\Asset\\|Pimcore\\\\Model\\\\DataObject\\\\Concrete\\|Pimcore\\\\Model\\\\Document given\\.$#"
-			count: 1
-			path: src/Command/Refresh.php
-
-		-
-			message: "#^Parameter \\#1 \\$document of class Pimcore\\\\Event\\\\Model\\\\DocumentEvent constructor expects Pimcore\\\\Model\\\\Document, Pimcore\\\\Model\\\\Asset\\|Pimcore\\\\Model\\\\DataObject\\\\Concrete\\|Pimcore\\\\Model\\\\Document given\\.$#"
-			count: 1
-			path: src/Command/Refresh.php
-
-		-
-			message: "#^Parameter \\#1 \\$object of class Pimcore\\\\Event\\\\Model\\\\DataObjectEvent constructor expects Pimcore\\\\Model\\\\DataObject\\\\AbstractObject, Pimcore\\\\Model\\\\Asset\\|Pimcore\\\\Model\\\\DataObject\\\\Concrete\\|Pimcore\\\\Model\\\\Document given\\.$#"
-			count: 1
-			path: src/Command/Refresh.php
-
-		-
 			message: "#^Method Valantic\\\\ElasticaBridgeBundle\\\\Document\\\\AbstractDocument\\:\\:getListingClass\\(\\) should return class\\-string but returns string\\.$#"
 			count: 1
 			path: src/Document/AbstractDocument.php
