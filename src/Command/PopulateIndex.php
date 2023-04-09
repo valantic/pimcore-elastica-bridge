@@ -10,7 +10,6 @@ use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Exception\Command\IndexingFailedException;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 use Valantic\ElasticaBridgeBundle\Repository\DocumentRepository;
@@ -21,12 +20,11 @@ class PopulateIndex extends BaseCommand
 {
     private const OPTION_CONFIG = 'config';
     private const OPTION_INDEX = 'index';
-    protected ElasticsearchClient $esClient;
 
     public function __construct(
-        protected IndexRepository $indexRepository,
-        protected DocumentRepository $documentRepository,
-        protected DocumentHelper $documentHelper,
+        private readonly IndexRepository $indexRepository,
+        private readonly DocumentRepository $documentRepository,
+        private readonly DocumentHelper $documentHelper,
     ) {
         parent::__construct();
     }
@@ -61,7 +59,7 @@ class PopulateIndex extends BaseCommand
         return self::SUCCESS;
     }
 
-    protected function populateIndex(IndexInterface $indexConfig, ElasticaIndex $esIndex): void
+    private function populateIndex(IndexInterface $indexConfig, ElasticaIndex $esIndex): void
     {
         ProgressBar::setFormatDefinition('custom', "%percent%%\t%remaining%\t%memory%\n%message%");
 

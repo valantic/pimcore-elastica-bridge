@@ -17,23 +17,19 @@ use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Enum\IndexBlueGreenSuffix;
 use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
-use Valantic\ElasticaBridgeBundle\Repository\DocumentRepository;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
-use Valantic\ElasticaBridgeBundle\Service\DocumentHelper;
 
 class Index extends BaseCommand
 {
-    protected const ARGUMENT_INDEX = 'index';
-    protected const OPTION_DELETE = 'delete';
-    protected const OPTION_POPULATE = 'populate';
+    private const ARGUMENT_INDEX = 'index';
+    private const OPTION_DELETE = 'delete';
+    private const OPTION_POPULATE = 'populate';
     public static bool $isPopulating = false;
 
     public function __construct(
-        protected IndexRepository $indexRepository,
-        protected DocumentRepository $documentRepository,
-        protected ElasticsearchClient $esClient,
-        protected DocumentHelper $documentHelper,
-        protected KernelInterface $kernel,
+        private readonly IndexRepository $indexRepository,
+        private readonly ElasticsearchClient $esClient,
+        private readonly KernelInterface $kernel,
     ) {
         parent::__construct();
     }
@@ -86,7 +82,7 @@ class Index extends BaseCommand
         return self::SUCCESS;
     }
 
-    protected function processIndex(IndexInterface $indexConfig): void
+    private function processIndex(IndexInterface $indexConfig): void
     {
         $this->output->writeln(sprintf('<info>Index: %s</info>', $indexConfig->getName()));
 
@@ -127,7 +123,7 @@ class Index extends BaseCommand
         $this->output->writeln('');
     }
 
-    protected function populateIndex(IndexInterface $indexConfig, ElasticaIndex $esIndex): void
+    private function populateIndex(IndexInterface $indexConfig, ElasticaIndex $esIndex): void
     {
         self::$isPopulating = true;
         $process = new Process(
@@ -150,7 +146,7 @@ class Index extends BaseCommand
         self::$isPopulating = false;
     }
 
-    protected function ensureCorrectIndexSetup(IndexInterface $indexConfig): void
+    private function ensureCorrectIndexSetup(IndexInterface $indexConfig): void
     {
         if ($indexConfig->usesBlueGreenIndices()) {
             $this->ensureCorrectBlueGreenIndexSetup($indexConfig);
@@ -161,7 +157,7 @@ class Index extends BaseCommand
         $this->ensureCorrectSimpleIndexSetup($indexConfig);
     }
 
-    protected function ensureCorrectSimpleIndexSetup(IndexInterface $indexConfig): void
+    private function ensureCorrectSimpleIndexSetup(IndexInterface $indexConfig): void
     {
         $index = $indexConfig->getElasticaIndex();
 
@@ -176,7 +172,7 @@ class Index extends BaseCommand
         }
     }
 
-    protected function ensureCorrectBlueGreenIndexSetup(IndexInterface $indexConfig): void
+    private function ensureCorrectBlueGreenIndexSetup(IndexInterface $indexConfig): void
     {
         $shouldDelete = $this->input->getOption(self::OPTION_DELETE) === true;
 

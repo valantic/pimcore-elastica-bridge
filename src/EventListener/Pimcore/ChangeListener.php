@@ -22,10 +22,10 @@ use Valantic\ElasticaBridgeBundle\Service\PropagateChanges;
  */
 class ChangeListener implements EventSubscriberInterface
 {
-    protected static bool $isEnabled = true;
+    private static bool $isEnabled = true;
 
     public function __construct(
-        private PropagateChanges $propagateChanges,
+        private readonly PropagateChanges $propagateChanges,
     ) {
     }
 
@@ -73,7 +73,7 @@ class ChangeListener implements EventSubscriberInterface
      *
      * @return T
      */
-    protected function getFreshElement(AbstractElement $element): AbstractElement
+    private function getFreshElement(AbstractElement $element): AbstractElement
     {
         /** @var class-string<T> $elementClass */
         $elementClass = $element::class;

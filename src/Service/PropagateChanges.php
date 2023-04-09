@@ -14,8 +14,8 @@ use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 class PropagateChanges
 {
     public function __construct(
-        private IndexRepository $indexRepository,
-        private DocumentHelper $documentHelper,
+        private readonly IndexRepository $indexRepository,
+        private readonly DocumentHelper $documentHelper,
     ) {
     }
 

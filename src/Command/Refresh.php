@@ -14,12 +14,12 @@ use Valantic\ElasticaBridgeBundle\Service\PropagateChanges;
 
 class Refresh extends BaseCommand
 {
-    protected const OPTION_ASSETS = 'assets';
-    protected const OPTION_DOCUMENTS = 'documents';
-    protected const OPTION_OBJECTS = 'objects';
+    private const OPTION_ASSETS = 'assets';
+    private const OPTION_DOCUMENTS = 'documents';
+    private const OPTION_OBJECTS = 'objects';
 
     public function __construct(
-        protected PropagateChanges $propagateChanges,
+        private readonly PropagateChanges $propagateChanges,
     ) {
         parent::__construct();
     }

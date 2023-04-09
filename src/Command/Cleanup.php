@@ -14,11 +14,11 @@ use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 
 class Cleanup extends BaseCommand
 {
-    protected const OPTION_ALL_IN_CLUSTER = 'all';
+    private const OPTION_ALL_IN_CLUSTER = 'all';
 
     public function __construct(
-        protected ElasticsearchClient $esClient,
-        protected IndexRepository $indexRepository,
+        private readonly ElasticsearchClient $esClient,
+        private readonly IndexRepository $indexRepository,
     ) {
         parent::__construct();
     }

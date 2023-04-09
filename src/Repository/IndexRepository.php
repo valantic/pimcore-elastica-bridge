@@ -17,7 +17,7 @@ class IndexRepository extends AbstractRepository
     /**
      * @var IndexInterface[]
      */
-    protected array $indices;
+    private readonly array $indices;
 
     public function __construct(iterable $indices)
     {

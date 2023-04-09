@@ -17,19 +17,19 @@ class Status extends BaseCommand
     /**
      * @var array<int,array<mixed>>
      */
-    protected array $bundleIndices = [];
+    private array $bundleIndices = [];
     /**
      * @var array<int,array<mixed>>
      */
-    protected array $otherIndices = [];
+    private array $otherIndices = [];
     /**
      * @var string[]
      */
-    protected array $skipOtherIndices = [];
+    private array $skipOtherIndices = [];
 
     public function __construct(
-        protected IndexRepository $indexRepository,
-        protected ElasticsearchClient $esClient,
+        private readonly IndexRepository $indexRepository,
+        private readonly ElasticsearchClient $esClient,
     ) {
         parent::__construct();
     }
@@ -85,7 +85,7 @@ class Status extends BaseCommand
         return self::SUCCESS;
     }
 
-    protected function formatBoolean(bool $val): string
+    private function formatBoolean(bool $val): string
     {
         return $val ? '✓' : '✗';
     }
@@ -93,7 +93,7 @@ class Status extends BaseCommand
     /**
      * @see https://stackoverflow.com/a/2510540
      */
-    protected function formatBytes(int $bytes): string
+    private function formatBytes(int $bytes): string
     {
         $base = log($bytes, 1024);
         $suffixes = ['', 'K', 'M', 'G', 'T'];
@@ -101,7 +101,7 @@ class Status extends BaseCommand
         return round(1024 ** ($base - floor($base)), 2) . ' ' . $suffixes[floor($base)] . 'B';
     }
 
-    protected function processBundleIndex(IndexInterface $indexConfig): void
+    private function processBundleIndex(IndexInterface $indexConfig): void
     {
         $name = $indexConfig->getName();
         $exists = $indexConfig->getElasticaIndex()->exists();
@@ -144,7 +144,7 @@ class Status extends BaseCommand
         ];
     }
 
-    protected function processOtherIndex(string $indexName): void
+    private function processOtherIndex(string $indexName): void
     {
         $index = $this->esClient->getIndex($indexName);
 

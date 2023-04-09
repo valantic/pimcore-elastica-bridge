@@ -19,8 +19,8 @@ abstract class AbstractIndex implements IndexInterface
     protected bool $areGlobalFiltersEnabled = true;
 
     public function __construct(
-        protected ElasticsearchClient $client,
-        protected DocumentRepository $documentRepository,
+        private readonly ElasticsearchClient $client,
+        private readonly DocumentRepository $documentRepository,
     ) {
     }
 

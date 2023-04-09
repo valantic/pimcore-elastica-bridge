@@ -16,7 +16,7 @@ class DocumentRepository extends AbstractRepository
     /**
      * @var DocumentInterface []
      */
-    protected array $documents;
+    private readonly array $documents;
 
     public function __construct(iterable $documents)
     {
