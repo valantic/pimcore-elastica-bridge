@@ -9,11 +9,11 @@ use Pimcore\Model\Element\AbstractElement;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
+use Elastica\Exception\NotFoundException;
 use Valantic\ElasticaBridgeBundle\Exception\EventListener\PimcoreElementNotFoundException;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 use Valantic\ElasticaBridgeBundle\Service\DocumentHelper;
-use Valantic\ElasticaBridgeBundle\Service\IndexHelper;
 
 /**
  * An abstract listener for DataObject and Document listeners.
@@ -28,7 +28,6 @@ abstract class AbstractListener implements EventSubscriberInterface
         protected IndexRepository $indexRepository,
         protected ElasticsearchClient $esClient,
         protected DocumentHelper $documentHelper,
-        protected IndexHelper $indexHelper,
     ) {
     }
 
@@ -50,7 +49,7 @@ abstract class AbstractListener implements EventSubscriberInterface
      */
     protected function decideAction(AbstractElement $element): void
     {
-        foreach ($this->indexHelper->matchingIndicesForElement($this->indexRepository->flattened(), $element) as $index) {
+        foreach ($this->matchingIndicesForElement($this->indexRepository->flattened(), $element) as $index) {
             $document = $index->findDocumentInstanceByPimcore($element);
 
             if (!$document instanceof DocumentInterface) {
@@ -73,7 +72,7 @@ abstract class AbstractListener implements EventSubscriberInterface
 
             $elasticsearchId = $document::getElasticsearchId($element);
 
-            $isPresent = $this->indexHelper->isIdInIndex($elasticsearchId, $index);
+            $isPresent = $this->isIdInIndex($elasticsearchId, $index);
 
             if ($document->shouldIndex($element)) {
                 if ($isPresent) {
@@ -95,7 +94,7 @@ abstract class AbstractListener implements EventSubscriberInterface
 
     protected function ensurePresent(AbstractElement $element): void
     {
-        foreach ($this->indexHelper->matchingIndicesForElement($this->indexRepository->flattened(), $element) as $index) {
+        foreach ($this->matchingIndicesForElement($this->indexRepository->flattened(), $element) as $index) {
             $document = $index->findDocumentInstanceByPimcore($element);
 
             if (!$document instanceof DocumentInterface) {
@@ -110,7 +109,7 @@ abstract class AbstractListener implements EventSubscriberInterface
                 continue;
             }
 
-            if ($this->indexHelper->isIdInIndex($document::getElasticsearchId($element), $index)) {
+            if ($this->isIdInIndex($document::getElasticsearchId($element), $index)) {
                 $this->updateElementInIndex($element, $index, $document);
                 $this->documentHelper->resetTenantIfNeeded($document, $index);
 
@@ -124,7 +123,7 @@ abstract class AbstractListener implements EventSubscriberInterface
 
     protected function ensureMissing(AbstractElement $element): void
     {
-        foreach ($this->indexHelper->matchingIndicesForElement($this->indexRepository->flattened(), $element) as $index) {
+        foreach ($this->matchingIndicesForElement($this->indexRepository->flattened(), $element) as $index) {
             $document = $index->findDocumentInstanceByPimcore($element);
 
             if (!$document instanceof DocumentInterface) {
@@ -141,7 +140,7 @@ abstract class AbstractListener implements EventSubscriberInterface
 
             $elasticsearchId = $document::getElasticsearchId($element);
 
-            if (!$this->indexHelper->isIdInIndex($elasticsearchId, $index)) {
+            if (!$this->isIdInIndex($elasticsearchId, $index)) {
                 $this->documentHelper->resetTenantIfNeeded($document, $index);
 
                 continue;
@@ -152,20 +151,29 @@ abstract class AbstractListener implements EventSubscriberInterface
         }
     }
 
-    protected function addElementToIndex(AbstractElement $element, IndexInterface $index, DocumentInterface $document): void
-    {
+    protected function addElementToIndex(
+        AbstractElement $element,
+        IndexInterface $index,
+        DocumentInterface $document,
+    ): void {
         $document = $this->documentHelper->elementToDocument($document, $element);
         $index->getElasticaIndex()->addDocument($document);
     }
 
-    protected function updateElementInIndex(AbstractElement $element, IndexInterface $index, DocumentInterface $document): void
-    {
+    protected function updateElementInIndex(
+        AbstractElement $element,
+        IndexInterface $index,
+        DocumentInterface $document,
+    ): void {
         $document = $this->documentHelper->elementToDocument($document, $element);
         $index->getElasticaIndex()->addDocument($document); // updateDocument() allows partial updates, hence the full replace here
     }
 
-    protected function deleteElementFromIndex(AbstractElement $element, IndexInterface $index, DocumentInterface $document): void
-    {
+    protected function deleteElementFromIndex(
+        AbstractElement $element,
+        IndexInterface $index,
+        DocumentInterface $document,
+    ): void {
         $elasticsearchId = $document::getElasticsearchId($element);
         $index->getElasticaIndex()->deleteById($elasticsearchId);
     }
@@ -191,5 +199,40 @@ abstract class AbstractListener implements EventSubscriberInterface
         }
 
         return $elementClass::getById($element->getId()) ?? throw $e;
+    }
+
+    /**
+     * Returns an array of indices that could contain $element.
+     *
+     * @param \Generator<string,IndexInterface,void,void> $indices
+     *
+     * @return IndexInterface[]
+     */
+    private function matchingIndicesForElement(\Generator $indices, AbstractElement $element): array
+    {
+        $matching = [];
+
+        foreach ($indices as $index) {
+            /** @var IndexInterface $index */
+            if ($index->isElementAllowedInIndex($element)) {
+                $matching[] = $index;
+            }
+        }
+
+        return $matching;
+    }
+
+    /**
+     * Checks whether a given ID is in an index.
+     */
+    private function isIdInIndex(string $id, IndexInterface $index): bool
+    {
+        try {
+            $index->getElasticaIndex()->getDocument($id);
+        } catch (NotFoundException) {
+            return false;
+        }
+
+        return true;
     }
 }
