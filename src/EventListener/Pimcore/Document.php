@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\EventListener\Pimcore;
 
+use Pimcore\Event\DocumentEvents;
 use Pimcore\Event\Model\DocumentEvent;
 
 class Document extends AbstractListener
@@ -33,5 +34,14 @@ class Document extends AbstractListener
         }
 
         $this->ensureMissing($this->getFreshElement($event->getDocument()));
+    }
+
+    public static function getSubscribedEvents(): array
+    {
+        return [
+            DocumentEvents::POST_ADD => 'added',
+            DocumentEvents::POST_UPDATE => 'updated',
+            DocumentEvents::PRE_DELETE => 'deleted',
+        ];
     }
 }

@@ -20,26 +20,11 @@ services:
       $host: '%valantic_elastica_bridge.client.host%'
       $port: '%valantic_elastica_bridge.client.port%'
 
-  Valantic\ElasticaBridgeBundle\EventListener\Pimcore\Asset:
-    tags:
-      - { name: kernel.event_listener, event: pimcore.asset.postAdd, method: added }
-      - { name: kernel.event_listener, event: pimcore.asset.postUpdate, method: updated }
-      - { name: kernel.event_listener, event: pimcore.asset.preDelete, method: deleted }
-
-  Valantic\ElasticaBridgeBundle\EventListener\Pimcore\DataObject:
-    tags:
-      - { name: kernel.event_listener, event: pimcore.dataobject.postAdd, method: added }
-      - { name: kernel.event_listener, event: pimcore.dataobject.postUpdate, method: updated }
-      - { name: kernel.event_listener, event: pimcore.dataobject.preDelete, method: deleted }
-
-  Valantic\ElasticaBridgeBundle\EventListener\Pimcore\Document:
-    tags:
-      - { name: kernel.event_listener, event: pimcore.document.postAdd, method: added }
-      - { name: kernel.event_listener, event: pimcore.document.postUpdate, method: updated }
-      - { name: kernel.event_listener, event: pimcore.document.preDelete, method: deleted }
-
   Valantic\ElasticaBridgeBundle\Service\:
     resource: '../../Service/*'
+
+  Valantic\ElasticaBridgeBundle\EventListener\:
+    resource: '../../EventListener/*'
 
   Valantic\ElasticaBridgeBundle\Repository\IndexRepository:
     arguments:

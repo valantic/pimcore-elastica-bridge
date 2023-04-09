@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\EventListener\Pimcore;
 
+use Pimcore\Event\DataObjectEvents;
 use Pimcore\Event\Model\DataObjectEvent;
 
 class DataObject extends AbstractListener
@@ -33,5 +34,14 @@ class DataObject extends AbstractListener
         }
 
         $this->ensureMissing($this->getFreshElement($event->getObject()));
+    }
+
+    public static function getSubscribedEvents(): array
+    {
+        return [
+            DataObjectEvents::POST_ADD => 'added',
+            DataObjectEvents::POST_UPDATE => 'updated',
+            DataObjectEvents::PRE_DELETE => 'deleted',
+        ];
     }
 }

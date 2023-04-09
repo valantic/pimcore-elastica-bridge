@@ -6,6 +6,7 @@ namespace Valantic\ElasticaBridgeBundle\EventListener\Pimcore;
 
 use Pimcore\Model\DataObject\AbstractObject;
 use Pimcore\Model\Element\AbstractElement;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Exception\EventListener\PimcoreElementNotFoundException;
@@ -19,7 +20,7 @@ use Valantic\ElasticaBridgeBundle\Service\IndexHelper;
  * These listeners are automatically registered by the bundle and update Elasticsearch with
  * any changes made in Pimcore.
  */
-abstract class AbstractListener
+abstract class AbstractListener implements EventSubscriberInterface
 {
     protected static bool $isEnabled = true;
 
