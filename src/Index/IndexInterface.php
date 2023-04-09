@@ -6,7 +6,6 @@ namespace Valantic\ElasticaBridgeBundle\Index;
 
 use Elastica\Document;
 use Elastica\Index;
-use Elastica\Query;
 use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\Command\Index as IndexCommand;
 use Valantic\ElasticaBridgeBundle\Document\DocumentNormalizerTrait;
@@ -32,23 +31,6 @@ interface IndexInterface
      * @see IndexCommand
      */
     public function getBatchSize(): int;
-
-    /**
-     * These filter queries will be applied to every query made to this index.
-     *
-     * @return Query[]
-     */
-    public function getGlobalFilters(): array;
-
-    /**
-     * Disables global filters.
-     */
-    public function disableGlobalFilters(): void;
-
-    /**
-     * Enables global filters.
-     */
-    public function enableGlobalFilters(): void;
 
     /**
      * @return bool

@@ -16,17 +16,10 @@ use Valantic\ElasticaBridgeBundle\Repository\DocumentRepository;
 
 abstract class AbstractIndex implements IndexInterface
 {
-    protected bool $areGlobalFiltersEnabled = true;
-
     public function __construct(
         private readonly ElasticsearchClient $client,
         private readonly DocumentRepository $documentRepository,
     ) {
-    }
-
-    public function getGlobalFilters(): array
-    {
-        return [];
     }
 
     public function getMapping(): array
@@ -37,16 +30,6 @@ abstract class AbstractIndex implements IndexInterface
     public function getSettings(): array
     {
         return [];
-    }
-
-    public function disableGlobalFilters(): void
-    {
-        $this->areGlobalFiltersEnabled = false;
-    }
-
-    public function enableGlobalFilters(): void
-    {
-        $this->areGlobalFiltersEnabled = true;
     }
 
     final public function hasMapping(): bool
