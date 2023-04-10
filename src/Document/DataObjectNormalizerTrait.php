@@ -12,6 +12,8 @@ use Pimcore\Tool;
 
 /**
  * Collection of helpers for normalizing a DataObject.
+ *
+ * @template TElement of Concrete
  */
 trait DataObjectNormalizerTrait
 {
@@ -34,13 +36,13 @@ trait DataObjectNormalizerTrait
      * $fields can be a simple array of strings, an array of 'elasticField' => 'pimcoreField', or even
      * 'elasticField' => function($element, $locale) -- or a mix of these options.
      *
-     * @param Concrete $element
-     * @param array $fields
+     * @param TElement $element
+     * @param string[]|callable[] $fields
      * @param bool $useFallbackValues
      *
      * @throws \Exception
      *
-     * @return array[]
+     * @return array{localized: array<string, array<string, mixed>>}
      */
     protected function localizedAttributes(Concrete $element, array $fields, bool $useFallbackValues = true): array
     {
@@ -78,10 +80,12 @@ trait DataObjectNormalizerTrait
      * $fields can be a simple array of strings, an array of 'elasticField' => 'pimcoreField', or even
      * 'elasticField' => function($element) -- or a mix of these options.
      *
-     * @param Concrete $element
-     * @param array $fields
+     * @param TElement $element
+     * @param string[]|callable[] $fields
      *
      * @throws \Exception
+     *
+     * @return array<string, mixed>
      */
     protected function plainAttributes(Concrete $element, array $fields): array
     {
@@ -100,10 +104,12 @@ trait DataObjectNormalizerTrait
      * $fields can be a simple array of strings, an array of 'elasticField' => 'pimcoreField', or even
      * 'elasticField' => function($element) -- or a mix of these options.
      *
-     * @param Concrete $element
-     * @param array $fields
+     * @param TElement $element
+     * @param string[]|callable[] $fields
      *
      * @throws \Exception
+     *
+     * @return array<string, mixed>
      */
     protected function relationAttributes(Concrete $element, array $fields): array
     {
@@ -137,7 +143,9 @@ trait DataObjectNormalizerTrait
     /**
      * Returns a normalized array of IDs of the direct children of $element, optionally limited by $objectTypes.
      *
-     * @return array[]
+     * @param string[] $objectTypes
+     *
+     * @return array{children: array<int, int>}
      */
     protected function children(
         Concrete $element,
@@ -150,13 +158,18 @@ trait DataObjectNormalizerTrait
             $ids[] = $child->getId();
         }
 
-        return [DocumentInterface::ATTRIBUTE_CHILDREN => $ids];
+        return [
+            DocumentInterface::ATTRIBUTE_CHILDREN => array_values(array_filter($ids)),
+        ];
     }
 
     /**
      * Returns a normalized array of IDs of all (recursive) children of $element, optionally limited by $objectTypes.
      *
-     * @return array[]
+     * @param string[] $objectTypes
+     * @param int[] $carry
+     *
+     * @return array{childrenRecursive: array<int, int>}
      */
     protected function childrenRecursive(
         Concrete $element,
@@ -166,15 +179,18 @@ trait DataObjectNormalizerTrait
         foreach ($element->getChildren($objectTypes) as $child) {
             /** @var Concrete $child */
             $carry[] = $child->getId();
+            $carry = array_values(array_filter($carry));
             $carry = $this->childrenRecursive($child, $objectTypes, $carry)[DocumentInterface::ATTRIBUTE_CHILDREN_RECURSIVE];
         }
 
-        return [DocumentInterface::ATTRIBUTE_CHILDREN_RECURSIVE => $carry];
+        return [DocumentInterface::ATTRIBUTE_CHILDREN_RECURSIVE => array_values(array_filter($carry))];
     }
 
     /**
      * The locales to use for e.g. $this->localizedAttributes().
      * Can be overridden for customizing that list.
+     *
+     * @return string[]
      */
     protected function getLocales(): array
     {
@@ -183,6 +199,10 @@ trait DataObjectNormalizerTrait
 
     /**
      * @internal
+     *
+     * @param array<int|string, mixed> $fields
+     *
+     * @return array<string, mixed>
      */
     private function expandFields(array $fields): array
     {
@@ -190,6 +210,7 @@ trait DataObjectNormalizerTrait
 
         foreach ($fields as $target => $source) {
             if (is_int($target)) {
+                /** @var string $source */
                 $expanded[$source] = $source;
             } else {
                 $expanded[$target] = $source;

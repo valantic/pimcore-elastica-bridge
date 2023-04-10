@@ -11,6 +11,8 @@ use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 
 /**
  * Describes how a Pimcore element relates to an Elasticsearch in the context of this index.
+ *
+ * @template TElement of AbstractElement
  */
 interface DocumentInterface
 {
@@ -67,6 +69,8 @@ interface DocumentInterface
      * Returns the normalization of the Pimcore element.
      * This is how the Pimcore element will be stored in the Elasticsearch document.
      *
+     * @param TElement $element
+     *
      * @return array<mixed>
      *
      * @see DocumentNormalizerTrait
@@ -78,6 +82,8 @@ interface DocumentInterface
     /**
      * Indicates whether a Pimcore element should be indexed.
      * E.g. return false when the element is not published.
+     *
+     * @param TElement $element
      */
     public function shouldIndex(AbstractElement $element): bool;
 
@@ -93,6 +99,8 @@ interface DocumentInterface
 
     /**
      * Returns the Elasticsearch ID for a Pimcore element.
+     *
+     * @param TElement $element
      *
      * @return string
      *

@@ -17,6 +17,11 @@ use UnhandledMatchError;
 use Valantic\ElasticaBridgeBundle\Enum\DocumentType;
 use Valantic\ElasticaBridgeBundle\Exception\DocumentType\UnknownPimcoreElementType;
 
+/**
+ * @template TElement of AbstractElement
+ *
+ * @implements DocumentInterface<TElement>
+ */
 abstract class AbstractDocument implements DocumentInterface
 {
     public function treatObjectVariantsAsDocuments(): bool

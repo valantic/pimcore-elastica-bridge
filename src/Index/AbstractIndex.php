@@ -60,6 +60,9 @@ abstract class AbstractIndex implements IndexInterface
         return $this->findDocumentInstanceByPimcore($element) instanceof DocumentInterface;
     }
 
+    /**
+     * @return DocumentInterface<AbstractElement>
+     */
     public function getDocumentInstance(Document $document): ?DocumentInterface
     {
         $type = $document->get(DocumentInterface::META_TYPE);
@@ -76,6 +79,9 @@ abstract class AbstractIndex implements IndexInterface
         return null;
     }
 
+    /**
+     * @return DocumentInterface<AbstractElement>
+     */
     public function findDocumentInstanceByPimcore(AbstractElement $element): ?DocumentInterface
     {
         foreach ($this->getAllowedDocuments() as $allowedDocument) {

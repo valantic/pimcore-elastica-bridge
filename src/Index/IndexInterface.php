@@ -96,7 +96,7 @@ interface IndexInterface
      *
      * @param Document $document
      *
-     * @return DocumentInterface|null
+     * @return DocumentInterface<AbstractElement>|null
      *
      * @internal
      */
@@ -114,7 +114,7 @@ interface IndexInterface
      *
      * @param AbstractElement $element
      *
-     * @return DocumentInterface|null
+     * @return DocumentInterface<AbstractElement>|null
      */
     public function findDocumentInstanceByPimcore(AbstractElement $element): ?DocumentInterface;
 

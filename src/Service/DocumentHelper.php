@@ -17,6 +17,8 @@ class DocumentHelper
      * Creates an Elastica document based on an DocumentInterface.
      *
      * @internal
+     *
+     * @param DocumentInterface<AbstractElement> $document
      */
     public function elementToDocument(DocumentInterface $document, AbstractElement $dataObject): Document
     {
@@ -32,6 +34,8 @@ class DocumentHelper
 
     /**
      * Set the tenant (if needed) on the Document based on the Index tenant.
+     *
+     * @param DocumentInterface<AbstractElement> $document
      */
     public function setTenantIfNeeded(DocumentInterface $document, IndexInterface $index): void
     {
@@ -42,6 +46,8 @@ class DocumentHelper
 
     /**
      * Reset the tenant (if needed) on the Document based on the Index tenant.
+     *
+     * @param DocumentInterface<AbstractElement> $document
      */
     public function resetTenantIfNeeded(DocumentInterface $document, IndexInterface $index): void
     {

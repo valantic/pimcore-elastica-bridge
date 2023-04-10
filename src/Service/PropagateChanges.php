@@ -70,6 +70,9 @@ class PropagateChanges
         }
     }
 
+    /**
+     * @param DocumentInterface<AbstractElement> $document
+     */
     private function addElementToIndex(
         AbstractElement $element,
         IndexInterface $index,
@@ -79,6 +82,9 @@ class PropagateChanges
         $index->getElasticaIndex()->addDocument($document);
     }
 
+    /**
+     * @param DocumentInterface<AbstractElement> $document
+     */
     private function updateElementInIndex(
         AbstractElement $element,
         IndexInterface $index,
@@ -88,6 +94,9 @@ class PropagateChanges
         $index->getElasticaIndex()->addDocument($document); // updateDocument() allows partial updates, hence the full replace here
     }
 
+    /**
+     * @param DocumentInterface<AbstractElement> $document
+     */
     private function deleteElementFromIndex(
         AbstractElement $element,
         IndexInterface $index,

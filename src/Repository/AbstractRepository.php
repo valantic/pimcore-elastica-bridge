@@ -7,20 +7,20 @@ namespace Valantic\ElasticaBridgeBundle\Repository;
 use Valantic\ElasticaBridgeBundle\Exception\Index\ItemNotFoundInRepositoryException;
 
 /**
- * @template T
+ * @template TItem
  */
 abstract class AbstractRepository
 {
-    /** @var T[] */
+    /** @var TItem[] */
     protected array $items;
 
     public function __construct(
-        /** @var \Iterator<T> */
+        /** @var \Iterator<TItem> */
         protected iterable $iterables,
     ) {
     }
 
-     /** @return T[] */
+     /** @return TItem[] */
      public function all(): array
      {
          $this->items ??= $this->initializeItemsFromIterables();
@@ -28,14 +28,14 @@ abstract class AbstractRepository
          return $this->items;
      }
 
-     /** @return T */
+     /** @return TItem */
      public function get(string $key)
      {
          return $this->all()[$key] ?? throw new ItemNotFoundInRepositoryException($key);
      }
 
     /**
-     * @return array<class-string<T>,T>
+     * @return array<class-string<TItem>,TItem>
      */
     protected function initializeItemsFromIterables(): array
     {
