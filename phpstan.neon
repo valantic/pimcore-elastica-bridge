@@ -8,5 +8,7 @@ parameters:
 
     level: 8
 
+    treatPhpDocTypesAsCertain: false
+
     ignoreErrors:
         - '#Call to an undefined method Symfony\\Component\\Config\\Definition\\Builder\\NodeDefinition::children\(\).#'

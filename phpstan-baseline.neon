@@ -1,26 +1,6 @@
 parameters:
 	ignoreErrors:
 		-
-			message: "#^Construct empty\\(\\) is not allowed\\. Use more strict comparison\\.$#"
-			count: 1
-			path: src/Command/Index.php
-
-		-
-			message: "#^Comparison operation \"\\>\" between 0 and 0 is always false\\.$#"
-			count: 1
-			path: src/Command/PopulateIndex.php
-
-		-
-			message: "#^Construct empty\\(\\) is not allowed\\. Use more strict comparison\\.$#"
-			count: 1
-			path: src/Command/PopulateIndex.php
-
-		-
-			message: "#^Foreach overwrites \\$indexConfig with its value variable\\.$#"
-			count: 1
-			path: src/Command/PopulateIndex.php
-
-		-
 			message: "#^Method Valantic\\\\ElasticaBridgeBundle\\\\Document\\\\AbstractDocument\\:\\:getListingClass\\(\\) should return class\\-string but returns string\\.$#"
 			count: 1
 			path: src/Document/AbstractDocument.php

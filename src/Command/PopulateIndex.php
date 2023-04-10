@@ -41,13 +41,7 @@ class PopulateIndex extends BaseCommand
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $indexConfig = null;
-
-        foreach ($this->indexRepository->flattened() as $indexConfig) {
-            if ($indexConfig->getName() === $this->input->getOption(self::OPTION_CONFIG)) {
-                break;
-            }
-        }
+        $indexConfig = $this->getIndex();
 
         if (!$indexConfig instanceof IndexInterface) {
             return self::FAILURE;
@@ -57,6 +51,17 @@ class PopulateIndex extends BaseCommand
         $this->populateIndex($indexConfig, $index);
 
         return self::SUCCESS;
+    }
+
+    private function getIndex(): ?IndexInterface
+    {
+        foreach ($this->indexRepository->flattened() as $indexConfig) {
+            if ($indexConfig->getName() === $this->input->getOption(self::OPTION_CONFIG)) {
+                return $indexConfig;
+            }
+        }
+
+        return null;
     }
 
     private function populateIndex(IndexInterface $indexConfig, ElasticaIndex $esIndex): void
@@ -121,10 +126,9 @@ class PopulateIndex extends BaseCommand
             $this->output->writeln(sprintf('In %s line %d', $throwable->getFile(), $throwable->getLine()));
             $this->output->writeln('');
 
-            if (!empty($throwable->getMessage())) {
-                $this->output->writeln($throwable->getMessage());
-                $this->output->writeln('');
-            }
+            $this->output->writeln($throwable->getMessage());
+            $this->output->writeln('');
+
             $this->output->writeln($throwable->getTraceAsString());
             $this->output->writeln('');
 

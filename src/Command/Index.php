@@ -63,7 +63,8 @@ class Index extends BaseCommand
 
         foreach ($this->indexRepository->flattened() as $indexConfig) {
             if (
-                !empty($this->input->getArgument(self::ARGUMENT_INDEX))
+                is_array($this->input->getArgument(self::ARGUMENT_INDEX))
+                && count($this->input->getArgument(self::ARGUMENT_INDEX)) > 0
                 && !in_array($indexConfig->getName(), $this->input->getArgument(self::ARGUMENT_INDEX), true)
             ) {
                 $skippedIndices[] = $indexConfig->getName();
