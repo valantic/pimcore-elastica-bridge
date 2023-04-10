@@ -4,18 +4,44 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Repository;
 
+use Valantic\ElasticaBridgeBundle\Exception\Index\ItemNotFoundInRepositoryException;
+
+/**
+ * @template T
+ */
 abstract class AbstractRepository
 {
+    /** @var T[] */
+    protected array $items;
+
+    public function __construct(
+        /** @var \Iterator<T> */
+        protected iterable $iterables,
+    ) {
+    }
+
+     /** @return T[] */
+     public function all(): array
+     {
+         $this->items ??= $this->initializeItemsFromIterables();
+
+         return $this->items;
+     }
+
+     /** @return T */
+     public function get(string $key)
+     {
+         return $this->all()[$key] ?? throw new ItemNotFoundInRepositoryException($key);
+     }
+
     /**
-     * @param iterable<object> $iterables
-     *
-     * @return array<string,object>
+     * @return array<class-string<T>,T>
      */
-    protected function iterableToArray(iterable $iterables): array
+    protected function initializeItemsFromIterables(): array
     {
         $arr = [];
 
-        foreach ($iterables as $iterable) {
+        foreach ($this->iterables as $iterable) {
             $arr[$iterable::class] = $iterable;
         }
 

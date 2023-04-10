@@ -7,35 +7,9 @@ namespace Valantic\ElasticaBridgeBundle\Repository;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 use Valantic\ElasticaBridgeBundle\Index\TenantAwareInterface;
 
-/**
- * Used for typehinting. Contains an array of all IndexInterface implementations.
- *
- * @see IndexInterface
- */
+/** @extends AbstractRepository<IndexInterface> */
 class IndexRepository extends AbstractRepository
 {
-    /**
-     * @var IndexInterface[]
-     */
-    private readonly array $indices;
-
-    public function __construct(iterable $indices)
-    {
-        $this->indices = $this->iterableToArray($indices);
-    }
-
-    /**
-     * @internal generally, usage is discouraged
-     *
-     * @see IndexRepository::flattened()
-     *
-     * @return IndexInterface[]
-     */
-    public function all(): array
-    {
-        return $this->indices;
-    }
-
     /**
      * @return \Generator<string,IndexInterface,void,void>
      */
@@ -52,10 +26,5 @@ class IndexRepository extends AbstractRepository
                 yield $indexConfig->getName() => $indexConfig;
             }
         }
-    }
-
-    public function get(string $key): IndexInterface
-    {
-        return $this->indices[$key];
     }
 }
