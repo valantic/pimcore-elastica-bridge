@@ -27,47 +27,49 @@ class PropagateChanges
      */
     public function handle(AbstractElement $element): void
     {
-        foreach ($this->matchingIndicesForElement($this->indexRepository->flattened(), $element) as $index) {
-            $document = $index->findDocumentInstanceByPimcore($element);
+        $indices = $this->matchingIndicesForElement($this->indexRepository->flattened(), $element);
 
-            if (!$document instanceof DocumentInterface) {
-                continue;
-            }
-
-            $this->documentHelper->setTenantIfNeeded($document, $index);
-
-            if (!in_array($document::class, $index->subscribedDocuments(), true)) {
-                $this->documentHelper->resetTenantIfNeeded($document, $index);
-
-                continue;
-            }
-
-            if ($element->getType() === AbstractObject::OBJECT_TYPE_VARIANT && !$document->treatObjectVariantsAsDocuments()) {
-                $this->documentHelper->resetTenantIfNeeded($document, $index);
-
-                continue;
-            }
-
-            $elasticsearchId = $document::getElasticsearchId($element);
-
-            $isPresent = $this->isIdInIndex($elasticsearchId, $index);
-
-            if ($document->shouldIndex($element)) {
-                if ($isPresent) {
-                    $this->updateElementInIndex($element, $index, $document);
-                }
-
-                if (!$isPresent) {
-                    $this->addElementToIndex($element, $index, $document);
-                }
-            }
-
-            if (!$document->shouldIndex($element) && $isPresent) {
-                $this->deleteElementFromIndex($element, $index, $document);
-            }
-
-            $this->documentHelper->resetTenantIfNeeded($document, $index);
+        foreach ($indices as $index) {
+            $this->handleIndex($element, $index);
         }
+    }
+
+    private function handleIndex(AbstractElement $element, IndexInterface $index): void
+    {
+        $document = $index->findDocumentInstanceByPimcore($element);
+
+        if (!$document instanceof DocumentInterface) {
+            return;
+        }
+
+        $this->documentHelper->setTenantIfNeeded($document, $index);
+
+        if (
+            !in_array($document::class, $index->subscribedDocuments(), true)
+            || ($element->getType() === AbstractObject::OBJECT_TYPE_VARIANT && !$document->treatObjectVariantsAsDocuments())
+        ) {
+            $this->documentHelper->resetTenantIfNeeded($document, $index);
+
+            return;
+        }
+
+        $isPresent = $this->isIdInIndex($document::getElasticsearchId($element), $index);
+
+        if ($document->shouldIndex($element)) {
+            if ($isPresent) {
+                $this->updateElementInIndex($element, $index, $document);
+            }
+
+            if (!$isPresent) {
+                $this->addElementToIndex($element, $index, $document);
+            }
+        }
+
+        if (!$document->shouldIndex($element) && $isPresent) {
+            $this->deleteElementFromIndex($element, $index, $document);
+        }
+
+        $this->documentHelper->resetTenantIfNeeded($document, $index);
     }
 
     /**
@@ -91,7 +93,8 @@ class PropagateChanges
         DocumentInterface $document,
     ): void {
         $document = $this->documentHelper->elementToDocument($document, $element);
-        $index->getElasticaIndex()->addDocument($document); // updateDocument() allows partial updates, hence the full replace here
+        // updateDocument() allows partial updates, hence the full replace here
+        $index->getElasticaIndex()->addDocument($document);
     }
 
     /**
@@ -113,8 +116,10 @@ class PropagateChanges
      *
      * @return IndexInterface[]
      */
-    private function matchingIndicesForElement(\Generator $indices, AbstractElement $element): array
-    {
+    private function matchingIndicesForElement(
+        \Generator $indices,
+        AbstractElement $element,
+    ): array {
         $matching = [];
 
         foreach ($indices as $index) {

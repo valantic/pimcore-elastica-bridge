@@ -36,8 +36,11 @@ trait DocumentNormalizerTrait
         $data = [];
         $editableNames = array_merge(
             array_map(fn (Document\Editable $editable): string => $editable->getName(), $document->getEditables()),
-            $document->getContentMasterDocumentId() && $document->getContentMasterDocument() instanceof Document\PageSnippet
-                ? array_map(fn (Document\Editable $editable): string => $editable->getName(), $document->getContentMasterDocument()->getEditables())
+            $document->getContentMasterDocument() instanceof Document\PageSnippet
+                ? array_map(
+                    fn (Document\Editable $editable): string => $editable->getName(),
+                    $document->getContentMasterDocument()->getEditables()
+                )
                 : []
         );
 
@@ -55,8 +58,10 @@ trait DocumentNormalizerTrait
         return array_values(array_filter($data));
     }
 
-    protected function editableRelation(Document\Page $document, Document\Editable\Relation $editable): ?string
-    {
+    protected function editableRelation(
+        Document\Page $document,
+        Document\Editable\Relation $editable,
+    ): ?string {
         if ($editable->type === null && $editable->subtype === null) {
             return null;
         }
@@ -76,113 +81,157 @@ trait DocumentNormalizerTrait
         throw new EditablePartiallyImplementedException(sprintf('%s is not yet implemented for %s/%s (%s)', $editable->getType(), $editable->type, $editable->subtype, $editable->getName()));
     }
 
-    protected function editableRelations(Document\Page $document, Document\Editable\Relations $editable): ?string
-    {
+    protected function editableRelations(
+        Document\Page $document,
+        Document\Editable\Relations $editable,
+    ): ?string {
         return null;
     }
 
-    protected function editableNumeric(Document\Page $document, Document\Editable\Numeric $editable): ?string
-    {
+    protected function editableNumeric(
+        Document\Page $document,
+        Document\Editable\Numeric $editable,
+    ): ?string {
         return $editable->getData();
     }
 
-    protected function editableInput(Document\Page $document, Document\Editable\Input $editable): ?string
-    {
+    protected function editableInput(
+        Document\Page $document,
+        Document\Editable\Input $editable,
+    ): ?string {
         return $editable->getData();
     }
 
-    protected function editableTextarea(Document\Page $document, Document\Editable\Textarea $editable): ?string
-    {
+    protected function editableTextarea(
+        Document\Page $document,
+        Document\Editable\Textarea $editable,
+    ): ?string {
         return $editable->getData();
     }
 
-    protected function editableWysiwyg(Document\Page $document, Document\Editable\Wysiwyg $editable): ?string
-    {
+    protected function editableWysiwyg(
+        Document\Page $document,
+        Document\Editable\Wysiwyg $editable,
+    ): ?string {
         return $editable->getData();
     }
 
-    protected function editableArea(Document\Page $document, Document\Editable\Area $editable): ?string
-    {
+    protected function editableArea(
+        Document\Page $document,
+        Document\Editable\Area $editable,
+    ): ?string {
         return null;
     }
 
-    protected function editableAreablock(Document\Page $document, Document\Editable\Areablock $editable): ?string
-    {
+    protected function editableAreablock(
+        Document\Page $document,
+        Document\Editable\Areablock $editable,
+    ): ?string {
         return null;
     }
 
-    protected function editableBlock(Document\Page $document, Document\Editable\Block $editable): ?string
-    {
+    protected function editableBlock(
+        Document\Page $document,
+        Document\Editable\Block $editable,
+    ): ?string {
         return null;
     }
 
-    protected function editableCheckbox(Document\Page $document, Document\Editable\Checkbox $editable): ?string
-    {
+    protected function editableCheckbox(
+        Document\Page $document,
+        Document\Editable\Checkbox $editable,
+    ): ?string {
         return null;
     }
 
-    protected function editableDao(Document\Page $document, Document\Editable\Dao $editable): ?string
-    {
+    protected function editableDao(
+        Document\Page $document,
+        Document\Editable\Dao $editable,
+    ): ?string {
         return null;
     }
 
-    protected function editableDate(Document\Page $document, Document\Editable\Date $editable): ?string
-    {
+    protected function editableDate(
+        Document\Page $document,
+        Document\Editable\Date $editable,
+    ): ?string {
         return null;
     }
 
-    protected function editableEmbed(Document\Page $document, Document\Editable\Embed $editable): ?string
-    {
+    protected function editableEmbed(
+        Document\Page $document,
+        Document\Editable\Embed $editable,
+    ): ?string {
         return null;
     }
 
-    protected function editableImage(Document\Page $document, Document\Editable\Image $editable): ?string
-    {
+    protected function editableImage(
+        Document\Page $document,
+        Document\Editable\Image $editable,
+    ): ?string {
         return null;
     }
 
-    protected function editableLink(Document\Page $document, Document\Editable\Link $editable): ?string
-    {
+    protected function editableLink(
+        Document\Page $document,
+        Document\Editable\Link $editable,
+    ): ?string {
         return null;
     }
 
-    protected function editableMultiselect(Document\Page $document, Document\Editable\Multiselect $editable): ?string
-    {
+    protected function editableMultiselect(
+        Document\Page $document,
+        Document\Editable\Multiselect $editable,
+    ): ?string {
         return null;
     }
 
-    protected function editablePdf(Document\Page $document, Document\Editable\Pdf $editable): ?string
-    {
+    protected function editablePdf(
+        Document\Page $document,
+        Document\Editable\Pdf $editable,
+    ): ?string {
         return null;
     }
 
-    protected function editableScheduledblock(Document\Page $document, Document\Editable\Scheduledblock $editable): ?string
-    {
+    protected function editableScheduledblock(
+        Document\Page $document,
+        Document\Editable\Scheduledblock $editable,
+    ): ?string {
         return null;
     }
 
-    protected function editableSelect(Document\Page $document, Document\Editable\Select $editable): ?string
-    {
+    protected function editableSelect(
+        Document\Page $document,
+        Document\Editable\Select $editable,
+    ): ?string {
         return null;
     }
 
-    protected function editableVideo(Document\Page $document, Document\Editable\Video $editable): ?string
-    {
+    protected function editableVideo(
+        Document\Page $document,
+        Document\Editable\Video $editable,
+    ): ?string {
         return null;
     }
 
-    protected function editableRenderlet(Document\Page $document, Document\Editable\Renderlet $editable): ?string
-    {
+    protected function editableRenderlet(
+        Document\Page $document,
+        Document\Editable\Renderlet $editable,
+    ): ?string {
         return null;
     }
 
-    protected function editableSnippet(Document\Page $document, Document\Editable\Snippet $editable): ?string
-    {
+    protected function editableSnippet(
+        Document\Page $document,
+        Document\Editable\Snippet $editable,
+    ): ?string {
         return null;
     }
 
-    protected function editableTable(Document\Page $document, Document\Editable\Table $editable): ?string
-    {
+    protected function editableTable(
+        Document\Page $document,
+        Document\Editable\Table $editable,
+    ): ?string {
         return null;
     }
 }

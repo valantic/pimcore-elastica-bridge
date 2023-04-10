@@ -6,6 +6,7 @@ namespace Valantic\ElasticaBridgeBundle\Document;
 
 use Pimcore\Model\DataObject;
 use Pimcore\Model\Listing\AbstractListing;
+use Valantic\ElasticaBridgeBundle\Exception\DocumentType\PimcoreListingClassNotFoundException;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 use Pimcore\Model\Asset;
 use Pimcore\Model\DataObject\Listing as DataObjectListing;
@@ -48,14 +49,19 @@ abstract class AbstractDocument implements DocumentInterface
 
         if ($this->getType() === DocumentType::DATA_OBJECT && $this->treatObjectVariantsAsDocuments()) {
             /** @var DataObjectListing $listingInstance */
-            $listingInstance->setObjectTypes([DataObject\AbstractObject::OBJECT_TYPE_OBJECT, DataObject\AbstractObject::OBJECT_TYPE_VARIANT]);
+            $listingInstance->setObjectTypes([
+                DataObject\AbstractObject::OBJECT_TYPE_OBJECT,
+                DataObject\AbstractObject::OBJECT_TYPE_VARIANT,
+            ]);
         }
 
         if (in_array($this->getType(), DocumentType::casesSubTypeListing(), true)) {
             $typeCondition = sprintf("`type` = '%s'", $this->getDocumentType());
 
             if ($this->getIndexListingCondition() !== null) {
-                $listingInstance->setCondition(sprintf('%s AND (%s)', $typeCondition, $this->getIndexListingCondition()));
+                $listingInstance->setCondition(
+                    sprintf('%s AND (%s)', $typeCondition, $this->getIndexListingCondition())
+                );
             } else {
                 $listingInstance->setCondition($typeCondition);
             }
@@ -142,7 +148,7 @@ abstract class AbstractDocument implements DocumentInterface
             return match ($this->getType()) {
                 DocumentType::ASSET => AssetListing::class,
                 DocumentType::DOCUMENT => DocumentListing::class,
-                DocumentType::DATA_OBJECT, DocumentType::VARIANT => $this->getSubType() . '\Listing',
+                DocumentType::DATA_OBJECT, DocumentType::VARIANT => $this->getDataObjectListingClass(),
             };
         } catch (UnhandledMatchError) {
             throw new UnknownPimcoreElementType($this->getType()->value);
@@ -157,5 +163,20 @@ abstract class AbstractDocument implements DocumentInterface
     protected function includeUnpublishedElementsInListing(): bool
     {
         return false;
+    }
+
+    /**
+     * @return class-string
+     */
+    private function getDataObjectListingClass(): string
+    {
+        $subType = $this->getSubType();
+        $className = $subType . '\Listing';
+
+        if (!class_exists($className)) {
+            throw new PimcoreListingClassNotFoundException($subType);
+        }
+
+        return $className;
     }
 }

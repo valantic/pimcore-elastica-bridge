@@ -20,8 +20,10 @@ class DocumentHelper
      *
      * @param DocumentInterface<AbstractElement> $document
      */
-    public function elementToDocument(DocumentInterface $document, AbstractElement $dataObject): Document
-    {
+    public function elementToDocument(
+        DocumentInterface $document,
+        AbstractElement $dataObject,
+    ): Document {
         return new Document(
             $document::getElasticsearchId($dataObject),
             array_merge($document->getNormalized($dataObject), [
@@ -37,9 +39,14 @@ class DocumentHelper
      *
      * @param DocumentInterface<AbstractElement> $document
      */
-    public function setTenantIfNeeded(DocumentInterface $document, IndexInterface $index): void
-    {
-        if ($index instanceof IndexTenantAwareInterfaceAlias && $document instanceof DocumentTenantAwareInterface) {
+    public function setTenantIfNeeded(
+        DocumentInterface $document,
+        IndexInterface $index,
+    ): void {
+        if (
+            $index instanceof IndexTenantAwareInterfaceAlias
+            && $document instanceof DocumentTenantAwareInterface
+        ) {
             $document->setTenant($index->getTenant());
         }
     }
@@ -49,9 +56,14 @@ class DocumentHelper
      *
      * @param DocumentInterface<AbstractElement> $document
      */
-    public function resetTenantIfNeeded(DocumentInterface $document, IndexInterface $index): void
-    {
-        if ($index instanceof IndexTenantAwareInterfaceAlias && $document instanceof DocumentTenantAwareInterface) {
+    public function resetTenantIfNeeded(
+        DocumentInterface $document,
+        IndexInterface $index,
+    ): void {
+        if (
+            $index instanceof IndexTenantAwareInterfaceAlias
+            && $document instanceof DocumentTenantAwareInterface
+        ) {
             $document->resetTenant();
         }
     }

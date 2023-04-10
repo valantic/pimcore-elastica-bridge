@@ -84,8 +84,9 @@ class PopulateIndex extends BaseCommand
                 $listingCount = $documentInstance->getListingInstance($indexConfig)->count();
                 $progressBar->setMaxSteps($listingCount > 0 ? $listingCount : 1);
                 $esDocuments = [];
+                $numberOfBatches = ceil($listingCount / $indexConfig->getBatchSize());
 
-                for ($batchNumber = 0; $batchNumber < ceil($listingCount / $indexConfig->getBatchSize()); $batchNumber++) {
+                for ($batchNumber = 0; $batchNumber < $numberOfBatches; $batchNumber++) {
                     $listing = $documentInstance->getListingInstance($indexConfig);
                     $listing->setOffset($batchNumber * $indexConfig->getBatchSize());
                     $listing->setLimit($indexConfig->getBatchSize());

@@ -44,8 +44,11 @@ trait DataObjectNormalizerTrait
      *
      * @return array{localized: array<string, array<string, mixed>>}
      */
-    protected function localizedAttributes(Concrete $element, array $fields, bool $useFallbackValues = true): array
-    {
+    protected function localizedAttributes(
+        Concrete $element,
+        array $fields,
+        bool $useFallbackValues = true,
+    ): array {
         if ($useFallbackValues) {
             $origLocale = $this->localeService->getLocale();
             $getFallbackValuesOrig = Localizedfield::getGetFallbackValues();
@@ -62,7 +65,9 @@ trait DataObjectNormalizerTrait
             $result[$locale] = [];
 
             foreach ($this->expandFields($fields) as $target => $source) {
-                $result[$locale][$target] = is_callable($source) ? $source($element, $locale) : $element->get($source, $locale);
+                $result[$locale][$target] = is_callable($source)
+                    ? $source($element, $locale)
+                    : $element->get($source, $locale);
             }
         }
 

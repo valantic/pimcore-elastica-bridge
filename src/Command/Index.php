@@ -77,7 +77,9 @@ class Index extends BaseCommand
 
         if (count($skippedIndices) > 0) {
             $this->output->writeln('');
-            $this->output->writeln(sprintf('<info>Skipped the following indices: %s</info>', implode(', ', $skippedIndices)));
+            $this->output->writeln(
+                sprintf('<info>Skipped the following indices: %s</info>', implode(', ', $skippedIndices))
+            );
         }
 
         return self::SUCCESS;
@@ -117,7 +119,9 @@ class Index extends BaseCommand
                 $newIndex->addAlias($indexConfig->getName());
                 $oldIndex->flush();
 
-                $this->output->writeln(sprintf('<comment>-> %s is now active</comment>', $newIndex->getName()));
+                $this->output->writeln(
+                    sprintf('<comment>-> %s is now active</comment>', $newIndex->getName())
+                );
             }
         }
 
@@ -203,7 +207,8 @@ class Index extends BaseCommand
         try {
             $indexConfig->getBlueGreenActiveSuffix();
         } catch (BlueGreenIndicesIncorrectlySetupException) {
-            $this->esClient->getIndex($indexConfig->getName() . IndexBlueGreenSuffix::BLUE->value)->addAlias($indexConfig->getName());
+            $this->esClient->getIndex($indexConfig->getName() . IndexBlueGreenSuffix::BLUE->value)
+                ->addAlias($indexConfig->getName());
         }
 
         $this->output->writeln('<comment>-> Ensured indices are correctly set up with alias</comment>');

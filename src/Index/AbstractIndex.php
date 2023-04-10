@@ -87,7 +87,10 @@ abstract class AbstractIndex implements IndexInterface
         foreach ($this->getAllowedDocuments() as $allowedDocument) {
             $documentInstance = $this->documentRepository->get($allowedDocument);
 
-            if (in_array($documentInstance->getType(), DocumentType::cases(), true) && $documentInstance->getSubType() === $element::class) {
+            if (
+                in_array($documentInstance->getType(), DocumentType::cases(), true)
+                && $documentInstance->getSubType() === $element::class
+            ) {
                 return $documentInstance;
             }
         }

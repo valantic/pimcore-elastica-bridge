@@ -1,6 +1,2 @@
 parameters:
 	ignoreErrors:
-		-
-			message: "#^Method Valantic\\\\ElasticaBridgeBundle\\\\Document\\\\AbstractDocument\\:\\:getListingClass\\(\\) should return class\\-string but returns string\\.$#"
-			count: 1
-			path: src/Document/AbstractDocument.php
