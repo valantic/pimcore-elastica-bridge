@@ -10,6 +10,8 @@ use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Model\Document as PimcoreDocument;
 use Pimcore\Model\Document\Listing as DocumentListing;
 use Pimcore\Model\Element\AbstractElement;
+use Pimcore\Model\Asset as PimcoreAsset;
+use Pimcore\Model\Asset\Listing as AssetListing;
 use Valantic\ElasticaBridgeBundle\Exception\DocumentType\ElasticsearchDocumentNotFoundException;
 use Valantic\ElasticaBridgeBundle\Exception\DocumentType\PimcoreElementNotFoundException;
 use Valantic\ElasticaBridgeBundle\Exception\DocumentType\UnknownPimcoreElementType;
@@ -18,23 +20,48 @@ abstract class AbstractDocument implements DocumentInterface
 {
     public function getDocumentType(): ?string
     {
-        if ($this->getType() !== DocumentInterface::TYPE_DOCUMENT) {
+        if (!in_array($this->getType(), [DocumentInterface::TYPE_DOCUMENT, DocumentInterface::TYPE_ASSET], true)) {
             return null;
         }
 
-        $candidate = [
-            PimcoreDocument\Folder::class => 'folder',
-            PimcoreDocument\Page::class => 'page',
-            PimcoreDocument\Snippet::class => 'snippet',
-            PimcoreDocument\Link::class => 'link',
-            PimcoreDocument\Hardlink::class => 'hardlink',
-            PimcoreDocument\Email::class => 'email',
-            PimcoreDocument\Newsletter::class => 'newsletter',
-            PimcoreDocument\Printpage::class => 'printpage',
-            PimcoreDocument\Printcontainer::class => 'printcontainer',
-        ][$this->getSubType()] ?? null;
+        $candidate = null;
 
-        if ($candidate === null || !in_array($candidate, PimcoreDocument::getTypes(), true)) {
+        if ($this->getType() === DocumentInterface::TYPE_DOCUMENT) {
+            $candidate = [
+                PimcoreDocument\Folder::class => 'folder',
+                PimcoreDocument\Page::class => 'page',
+                PimcoreDocument\Snippet::class => 'snippet',
+                PimcoreDocument\Link::class => 'link',
+                PimcoreDocument\Hardlink::class => 'hardlink',
+                PimcoreDocument\Email::class => 'email',
+                PimcoreDocument\Newsletter::class => 'newsletter',
+                PimcoreDocument\Printpage::class => 'printpage',
+                PimcoreDocument\Printcontainer::class => 'printcontainer',
+            ][$this->getSubType()] ?? null;
+
+            if (!in_array($candidate, PimcoreDocument::getTypes(), true)) {
+                throw new UnknownPimcoreElementType($candidate);
+            }
+        }
+
+        if ($this->getType() === DocumentInterface::TYPE_ASSET) {
+            $candidate = [
+                PimcoreAsset\Archive::class => 'archive',
+                PimcoreAsset\Audio::class => 'audio',
+                PimcoreAsset\Document::class => 'document',
+                PimcoreAsset\Folder::class => 'folder',
+                PimcoreAsset\Image::class => 'image',
+                PimcoreAsset\Text::class => 'text',
+                PimcoreAsset\Unknown::class => 'unknown',
+                PimcoreAsset\Video::class => 'video',
+            ][$this->getSubType()] ?? null;
+
+            if (!in_array($candidate, PimcoreAsset::getTypes(), true)) {
+                throw new UnknownPimcoreElementType($candidate);
+            }
+        }
+
+        if ($candidate === null) {
             throw new UnknownPimcoreElementType($candidate);
         }
 
@@ -73,8 +100,8 @@ abstract class AbstractDocument implements DocumentInterface
             return $this->getSubType() . '\Listing';
         }
 
-        if (in_array($this->getType(), [DocumentInterface::TYPE_ASSET], true)) {
-            return $this->getSubType() . '\Listing';
+        if ($this->getType() === DocumentInterface::TYPE_ASSET) {
+            return AssetListing::class;
         }
 
         if ($this->getType() === DocumentInterface::TYPE_DOCUMENT) {
