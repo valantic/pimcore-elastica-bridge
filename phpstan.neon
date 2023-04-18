@@ -4,6 +4,7 @@ includes:
 parameters:
 
     paths:
+        - docs/example
         - src
 
     level: 8
