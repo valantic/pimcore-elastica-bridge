@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Index;
 
-use Elastica\Document;
 use Elastica\Index;
 use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\Command\Index as IndexCommand;
@@ -31,13 +30,6 @@ interface IndexInterface
      * @see IndexCommand
      */
     public function getBatchSize(): int;
-
-    /**
-     * @return bool
-     *
-     * @internal
-     */
-    public function hasMapping(): bool;
 
     /**
      * Defines the mapping to be used for this index.
@@ -90,17 +82,6 @@ interface IndexInterface
      * @internal
      */
     public function isElementAllowedInIndex(AbstractElement $element): bool;
-
-    /**
-     * Given an Elasticsearch document, returns the associated DocumentInterface.
-     *
-     * @param Document $document
-     *
-     * @return DocumentInterface<AbstractElement>|null
-     *
-     * @internal
-     */
-    public function getDocumentInstance(Document $document): ?DocumentInterface;
 
     /**
      * Exposes a pre-configured Elastica client for this index.

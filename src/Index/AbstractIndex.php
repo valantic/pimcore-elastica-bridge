@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Index;
 
-use Elastica\Document;
 use Elastica\Index;
 use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
-use Valantic\ElasticaBridgeBundle\Enum\DocumentType;
 use Valantic\ElasticaBridgeBundle\Enum\IndexBlueGreenSuffix;
 use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
 use Valantic\ElasticaBridgeBundle\Repository\DocumentRepository;
@@ -58,25 +56,6 @@ abstract class AbstractIndex implements IndexInterface
     public function isElementAllowedInIndex(AbstractElement $element): bool
     {
         return $this->findDocumentInstanceByPimcore($element) instanceof DocumentInterface;
-    }
-
-    /**
-     * @return DocumentInterface<AbstractElement>
-     */
-    public function getDocumentInstance(Document $document): ?DocumentInterface
-    {
-        $type = $document->get(DocumentInterface::META_TYPE);
-        $subType = $document->get(DocumentInterface::META_SUB_TYPE);
-
-        foreach ($this->getAllowedDocuments() as $allowedDocument) {
-            $documentInstance = $this->documentRepository->get($allowedDocument);
-
-            if ($documentInstance->getType() === $type && $documentInstance->getSubType() === $subType) {
-                return $documentInstance;
-            }
-        }
-
-        return null;
     }
 
     /**
