@@ -61,9 +61,11 @@ interface DocumentInterface
     /**
      * The subtype, e.g. the DataObject class or Document\Page.
      *
-     * @return class-string
+     * Returning null will result in all elements of getType() being included.
+     *
+     * @return ?class-string
      */
-    public function getSubType(): string;
+    public function getSubType(): ?string;
 
     /**
      * Returns the normalization of the Pimcore element.

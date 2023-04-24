@@ -27,7 +27,7 @@ class ProductIndexDocument extends AbstractDocument implements TenantAwareInterf
         return DocumentType::DATA_OBJECT;
     }
 
-    public function getSubType(): string
+    public function getSubType(): ?string
     {
         return Product::class;
     }

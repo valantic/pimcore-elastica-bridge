@@ -25,6 +25,7 @@
 - PHPStan generics annotations for `\Valantic\ElasticaBridgeBundle\Document\DocumentInterface` and related helper traits [#32](https://github.com/valantic/pimcore-elastica-bridge/issues/32)
 - Added `\Valantic\ElasticaBridgeBundle\Service\PropagateChanges::handle` to programmatically update an element in all indices [#33](https://github.com/valantic/pimcore-elastica-bridge/issues/33)
 - Added support for assets [#34](https://github.com/valantic/pimcore-elastica-bridge/issues/34)
+- Allow `\Valantic\ElasticaBridgeBundle\Document\DocumentInterface::getSubType` to return `null` for generic, element-level indices [#42](https://github.com/valantic/pimcore-elastica-bridge/issues/42)
 
 ## Other changes
 

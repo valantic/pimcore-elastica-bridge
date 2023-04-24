@@ -55,7 +55,7 @@ abstract class AbstractDocument implements DocumentInterface
             ]);
         }
 
-        if (in_array($this->getType(), DocumentType::casesSubTypeListing(), true)) {
+        if ($this->getSubType() !== null && in_array($this->getType(), DocumentType::casesSubTypeListing(), true)) {
             $typeCondition = sprintf("`type` = '%s'", $this->getDocumentType());
 
             if ($this->getIndexListingCondition() !== null) {
@@ -82,8 +82,11 @@ abstract class AbstractDocument implements DocumentInterface
             return DocumentType::DOCUMENT->value . $element->getId();
         }
 
-        if (in_array($documentType, DocumentType::casesDataObjects(), true)) {
-            return $documentType->value . $element->getId();
+        if (
+            in_array($documentType, DocumentType::casesDataObjects(), true)
+            || $element instanceof DataObject\Folder
+        ) {
+            return DocumentType::DATA_OBJECT->value . $element->getId();
         }
 
         throw new UnknownPimcoreElementType($documentType?->value);
@@ -171,6 +174,11 @@ abstract class AbstractDocument implements DocumentInterface
     private function getDataObjectListingClass(): string
     {
         $subType = $this->getSubType();
+
+        if ($subType === null) {
+            return DataObject\Listing::class;
+        }
+
         $className = $subType . '\Listing';
 
         if (!class_exists($className)) {

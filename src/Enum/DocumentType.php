@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Enum;
 
+use Pimcore\Model;
+
 enum DocumentType: string
 {
     case ASSET = 'asset';
@@ -13,6 +15,18 @@ enum DocumentType: string
     case DATA_OBJECT = 'object';
 
     case VARIANT = 'variant';
+
+    /**
+     * @return class-string
+     */
+    public function baseClass(): string
+    {
+        return match ($this) {
+            self::ASSET => Model\Asset::class,
+            self::DOCUMENT => Model\Document::class,
+            self::DATA_OBJECT, self::VARIANT => Model\DataObject::class,
+        };
+    }
 
     /** @return self[] */
     public static function casesDataObjects()
