@@ -101,17 +101,7 @@ abstract class AbstractDocument implements DocumentInterface
         $candidate = null;
 
         if ($this->getType() === DocumentType::DOCUMENT) {
-            $candidate = [
-                PimcoreDocument\Folder::class => 'folder',
-                PimcoreDocument\Page::class => 'page',
-                PimcoreDocument\Snippet::class => 'snippet',
-                PimcoreDocument\Link::class => 'link',
-                PimcoreDocument\Hardlink::class => 'hardlink',
-                PimcoreDocument\Email::class => 'email',
-                PimcoreDocument\Newsletter::class => 'newsletter',
-                PimcoreDocument\Printpage::class => 'printpage',
-                PimcoreDocument\Printcontainer::class => 'printcontainer',
-            ][$this->getSubType()] ?? null;
+            $candidate = $this->getTypeMappingForDocuments()[$this->getSubType()] ?? null;
 
             if (!in_array($candidate, PimcoreDocument::getTypes(), true)) {
                 throw new UnknownPimcoreElementType($candidate);
@@ -119,16 +109,7 @@ abstract class AbstractDocument implements DocumentInterface
         }
 
         if ($this->getType() === DocumentType::ASSET) {
-            $candidate = [
-                Asset\Archive::class => 'archive',
-                Asset\Audio::class => 'audio',
-                Asset\Document::class => 'document',
-                Asset\Folder::class => 'folder',
-                Asset\Image::class => 'image',
-                Asset\Text::class => 'text',
-                Asset\Unknown::class => 'unknown',
-                Asset\Video::class => 'video',
-            ][$this->getSubType()] ?? null;
+            $candidate = $this->getTypeMappingForAssets()[$this->getSubType()] ?? null;
 
             if (!in_array($candidate, Asset::getTypes(), true)) {
                 throw new UnknownPimcoreElementType($candidate);
@@ -166,6 +147,41 @@ abstract class AbstractDocument implements DocumentInterface
     protected function includeUnpublishedElementsInListing(): bool
     {
         return false;
+    }
+
+    /**
+     * @return array<class-string,string>
+     */
+    protected function getTypeMappingForAssets(): array
+    {
+        return [
+            Asset\Archive::class => 'archive',
+            Asset\Audio::class => 'audio',
+            Asset\Document::class => 'document',
+            Asset\Folder::class => 'folder',
+            Asset\Image::class => 'image',
+            Asset\Text::class => 'text',
+            Asset\Unknown::class => 'unknown',
+            Asset\Video::class => 'video',
+        ];
+    }
+
+    /**
+     * @return array<class-string,string>
+     */
+    protected function getTypeMappingForDocuments(): array
+    {
+        return [
+            PimcoreDocument\Folder::class => 'folder',
+            PimcoreDocument\Page::class => 'page',
+            PimcoreDocument\Snippet::class => 'snippet',
+            PimcoreDocument\Link::class => 'link',
+            PimcoreDocument\Hardlink::class => 'hardlink',
+            PimcoreDocument\Email::class => 'email',
+            PimcoreDocument\Newsletter::class => 'newsletter',
+            PimcoreDocument\Printpage::class => 'printpage',
+            PimcoreDocument\Printcontainer::class => 'printcontainer',
+        ];
     }
 
     /**
