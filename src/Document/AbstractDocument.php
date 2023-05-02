@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Document;
 
-use Pimcore\Model\DataObject;
-use Pimcore\Model\Listing\AbstractListing;
-use Valantic\ElasticaBridgeBundle\Exception\DocumentType\PimcoreListingClassNotFoundException;
-use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 use Pimcore\Model\Asset;
+use Pimcore\Model\Asset\Listing as AssetListing;
+use Pimcore\Model\DataObject;
 use Pimcore\Model\DataObject\Listing as DataObjectListing;
 use Pimcore\Model\Document as PimcoreDocument;
 use Pimcore\Model\Document\Listing as DocumentListing;
-use Pimcore\Model\Asset\Listing as AssetListing;
 use Pimcore\Model\Element\AbstractElement;
+use Pimcore\Model\Listing\AbstractListing;
 use UnhandledMatchError;
 use Valantic\ElasticaBridgeBundle\Enum\DocumentType;
+use Valantic\ElasticaBridgeBundle\Exception\DocumentType\PimcoreListingClassNotFoundException;
 use Valantic\ElasticaBridgeBundle\Exception\DocumentType\UnknownPimcoreElementType;
+use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 
 /**
  * @template TElement of AbstractElement

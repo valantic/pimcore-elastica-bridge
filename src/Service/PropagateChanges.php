@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Service;
 
+use Elastica\Exception\NotFoundException;
 use Pimcore\Model\DataObject\AbstractObject;
 use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
-use Elastica\Exception\NotFoundException;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 

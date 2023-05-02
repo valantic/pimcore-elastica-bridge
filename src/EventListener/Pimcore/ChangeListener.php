@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\EventListener\Pimcore;
 
-use Pimcore\Model\Element\AbstractElement;
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Pimcore\Event\AssetEvents;
 use Pimcore\Event\DataObjectEvents;
 use Pimcore\Event\DocumentEvents;
 use Pimcore\Event\Model\AssetEvent;
 use Pimcore\Event\Model\DataObjectEvent;
 use Pimcore\Event\Model\DocumentEvent;
+use Pimcore\Model\Element\AbstractElement;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Valantic\ElasticaBridgeBundle\Exception\EventListener\PimcoreElementNotFoundException;
 use Valantic\ElasticaBridgeBundle\Service\PropagateChanges;
 

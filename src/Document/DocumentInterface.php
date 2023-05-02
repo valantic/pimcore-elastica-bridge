@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Document;
 
-use Valantic\ElasticaBridgeBundle\Enum\DocumentType;
 use Pimcore\Model\Element\AbstractElement;
 use Pimcore\Model\Listing\AbstractListing;
+use Valantic\ElasticaBridgeBundle\Enum\DocumentType;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 
 /**

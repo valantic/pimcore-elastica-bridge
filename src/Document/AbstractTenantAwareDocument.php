@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Document;
 
-use Valantic\ElasticaBridgeBundle\Exception\Index\TenantNotSetException;
 use Pimcore\Model\Element\AbstractElement;
+use Valantic\ElasticaBridgeBundle\Exception\Index\TenantNotSetException;
 
 /**
  * @template TElement of AbstractElement

@@ -80,6 +80,7 @@ return (new PhpCsFixer\Config())
                 'method_private',
             ],
         ],
+        'ordered_imports' => ['imports_order' => ['class', 'function', 'const'], 'sort_algorithm' => 'alpha'],
         'phpdoc_align' => ['align' => 'left'],
         'phpdoc_order' => true,
         'phpdoc_tag_casing' => true,

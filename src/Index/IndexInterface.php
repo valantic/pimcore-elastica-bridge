@@ -7,8 +7,8 @@ namespace Valantic\ElasticaBridgeBundle\Index;
 use Elastica\Index;
 use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\Command\Index as IndexCommand;
-use Valantic\ElasticaBridgeBundle\Document\DocumentNormalizerTrait;
 use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
+use Valantic\ElasticaBridgeBundle\Document\DocumentNormalizerTrait;
 use Valantic\ElasticaBridgeBundle\Enum\IndexBlueGreenSuffix;
 use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
 
