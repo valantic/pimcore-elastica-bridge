@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Valantic\ElasticaBridgeBundle\Document;
+namespace Valantic\ElasticaBridgeBundle\Index;
 
 use Valantic\ElasticaBridgeBundle\Exception\Index\TenantNotSetException;
 
-trait TenantAwareTrait
+abstract class AbstractTenantAwareIndex extends AbstractIndex implements TenantAwareInterface
 {
     protected string $activeTenant;
 
@@ -17,6 +17,10 @@ trait TenantAwareTrait
 
     public function getTenant(): string
     {
+        if (!$this->hasTenant() && $this->hasDefaultTenant()) {
+            return $this->getDefaultTenant();
+        }
+
         if (!$this->hasTenant()) {
             throw new TenantNotSetException();
         }
@@ -27,6 +31,11 @@ trait TenantAwareTrait
     public function setTenant(string $tenant): void
     {
         $this->activeTenant = $tenant;
+    }
+
+    public function getName(): string
+    {
+        return sprintf('%s_%s', $this->getTenantUnawareName(), $this->getTenant());
     }
 
     public function resetTenant(): void

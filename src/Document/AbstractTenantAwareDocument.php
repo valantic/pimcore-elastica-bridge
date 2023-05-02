@@ -2,11 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Valantic\ElasticaBridgeBundle\Index;
+namespace Valantic\ElasticaBridgeBundle\Document;
 
 use Valantic\ElasticaBridgeBundle\Exception\Index\TenantNotSetException;
+use Pimcore\Model\Element\AbstractElement;
 
-trait TenantAwareTrait
+/**
+ * @template TElement of AbstractElement
+ *
+ * @extends  AbstractDocument<TElement>
+ *
+ * @implements TenantAwareInterface<TElement>
+ */
+abstract class AbstractTenantAwareDocument extends AbstractDocument implements TenantAwareInterface
 {
     protected string $activeTenant;
 
@@ -17,10 +25,6 @@ trait TenantAwareTrait
 
     public function getTenant(): string
     {
-        if (!$this->hasTenant() && $this->hasDefaultTenant()) {
-            return $this->getDefaultTenant();
-        }
-
         if (!$this->hasTenant()) {
             throw new TenantNotSetException();
         }
@@ -31,11 +35,6 @@ trait TenantAwareTrait
     public function setTenant(string $tenant): void
     {
         $this->activeTenant = $tenant;
-    }
-
-    public function getName(): string
-    {
-        return sprintf('%s_%s', $this->getTenantUnawareName(), $this->getTenant());
     }
 
     public function resetTenant(): void

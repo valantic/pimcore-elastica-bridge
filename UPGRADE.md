@@ -19,6 +19,8 @@
 - `Valantic\ElasticaBridgeBundle\Index\IndexInterface::searchForElements` was removed, use `$index->getElasticaIndex()->search($query)->getDocuments()` instead [#35](https://github.com/valantic/pimcore-elastica-bridge/issues/35)
 - `Valantic\ElasticaBridgeBundle\Index\IndexInterface::documentResultToElements` was removed [#35](https://github.com/valantic/pimcore-elastica-bridge/issues/35)
 - `Valantic\ElasticaBridgeBundle\Index\IndexInterface::getGlobalFilters`, `Valantic\ElasticaBridgeBundle\Index\IndexInterface::disableGlobalFilters`, `Valantic\ElasticaBridgeBundle\Index\IndexInterface::enableGlobalFilters` were removed
+- `Valantic\ElasticaBridgeBundle\Index\TenantAwareTrait` has been replaced by `Valantic\ElasticaBridgeBundle\Index\AbstractTenantAwareIndex`
+- `Valantic\ElasticaBridgeBundle\Document\TenantAwareTrait` has been replaced by `Valantic\ElasticaBridgeBundle\Document\AbstractTenantAwareDocument`
 
 ## New Features
 
@@ -31,3 +33,5 @@
 
 - `:cleanup` now defaults to only cleaning up bundle indices [#27](https://github.com/valantic/pimcore-elastica-bridge/issues/27)
 - Removed `--check` from `:index` [#41](https://github.com/valantic/pimcore-elastica-bridge/issues/41)
+- `Valantic\ElasticaBridgeBundle\Index\TenantAwareInterface` now extends `Valantic\ElasticaBridgeBundle\Index\IndexInterface`
+- `Valantic\ElasticaBridgeBundle\Document\TenantAwareInterface` now extends `Valantic\ElasticaBridgeBundle\Document\DocumentInterface`

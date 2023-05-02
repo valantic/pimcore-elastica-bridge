@@ -11,14 +11,10 @@ use Elastica\Query\MultiMatch;
 use Pimcore\Model\DataObject\Product;
 use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Enum\DocumentType;
-use Valantic\ElasticaBridgeBundle\Index\AbstractIndex;
-use Valantic\ElasticaBridgeBundle\Index\TenantAwareInterface;
-use Valantic\ElasticaBridgeBundle\Index\TenantAwareTrait;
+use Valantic\ElasticaBridgeBundle\Index\AbstractTenantAwareIndex;
 
-class ProductIndex extends AbstractIndex implements TenantAwareInterface
+class ProductIndex extends AbstractTenantAwareIndex
 {
-    use TenantAwareTrait;
-
     public const ATTRIBUTE_CATEGORIES = 'categories';
 
     public function getTenantUnawareName(): string

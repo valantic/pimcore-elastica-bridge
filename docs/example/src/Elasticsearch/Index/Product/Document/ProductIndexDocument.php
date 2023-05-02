@@ -7,20 +7,17 @@ namespace App\Elasticsearch\Index\Product\Document;
 use App\Elasticsearch\Index\Product\ProductIndex;
 use Pimcore\Model\DataObject\Product;
 use Pimcore\Model\Element\AbstractElement;
-use Valantic\ElasticaBridgeBundle\Document\AbstractDocument;
+use Valantic\ElasticaBridgeBundle\Document\AbstractTenantAwareDocument;
 use Valantic\ElasticaBridgeBundle\Document\DataObjectNormalizerTrait;
-use Valantic\ElasticaBridgeBundle\Document\TenantAwareInterface;
-use Valantic\ElasticaBridgeBundle\Document\TenantAwareTrait;
 use Valantic\ElasticaBridgeBundle\Enum\DocumentType;
 
 /**
- * @extends AbstractDocument<Product>
+ * @extends AbstractTenantAwareDocument<Product>
  */
-class ProductIndexDocument extends AbstractDocument implements TenantAwareInterface
+class ProductIndexDocument extends AbstractTenantAwareDocument
 {
     /** @use DataObjectNormalizerTrait<Product> */
     use DataObjectNormalizerTrait;
-    use TenantAwareTrait;
 
     public function getType(): DocumentType
     {

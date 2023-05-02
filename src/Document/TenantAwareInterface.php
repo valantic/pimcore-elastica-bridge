@@ -4,7 +4,14 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Document;
 
-interface TenantAwareInterface
+use Pimcore\Model\Element\AbstractElement;
+
+/**
+ * @template TElement of AbstractElement
+ *
+ * @extends DocumentInterface<TElement>
+ */
+interface TenantAwareInterface extends DocumentInterface
 {
     /**
      * Indicates whether a tenant is currently active.

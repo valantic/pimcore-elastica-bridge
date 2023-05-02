@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Index;
 
-interface TenantAwareInterface
+interface TenantAwareInterface extends IndexInterface
 {
     /**
      * Returns a list of tenants supported by this index.
