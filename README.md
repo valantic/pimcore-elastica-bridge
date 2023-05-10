@@ -9,8 +9,7 @@
 This package is developed by [valantic CEC Schweiz](https://www.valantic.com/en/services/digital-business/) and is
 under active development.
 
-The only job of the bundle is to store Pimcore elements (assets, documents, data objects, ...) into elastic search
-documents.
+The only job of the bundle is to store Pimcore elements (assets, documents, data objects) into Elasticsearch documents.
 
 ## Setup
 
@@ -43,20 +42,20 @@ developer must tell this bundle about these elements by providing a class implem
 methods are already implemented in the `AbstractDocument`, so it is recommended to use that one as a base class. Then
 only two methods need to be implemented:
 
-- `getType` is either asset, document, data object or variant. The `DocumentInterface` provides constants for them,
+- `getType` is either asset, document, data object, or variant. The `DocumentInterface` provides constants for them,
   which can be returned in your implementation.
 - `getSubType` is very useful for data objects, since it allows to define what kind of data object this document is
   about. It is best to use the `::class` constant of the data object.
 
-Mind that this document is not what is actually indexed, which is a `IndexDocument` (explained later). The document just
-described is completely separated from an index, which allows it to be reused in many different indices.
+Mind that this document is not what is actually indexed, which is an `IndexDocument` (explained later). The document
+just described is completely separated from an index, which allows it to be reused in many different indices.
 
 See the [`ProductDocument` provided in the
 example](docs/example/src/AppBundle/Elasticsearch/Document/ProductDocument.php) for more details.
 
 ### Define a mapping from element to document
 
-**The `IndexDocumentInterface` is mainly responsible for the mapping from a Pimcore element to document stored in an
+**The `IndexDocumentInterface` is mainly responsible for the mapping from a Pimcore element to a document stored in an
 Elasticsearch index.** This class usually inherits from the corresponding `DocumentInterface` implementation, since many
 methods from that implementation are reusable.
 
@@ -67,23 +66,24 @@ There are two traits that help a lot with implementing that interface:
 - The `DataObjectNormalizerTrait` helps with creating a mapping from a Pimcore element to an index by providing a few
   helper methods.
 
-While the `ListingTrait` is just used and does not need any further effort, the `DataObjectNormalizerTrait` does not do
-anything on its own. It is used in the `IndexDocumentInterface::getNormalized` method, which creates an index
+While the `ListingTrait` is simply `use`d and does not need any further effort, the `DataObjectNormalizerTrait` does not
+do anything on its own. It is used in the `IndexDocumentInterface::getNormalized` method, which creates an index
 representation of the Pimcore element. The `getNormalized` method returns the associative array to be indexed. The
 `DataObjectNormalizerTrait` helps in this process with the following methods, all of which take the Pimcore element and
 an array describing the mapping:
 
-- `plainAttributes` is for "normal" attributes. Based on the mapping the index will just be filled with the value in
-  these properties.
-- `localizedAttributes` is for localized Pimcore attributes. They will be stored in a `localized` field in the index
+- `plainAttributes` is for scalar attributes. Based on the mapping the document will contain the value in these
+  properties.
+- `localizedAttributes` is for localized Pimcore attributes. They will be stored in a `localized` field in the document
   with all languages as children.
 - `relationAttributes` allow to store just a reference, i.e. the ID of a Pimcore element, instead of the entire object
   in the index.
 
-The mapping can either be just a value array, in which case the Pimcore element's property will be indexed using the
-same name or a key-value pair if the property should be named differently in the index. **If a key-value pair is used,
-it is also possible to pass a function retrieving the Pimcore element and returning an arbitraty array.** This is very
-powerful and allows to implement almost any use case.
+The mapping can either be an array defined without keys, in which case the Pimcore element's property will be indexed
+using the same name or a key-value pair if the property should be named differently in the index. **If a key-value pair
+is used, it is also possible to pass a function retrieving the Pimcore element and returning an arbitraty array.** This
+is very powerful and allows to implement almost any use case. Mind that it is also possible to mix both approaches, i.e.
+define some entries with a key and others without one.
 
 In addition there are two more functions required to satisfy the `IndexDocumentInterface`:
 
@@ -95,11 +95,11 @@ example](docs/example/src/AppBundle/Elasticsearch/Index/Product/Document/Product
 
 ### Define an index
 
-**The `IndexInterface` describes an index in Elasticsearch**, and contains method that are required to create such an
+**The `IndexInterface` describes an index in Elasticsearch**, and contains methods that are required to create such an
 index. The easiest way to start is to use the `AbstractIndex` class, which has most of the methods already implemented
 in a generic manner. In this case only two methods need to be implemented for a new index:
 
-- `getName` returns the name of the index. A suffix will be added for blue/green deployments, which are activated by
+- `getName` returns the name of the index. A suffix will be added for blue/green deployments, which are enabled by
   default.
 - `getAllowedDocuments` returns an array containing the FQCN of the documents that can be stored within this index. It
   is best to use the `::class` constant of the classes implementing the `IndexDocumentInterface`.
