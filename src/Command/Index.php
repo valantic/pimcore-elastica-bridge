@@ -189,6 +189,7 @@ class Index extends BaseCommand
             && !$this->esClient->request('_alias/' . $indexConfig->getName(), Request::HEAD)->isOk()
         ) {
             $nonAliasIndex->delete();
+            $this->output->writeln('<comment>-> Deleted non-blue/green index to prepare for blue/green usage</comment>');
         }
 
         foreach (IndexBlueGreenSuffix::cases() as $suffix) {
@@ -197,10 +198,12 @@ class Index extends BaseCommand
 
             if ($shouldDelete && $aliasIndex->exists()) {
                 $aliasIndex->delete();
+                $this->output->writeln('<comment>-> Deleted blue/green index with alias</comment>');
             }
 
             if (!$aliasIndex->exists()) {
                 $aliasIndex->create($indexConfig->getCreateArguments());
+                $this->output->writeln('<comment>-> Created blue/green index with alias</comment>');
             }
         }
 
