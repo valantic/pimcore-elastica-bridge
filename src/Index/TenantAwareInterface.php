@@ -50,7 +50,7 @@ interface TenantAwareInterface extends IndexInterface
     public function getTenantUnawareName(): string;
 
     /**
-     * Indicates whether this index has a default tenant.
+     * Indicates whether this index has a default tenant. Override method if your getTenants() method is expensive.
      */
     public function hasDefaultTenant(): bool;
 

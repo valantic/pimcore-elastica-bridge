@@ -48,11 +48,6 @@ class ProductIndex extends AbstractTenantAwareIndex
         return ['acme'];
     }
 
-    public function hasDefaultTenant(): bool
-    {
-        return true;
-    }
-
     public function getDefaultTenant(): string
     {
         return 'acme';

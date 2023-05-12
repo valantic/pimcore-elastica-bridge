@@ -15,6 +15,11 @@ abstract class AbstractTenantAwareIndex extends AbstractIndex implements TenantA
         return isset($this->activeTenant);
     }
 
+    public function hasDefaultTenant(): bool
+    {
+        return in_array($this->getDefaultTenant(), $this->getTenants(), true);
+    }
+
     public function getTenant(): string
     {
         if (!$this->hasTenant() && $this->hasDefaultTenant()) {
