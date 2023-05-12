@@ -83,8 +83,8 @@ abstract class AbstractDocument implements DocumentInterface
         }
 
         if (
-            in_array($documentType, DocumentType::casesDataObjects(), true)
-            || $element instanceof DataObject\Folder
+            $element instanceof DataObject\Folder
+            || in_array($documentType, DocumentType::casesDataObjects(), true)
         ) {
             return DocumentType::DATA_OBJECT->value . $element->getId();
         }

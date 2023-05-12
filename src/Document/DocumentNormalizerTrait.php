@@ -46,6 +46,11 @@ trait DocumentNormalizerTrait
 
         foreach ($editableNames as $editableName) {
             $editable = $document->getEditable($editableName);
+
+            if ($editable === null) {
+                continue;
+            }
+
             $editableMethod = sprintf('editable%s', ucfirst($editable->getType()));
 
             if (!method_exists($this, $editableMethod)) {
@@ -68,6 +73,10 @@ trait DocumentNormalizerTrait
 
         if ($editable->type === 'object' && $editable->subtype === 'folder') {
             $contents = Folder::getById($editable->getId());
+
+            if ($contents === null) {
+                return null;
+            }
 
             $this->relatedObjects = array_merge(
                 $this->relatedObjects,

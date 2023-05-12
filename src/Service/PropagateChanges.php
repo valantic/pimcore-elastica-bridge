@@ -65,7 +65,7 @@ class PropagateChanges
             }
         }
 
-        if (!$document->shouldIndex($element) && $isPresent) {
+        if ($isPresent && !$document->shouldIndex($element)) {
             $this->deleteElementFromIndex($element, $index, $document);
         }
 
