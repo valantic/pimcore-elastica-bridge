@@ -8,6 +8,7 @@ use Elastica\Query\BoolQuery;
 use Elastica\Query\MatchQuery;
 use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\Command\Index;
+use Valantic\ElasticaBridgeBundle\Enum\DocumentType;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 
 /**
@@ -29,7 +30,7 @@ trait DocumentRelationAwareDataObjectTrait
         )
             ->search(
                 (new BoolQuery())
-                    ->addFilter(new MatchQuery(DocumentInterface::META_TYPE, DocumentInterface::TYPE_DOCUMENT))
+                    ->addFilter(new MatchQuery(DocumentInterface::META_TYPE, DocumentType::DOCUMENT))
                     ->addFilter(new MatchQuery(DocumentInterface::ATTRIBUTE_RELATED_OBJECTS, $element->getId()))
             );
 
