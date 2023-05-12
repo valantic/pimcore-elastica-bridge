@@ -29,19 +29,19 @@ enum DocumentType: string
     }
 
     /** @return self[] */
-    public static function casesDataObjects()
+    public static function casesDataObjects(): array
     {
         return [self::DATA_OBJECT, self::VARIANT];
     }
 
     /** @return self[] */
-    public static function casesPublishedState()
+    public static function casesPublishedState(): array
     {
         return [self::DATA_OBJECT, self::DOCUMENT];
     }
 
     /** @return self[] */
-    public static function casesSubTypeListing()
+    public static function casesSubTypeListing(): array
     {
         return [self::ASSET, self::DOCUMENT];
     }

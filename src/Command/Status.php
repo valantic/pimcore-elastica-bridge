@@ -15,11 +15,11 @@ use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 class Status extends BaseCommand
 {
     /**
-     * @var array<int,array<mixed>>
+     * @var array<int,array<int,mixed>>
      */
     private array $bundleIndices = [];
     /**
-     * @var array<int,array<mixed>>
+     * @var array<int,array<int,mixed>>
      */
     private array $otherIndices = [];
     /**
