@@ -1,6 +1,11 @@
 parameters:
 	ignoreErrors:
 		-
+			message: "#^Method Valantic\\\\ElasticaBridgeBundle\\\\EventListener\\\\Pimcore\\\\ChangeListener\\:\\:getFreshElement\\(\\) should return TElement of Pimcore\\\\Model\\\\Asset\\|Pimcore\\\\Model\\\\DataObject\\\\AbstractObject\\|Pimcore\\\\Model\\\\Document but returns Pimcore\\\\Model\\\\Asset\\|Pimcore\\\\Model\\\\DataObject\\\\AbstractObject\\|Pimcore\\\\Model\\\\Document\\.$#"
+			count: 1
+			path: src/EventListener/Pimcore/ChangeListener.php
+
+		-
 			message: "#^Call to function is_subclass_of\\(\\) with Pimcore\\\\Model\\\\Element\\\\AbstractElement and mixed will always evaluate to true\\.$#"
 			count: 1
 			path: src/Index/AbstractIndex.php

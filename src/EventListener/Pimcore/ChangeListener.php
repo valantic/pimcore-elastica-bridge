@@ -10,6 +10,9 @@ use Pimcore\Event\DocumentEvents;
 use Pimcore\Event\Model\AssetEvent;
 use Pimcore\Event\Model\DataObjectEvent;
 use Pimcore\Event\Model\DocumentEvent;
+use Pimcore\Model\Asset;
+use Pimcore\Model\DataObject\AbstractObject;
+use Pimcore\Model\Document;
 use Pimcore\Model\Element\AbstractElement;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Valantic\ElasticaBridgeBundle\Exception\EventListener\PimcoreElementNotFoundException;
@@ -67,7 +70,7 @@ class ChangeListener implements EventSubscriberInterface
      * The object passed via the event listener may be a draft and not the latest published version.
      * This method retrieves the latest published version of that element.
      *
-     * @template TElement of AbstractElement
+     * @template TElement of AbstractObject|Document|Asset
      *
      * @param TElement $element
      *
@@ -75,7 +78,6 @@ class ChangeListener implements EventSubscriberInterface
      */
     private function getFreshElement(AbstractElement $element): AbstractElement
     {
-        /** @var class-string<TElement> $elementClass */
         $elementClass = $element::class;
         $e = new PimcoreElementNotFoundException($element->getId(), $elementClass);
 
@@ -83,6 +85,6 @@ class ChangeListener implements EventSubscriberInterface
             throw $e;
         }
 
-        return $elementClass::getById($element->getId()) ?? throw $e;
+        return $elementClass::getById($element->getId(), true) ?? throw $e;
     }
 }
