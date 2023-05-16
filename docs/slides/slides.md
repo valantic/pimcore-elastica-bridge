@@ -7,7 +7,7 @@ lineNumbers: true
 info: |
   ## Pimcore Elastica Bridge
 
-  See [repo](https://github.com/valantic/pimcore-elastica-bridge)
+  See [repo](https://github.com/valantic/pimcore-elastica-bridge), updated for v2
 drawings:
   persist: true
 transition: fade-out
@@ -81,7 +81,7 @@ A named collection of documents, see `...\Index\IndexInterface`.
 
 ### Document
 
-A JSON structure inside an index, see `...\DocumentType\DocumentInterface`.
+A JSON structure inside an index, see `...\Document\DocumentInterface`.
 
 
 ::right::
@@ -92,13 +92,9 @@ A JSON structure inside an index, see `...\DocumentType\DocumentInterface`.
 
 A Pimcore document, asset, or object because `Pimcore\Model\Element\AbstractElement`.
 
-### Index Document
-
-Represents a document inside an index, see `...\DocumentType\Index\IndexDocumentInterface`.
-
 ### Tenants
 
-A layer above indices to isolate different tenants, see `\Index\TenantAwareInterface` and `...\DocumentType\Index\TenantAwareInterface`.
+A layer above indices to isolate different tenants, see `\Index\TenantAwareInterface` and `...\Document\TenantAwareInterface`.
 
 ### Blue-Green
 
@@ -113,7 +109,7 @@ layout: section
 
 # Example -- `Index`
 
-```php {all|2,4|6,8|11,13|all}
+```php {all|2,4|6,8|1,11,13|all}
 use App\Elasticsearch\Index\Country\Document\CountryIndexDocument;
 use Valantic\ElasticaBridgeBundle\Index\AbstractIndex;
 
@@ -134,60 +130,36 @@ class CountryIndex extends AbstractIndex
 
 ---
 
-# Example -- `Document`
+# Example -- `Document` (I)
 
-```php {all|2,5|7,9|12,14|all}
+```php {all|2,4|6,8|1,11,13|all}
 use Pimcore\Model\DataObject\Country;
-use Valantic\ElasticaBridgeBundle\DocumentType\AbstractDocument;
-use Valantic\ElasticaBridgeBundle\DocumentType\DocumentInterface;
+use Valantic\ElasticaBridgeBundle\Document\AbstractDocument;
 
 class CountryDocument extends AbstractDocument
 {
     public function getType(): string
     {
-        return DocumentInterface::TYPE_OBJECT;
+        return DocumentInterface::DATA_OBJECT;
     }
 
     public function getSubType(): string
     {
         return Country::class;
     }
-
-    public function treatObjectVariantsAsDocuments(): bool
-    {
-        return false;
-    }
 }
 ```
 
 ---
 
-# Example -- `IndexDocument` (I)
+# Example -- `Document` (II)
 
-```php {all|1,2,5|7|all}
-use App\Elasticsearch\Document\CountryDocument;
-use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
-use Valantic\ElasticaBridgeBundle\DocumentType\Index\ListingTrait;
-
-class CountryIndexDocument extends CountryDocument implements IndexDocumentInterface
-{
-    use ListingTrait;
-
-    // ...
-}
-```
-
----
-
-# Example -- `IndexDocument` (II)
-
-```php {all|7,9|all}
-use Pimcore\Model\DataObject\Country;
+```php {all|1,3,4|6-9|all}
 use Pimcore\Model\Element\AbstractElement;
 
-class CountryIndexDocument
+/** @extends AbstractDocument<Country> */
+class CountryDocument extends AbstractDocument
 {
-    /** @param Country $element */
     public function shouldIndex(AbstractElement $element): bool
     {
         return $element->isPublished();
@@ -199,26 +171,26 @@ class CountryIndexDocument
 
 # Example -- `IndexDocument` (III)
 
-```php {all|3,7|13-15|16-18|all}
+```php {all|3,7-8|13-15|16-18|all}
 use Pimcore\Model\DataObject\Country;
 use Pimcore\Model\Element\AbstractElement;
-use Valantic\ElasticaBridgeBundle\DocumentType\Index\DataObjectNormalizerTrait;
+use Valantic\ElasticaBridgeBundle\Document\DataObjectNormalizerTrait;
 
 class CountryIndexDocument
 {
+    /** @use DataObjectNormalizerTrait<Country> */
     use DataObjectNormalizerTrait;
 
-    /** @param Country $element */
     public function getNormalized(AbstractElement $element): array
     {
-        return array_merge(
-            $this->plainAttributes($element, [
+        return [
+            ... $this->plainAttributes($element, [
                 'country',
             ]),
-            $this->localizedAttributes($element, [
+            ... $this->localizedAttributes($element, [
                 'name',
             ]),
-        );
+        ];
     }
 }
 ```
@@ -283,18 +255,18 @@ class CountryIndexDocument
 
 ```php {all|5,6,19|7,8,17|1,9-11|all}
 use Elastica\Query;
-use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
+use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
 
 $this->catalogTeaserIndex
   ->getElasticaIndex()
   ->search(
     (new Query())
       ->setQuery((new Query\BoolQuery())
-        ->addFilter(new Query\MatchQuery(IndexDocumentInterface::META_ID, $element->getId()))
+        ->addFilter(new Query\MatchQuery(DocumentInterface::META_ID, $element->getId()))
         ->addFilter(new Query\Terms(CatalogTeaserIndex::ATTRIBUTE_CATALOG_TEASER_LOCATIONS, [$location]))
         ->addFilter(new Query\Exists(sprintf(
           '%s.%s.%s',
-          IndexDocumentInterface::ATTRIBUTE_LOCALIZED,
+          DocumentInterface::ATTRIBUTE_LOCALIZED,
           $this->languageService->getLocale(),
           CatalogTeaserIndex::ATTRIBUTE_SNIPPET_ID
         ))))
