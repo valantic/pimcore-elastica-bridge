@@ -34,7 +34,9 @@ trait DataObjectNormalizerTrait
      * and return a normalized array.
      *
      * $fields can be a simple array of strings, an array of 'elasticField' => 'pimcoreField', or even
-     * 'elasticField' => function($element, $locale) -- or a mix of these options.
+     * 'elasticField' => fn ($element, $locale) -- or a mix of these options.
+     *
+     * @see \App\Elasticsearch\Index\Product\Document\ProductIndexDocument::getNormalized for a usage example
      *
      * @param TElement $element
      * @param string[]|callable[] $fields
@@ -85,6 +87,8 @@ trait DataObjectNormalizerTrait
      * $fields can be a simple array of strings, an array of 'elasticField' => 'pimcoreField', or even
      * 'elasticField' => function($element) -- or a mix of these options.
      *
+     * @see \App\Elasticsearch\Index\Product\Document\ProductIndexDocument::getNormalized for a usage example
+     *
      * @param TElement $element
      * @param string[]|callable[] $fields
      *
@@ -108,6 +112,8 @@ trait DataObjectNormalizerTrait
      *
      * $fields can be a simple array of strings, an array of 'elasticField' => 'pimcoreField', or even
      * 'elasticField' => function($element) -- or a mix of these options.
+     *
+     * @see \App\Elasticsearch\Index\Product\Document\ProductIndexDocument::getNormalized for a usage example
      *
      * @param TElement $element
      * @param string[]|callable[] $fields
@@ -150,6 +156,8 @@ trait DataObjectNormalizerTrait
      *
      * @param string[] $objectTypes
      *
+     * @see \App\Elasticsearch\Index\Product\Document\ProductIndexDocument::getNormalized for a usage example
+     *
      * @return array{children: array<int, int>}
      */
     protected function children(
@@ -173,6 +181,8 @@ trait DataObjectNormalizerTrait
      *
      * @param string[] $objectTypes
      * @param int[] $carry
+     *
+     * @see \App\Elasticsearch\Index\Product\Document\ProductIndexDocument::getNormalized for a usage example
      *
      * @return array{childrenRecursive: array<int, int>}
      */

@@ -31,16 +31,32 @@ class ProductIndexDocument extends AbstractTenantAwareDocument
 
     public function getNormalized(AbstractElement $element): array
     {
-        return array_merge(
-            $this->plainAttributes($element, ['sku']),
-            $this->localizedAttributes($element, ['name', 'url']),
-            $this->relationAttributes(
+        return [
+            ...$this->plainAttributes(
+                $element,
+                [
+                    'sku',
+                    'created_at' => fn (Product $product) => date('r', $product->getCreationDate()),
+                ]
+            ),
+            ...$this->localizedAttributes(
+                $element,
+                [
+                    'name',
+                    'url',
+                    'slug' => fn (Product $product, string $locale): string => str_replace(' ', '-', $product->getName()),
+                ]
+            ),
+            ...$this->relationAttributes(
                 $element,
                 [
                     ProductIndex::ATTRIBUTE_CATEGORIES => 'categories',
+                    'relatedProducts' => fn (Product $product) => $product->getRelatedProducts(),
                 ]
-            )
-        );
+            ),
+            ...$this->children($element),
+            ...$this->childrenRecursive($element),
+        ];
     }
 
     public function shouldIndex(AbstractElement $element): bool
