@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Document;
 
+use Pimcore\Model\DataObject\AbstractObject;
 use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Model\DataObject\Folder;
 use Pimcore\Model\Document;
@@ -47,7 +48,7 @@ trait DocumentNormalizerTrait
         foreach ($editableNames as $editableName) {
             $editable = $document->getEditable($editableName);
 
-            if ($editable === null) {
+            if (!$editable instanceof Document\Editable) {
                 continue;
             }
 
@@ -74,14 +75,17 @@ trait DocumentNormalizerTrait
         if ($editable->type === 'object' && $editable->subtype === 'folder') {
             $contents = Folder::getById($editable->getId());
 
-            if ($contents === null) {
+            if (!$contents instanceof Folder) {
                 return null;
             }
 
             $this->relatedObjects = array_merge(
                 $this->relatedObjects,
                 [$contents->getId()],
-                array_map(fn (Concrete $obj): int => $obj->getId(), $contents->getChildren([Folder::OBJECT_TYPE_OBJECT]))
+                array_map(
+                    fn (Concrete $obj): int => $obj->getId(),
+                    $contents->getChildren([AbstractObject::OBJECT_TYPE_OBJECT])
+                )
             );
 
             return null;
