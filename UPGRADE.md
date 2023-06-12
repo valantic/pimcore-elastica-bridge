@@ -21,6 +21,7 @@
 - `Valantic\ElasticaBridgeBundle\Index\IndexInterface::getGlobalFilters`, `Valantic\ElasticaBridgeBundle\Index\IndexInterface::disableGlobalFilters`, `Valantic\ElasticaBridgeBundle\Index\IndexInterface::enableGlobalFilters` were removed
 - `Valantic\ElasticaBridgeBundle\Index\TenantAwareTrait` has been replaced by `Valantic\ElasticaBridgeBundle\Index\AbstractTenantAwareIndex`
 - `Valantic\ElasticaBridgeBundle\Document\TenantAwareTrait` has been replaced by `Valantic\ElasticaBridgeBundle\Document\AbstractTenantAwareDocument`
+- `Valantic\ElasticaBridgeBundle\DocumentType\Index\DataObjectNormalizerTrait` was moved to `Valantic\ElasticaBridgeBundle\Document\DataObjectNormalizerTrait`
 
 ## New Features
 
