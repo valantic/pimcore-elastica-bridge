@@ -1,15 +1,9 @@
 services:
-  # default configuration for services in *this* file
   _defaults:
-    # automatically injects dependencies in your services
     autowire: true
-    # automatically registers your services as commands, event subscribers, etc.
     autoconfigure: true
-    # this means you cannot fetch services directly from the container via $container->get()
-    # if you need to do this, you can override this setting on individual services
     public: false
 
-  # auto-register all commands as services
   Valantic\ElasticaBridgeBundle\Command\:
     resource: '../../Command/*'
     tags: [ 'console.command' ]
@@ -20,26 +14,11 @@ services:
       $host: '%valantic_elastica_bridge.client.host%'
       $port: '%valantic_elastica_bridge.client.port%'
 
-  Valantic\ElasticaBridgeBundle\EventListener\Pimcore\Asset:
-    tags:
-      - { name: kernel.event_listener, event: pimcore.asset.postAdd, method: added }
-      - { name: kernel.event_listener, event: pimcore.asset.postUpdate, method: updated }
-      - { name: kernel.event_listener, event: pimcore.asset.preDelete, method: deleted }
-
-  Valantic\ElasticaBridgeBundle\EventListener\Pimcore\DataObject:
-    tags:
-      - { name: kernel.event_listener, event: pimcore.dataobject.postAdd, method: added }
-      - { name: kernel.event_listener, event: pimcore.dataobject.postUpdate, method: updated }
-      - { name: kernel.event_listener, event: pimcore.dataobject.preDelete, method: deleted }
-
-  Valantic\ElasticaBridgeBundle\EventListener\Pimcore\Document:
-    tags:
-      - { name: kernel.event_listener, event: pimcore.document.postAdd, method: added }
-      - { name: kernel.event_listener, event: pimcore.document.postUpdate, method: updated }
-      - { name: kernel.event_listener, event: pimcore.document.preDelete, method: deleted }
-
   Valantic\ElasticaBridgeBundle\Service\:
     resource: '../../Service/*'
+
+  Valantic\ElasticaBridgeBundle\EventListener\:
+    resource: '../../EventListener/*'
 
   Valantic\ElasticaBridgeBundle\Repository\IndexRepository:
     arguments:
@@ -48,7 +27,3 @@ services:
   Valantic\ElasticaBridgeBundle\Repository\DocumentRepository:
     arguments:
       - !tagged_iterator valantic.elastica_bridge.document
-
-  Valantic\ElasticaBridgeBundle\Repository\IndexDocumentRepository:
-    arguments:
-      - !tagged_iterator valantic.elastica_bridge.document_index

@@ -4,20 +4,21 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Command;
 
+use Elastica\Exception\ResponseException;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
-use Symfony\Component\Console\Input\InputOption;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 
 class Cleanup extends BaseCommand
 {
-    protected const OPTION_ONLY_KNOWN = 'only-known';
+    private const OPTION_ALL_IN_CLUSTER = 'all';
 
     public function __construct(
-        protected ElasticsearchClient $esClient,
-        protected IndexRepository $indexRepository,
+        private readonly ElasticsearchClient $esClient,
+        private readonly IndexRepository $indexRepository,
     ) {
         parent::__construct();
     }
@@ -25,24 +26,24 @@ class Cleanup extends BaseCommand
     protected function configure(): void
     {
         $this->setName(self::COMMAND_NAMESPACE . 'cleanup')
-            ->setDescription('Deletes ALL Elasticsearch indices and aliases')
+            ->setDescription('Deletes Elasticsearch indices and aliases known to (i.e. created by) the bundle')
             ->addOption(
-                self::OPTION_ONLY_KNOWN,
-                'k',
+                self::OPTION_ALL_IN_CLUSTER,
+                'a',
                 InputOption::VALUE_NONE,
-                'Delete only indices known to (i.e. created by) the bundle'
+                'Delete all indices in cluster including indices not created by this bundle but e.g. by Pimcore Enterprise features'
             );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->output->writeln(
-            $this->input->getOption(self::OPTION_ONLY_KNOWN)
-                ? 'Only deleting KNOWN indices'
-                : 'Deleting ALL indices in the cluster'
+            $this->input->getOption(self::OPTION_ALL_IN_CLUSTER) === true
+                ? 'Deleting ALL indices in the cluster'
+                : 'Only deleting KNOWN indices'
         );
         $helper = $this->getHelper('question');
-        $question = new ConfirmationQuestion('Are you sure you want to delete all indices and aliases? (y/n)', false);
+        $question = new ConfirmationQuestion('Are you sure you want to proceed deleting indices and aliases? (y/N)', false);
 
         if (!$helper->ask($input, $output, $question)) {
             return self::FAILURE;
@@ -57,7 +58,11 @@ class Cleanup extends BaseCommand
                 $client->removeAlias($alias);
             }
 
-            $client->delete();
+            try {
+                $client->delete();
+            } catch (ResponseException $e) {
+                $this->output->writeln(sprintf('<error>%s</error>', $e->getMessage()));
+            }
         }
 
         return self::SUCCESS;
@@ -68,22 +73,23 @@ class Cleanup extends BaseCommand
      */
     private function getIndices(): array
     {
-        if ($this->input->getOption(self::OPTION_ONLY_KNOWN)) {
-            $indices = [];
-
-            foreach ($this->indexRepository->flattened() as $indexConfig) {
-                if ($indexConfig->usesBlueGreenIndices()) {
-                    $indices[] = $indexConfig->getBlueGreenActiveElasticaIndex()->getName();
-                    $indices[] = $indexConfig->getBlueGreenInactiveElasticaIndex()->getName();
-                    continue;
-                }
-
-                $indices[] = $indexConfig->getName();
-            }
-
-            return $indices;
+        if ($this->input->getOption(self::OPTION_ALL_IN_CLUSTER) === true) {
+            return $this->esClient->getCluster()->getIndexNames();
         }
 
-        return $this->esClient->getCluster()->getIndexNames();
+        $indices = [];
+
+        foreach ($this->indexRepository->flattened() as $indexConfig) {
+            if ($indexConfig->usesBlueGreenIndices()) {
+                $indices[] = $indexConfig->getBlueGreenActiveElasticaIndex()->getName();
+                $indices[] = $indexConfig->getBlueGreenInactiveElasticaIndex()->getName();
+
+                continue;
+            }
+
+            $indices[] = $indexConfig->getName();
+        }
+
+        return $indices;
     }
 }

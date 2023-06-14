@@ -36,7 +36,7 @@ Simplified, these are the steps to get the bundle up and running:
 1. Configure the Elasticsearch client in `app/config/config.yml`
 2. Define the mapping between an Elasticsearch document and a Pimcore element by implementing `\Valantic\ElasticaBridgeBundle\DocumentType\DocumentInterface`
 3. Define the Elasticsearch index by implementing `\Valantic\ElasticaBridgeBundle\Index\IndexInterface`
-4. Define how a document is persisted in an index by implementing `\Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface`
+4. Define how a document is persisted in an index by implementing `\Valantic\ElasticaBridgeBundle\Document\IndexDocumentInterface`
 
 ## Indexing
 
@@ -64,7 +64,7 @@ Options:
 
 The bridge automatically listens to Pimcore events and updates documents as needed.
 
-This can be globally disabled by calling `\Valantic\ElasticaBridgeBundle\EventListener\Pimcore\AbstractListener::disableListener();` or by implementing `\Valantic\ElasticaBridgeBundle\Index\IndexInterface::subscribedDocuments`.
+This can be globally disabled by calling `\Valantic\ElasticaBridgeBundle\EventListener\Pimcore\ChangeListener::disableListener();` or by implementing `\Valantic\ElasticaBridgeBundle\Index\IndexInterface::subscribedDocuments`.
 
 ## Status
 

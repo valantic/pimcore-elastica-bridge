@@ -4,29 +4,20 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Index;
 
-use Elastica\Document;
 use Elastica\Index;
-use Elastica\Query;
-use Elastica\ResultSet;
 use Pimcore\Model\Element\AbstractElement;
-use RuntimeException;
-use Valantic\ElasticaBridgeBundle\DocumentType\DocumentInterface;
-use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
+use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
+use Valantic\ElasticaBridgeBundle\Enum\IndexBlueGreenSuffix;
 use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
-use Valantic\ElasticaBridgeBundle\Repository\IndexDocumentRepository;
+use Valantic\ElasticaBridgeBundle\Repository\DocumentRepository;
 
 abstract class AbstractIndex implements IndexInterface
 {
-    protected bool $areGlobalFiltersEnabled = true;
-
-    public function __construct(protected ElasticsearchClient $client, protected IndexDocumentRepository $indexDocumentRepository)
-    {
-    }
-
-    public function getGlobalFilters(): array
-    {
-        return [];
+    public function __construct(
+        private readonly ElasticsearchClient $client,
+        private readonly DocumentRepository $documentRepository,
+    ) {
     }
 
     public function getMapping(): array
@@ -37,16 +28,6 @@ abstract class AbstractIndex implements IndexInterface
     public function getSettings(): array
     {
         return [];
-    }
-
-    public function disableGlobalFilters(): void
-    {
-        $this->areGlobalFiltersEnabled = false;
-    }
-
-    public function enableGlobalFilters(): void
-    {
-        $this->areGlobalFiltersEnabled = true;
     }
 
     final public function hasMapping(): bool
@@ -74,92 +55,29 @@ abstract class AbstractIndex implements IndexInterface
 
     public function isElementAllowedInIndex(AbstractElement $element): bool
     {
-        return $this->findIndexDocumentInstanceByPimcore($element) !== null;
-    }
-
-    public function getIndexDocumentInstance(Document $document): ?IndexDocumentInterface
-    {
-        $type = $document->get(IndexDocumentInterface::META_TYPE);
-        $subType = $document->get(IndexDocumentInterface::META_SUB_TYPE);
-
-        foreach ($this->getAllowedDocuments() as $allowedDocument) {
-            $documentInstance = $this->indexDocumentRepository->get($allowedDocument);
-
-            if ($documentInstance->getType() === $type && $documentInstance->getSubType() === $subType) {
-                return $documentInstance;
-            }
-        }
-
-        return null;
-    }
-
-    public function getDocumentFromElement(AbstractElement $element): ?Document
-    {
-        $documentInstance = $this->findIndexDocumentInstanceByPimcore($element);
-
-        if (!$documentInstance) {
-            return null;
-        }
-
-        try {
-            return $this->getElasticaIndex()->getDocument($documentInstance->getElasticsearchId($element));
-        } catch (RuntimeException) {
-            return null;
-        }
-    }
-
-    public function findIndexDocumentInstanceByPimcore(AbstractElement $element): ?IndexDocumentInterface
-    {
-        foreach ($this->getAllowedDocuments() as $allowedDocument) {
-            $documentInstance = $this->indexDocumentRepository->get($allowedDocument);
-
-            if (in_array($documentInstance->getType(), [
-                DocumentInterface::TYPE_OBJECT,
-                DocumentInterface::TYPE_VARIANT,
-                DocumentInterface::TYPE_DOCUMENT,
-            ], true) && $documentInstance->getSubType() === $element::class) {
-                return $documentInstance;
-            }
-        }
-
-        return null;
+        return $this->findDocumentInstanceByPimcore($element) instanceof DocumentInterface;
     }
 
     /**
-     * @param int $size Max number of elements to be retrieved aka limit
-     * @param int $from Number of elements to skip from the beginning aka offset
-     *
-     * @return AbstractElement[]
+     * @return DocumentInterface<AbstractElement>
      */
-    public function searchForElements(Query\AbstractQuery $query, int $size = 10, int $from = 0): array
+    public function findDocumentInstanceByPimcore(AbstractElement $element): ?DocumentInterface
     {
-        return $this->documentResultToElements(
-            $this->getElasticaIndex()
-                ->search(
-                    (new Query($query))
-                        ->setSize($size)
-                        ->setFrom($from)
+        foreach ($this->getAllowedDocuments() as $allowedDocument) {
+            $documentInstance = $this->documentRepository->get($allowedDocument);
+
+            if (
+                $documentInstance->getSubType() === $element::class
+                || (
+                    $documentInstance->getSubType() === null
+                    && is_subclass_of($element, $documentInstance->getType()->baseClass())
                 )
-        );
-    }
-
-    /**
-     * @return AbstractElement[]
-     */
-    public function documentResultToElements(ResultSet $result): array
-    {
-        $elements = [];
-        foreach ($result->getDocuments() as $esDoc) {
-            $instance = $this->getIndexDocumentInstance($esDoc);
-
-            if (!$instance) {
-                continue;
+            ) {
+                return $documentInstance;
             }
-
-            $elements[] = $instance->getPimcoreElement($esDoc);
         }
 
-        return $elements;
+        return null;
     }
 
     public function subscribedDocuments(): array
@@ -167,7 +85,7 @@ abstract class AbstractIndex implements IndexInterface
         return $this->getAllowedDocuments();
     }
 
-    public function refreshIndexAfterEveryIndexDocumentWhenPopulating(): bool
+    public function refreshIndexAfterEveryDocumentWhenPopulating(): bool
     {
         return false;
     }
@@ -181,15 +99,15 @@ abstract class AbstractIndex implements IndexInterface
     {
         return array_reduce(
             array_map(
-                fn (string $suffix): bool => $this->client->getIndex($this->getName() . $suffix)->exists(),
-                self::INDEX_SUFFIXES
+                fn (IndexBlueGreenSuffix $suffix): bool => $this->client->getIndex($this->getName() . $suffix->value)->exists(),
+                IndexBlueGreenSuffix::cases()
             ),
             fn (bool $carry, bool $item): bool => $item && $carry,
             true
         );
     }
 
-    final public function getBlueGreenActiveSuffix(): string
+    final public function getBlueGreenActiveSuffix(): IndexBlueGreenSuffix
     {
         if (!$this->hasBlueGreenIndices()) {
             throw new BlueGreenIndicesIncorrectlySetupException();
@@ -197,7 +115,7 @@ abstract class AbstractIndex implements IndexInterface
 
         $aliases = array_filter(
             $this->client->request('_aliases')->getData(),
-            fn (array $datum): bool => in_array($this->getName(), array_keys($datum['aliases']), true)
+            fn (array $datum): bool => array_key_exists($this->getName(), $datum['aliases'])
         );
 
         if (count($aliases) !== 1) {
@@ -206,35 +124,24 @@ abstract class AbstractIndex implements IndexInterface
 
         $suffix = substr(array_keys($aliases)[0], strlen($this->getName()));
 
-        if (!in_array($suffix, self::INDEX_SUFFIXES, true)) {
-            throw new BlueGreenIndicesIncorrectlySetupException();
-        }
-
-        return $suffix;
+        return IndexBlueGreenSuffix::tryFrom($suffix) ?? throw new BlueGreenIndicesIncorrectlySetupException();
     }
 
-    final public function getBlueGreenInactiveSuffix(): string
+    final public function getBlueGreenInactiveSuffix(): IndexBlueGreenSuffix
     {
-        $active = $this->getBlueGreenActiveSuffix();
-
-        if ($active === self::INDEX_SUFFIX_BLUE) {
-            return self::INDEX_SUFFIX_GREEN;
-        }
-
-        if ($active === self::INDEX_SUFFIX_GREEN) {
-            return self::INDEX_SUFFIX_BLUE;
-        }
-
-        throw new BlueGreenIndicesIncorrectlySetupException();
+        return match ($this->getBlueGreenActiveSuffix()) {
+            IndexBlueGreenSuffix::BLUE => IndexBlueGreenSuffix::GREEN,
+            IndexBlueGreenSuffix::GREEN => IndexBlueGreenSuffix::BLUE,
+        };
     }
 
     final public function getBlueGreenActiveElasticaIndex(): Index
     {
-        return $this->client->getIndex($this->getName() . $this->getBlueGreenActiveSuffix());
+        return $this->client->getIndex($this->getName() . $this->getBlueGreenActiveSuffix()->value);
     }
 
     final public function getBlueGreenInactiveElasticaIndex(): Index
     {
-        return $this->client->getIndex($this->getName() . $this->getBlueGreenInactiveSuffix());
+        return $this->client->getIndex($this->getName() . $this->getBlueGreenInactiveSuffix()->value);
     }
 }

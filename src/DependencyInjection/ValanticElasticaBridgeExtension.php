@@ -8,8 +8,7 @@ use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader;
 use Symfony\Component\HttpKernel\DependencyInjection\Extension;
-use Valantic\ElasticaBridgeBundle\DocumentType\DocumentInterface;
-use Valantic\ElasticaBridgeBundle\DocumentType\Index\IndexDocumentInterface;
+use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 
 /**
@@ -19,9 +18,8 @@ use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
  */
 class ValanticElasticaBridgeExtension extends Extension
 {
-    public const TAG_INDEX = 'valantic.elastica_bridge.index';
-    public const TAG_DOCUMENT = 'valantic.elastica_bridge.document';
-    public const TAG_DOCUMENT_INDEX = 'valantic.elastica_bridge.document_index';
+    private const TAG_INDEX = 'valantic.elastica_bridge.index';
+    private const TAG_DOCUMENT_INDEX = 'valantic.elastica_bridge.document';
 
     /**
      * {@inheritDoc}
@@ -33,8 +31,7 @@ class ValanticElasticaBridgeExtension extends Extension
     public function load(array $configs, ContainerBuilder $container): void
     {
         $container->registerForAutoconfiguration(IndexInterface::class)->addTag(self::TAG_INDEX);
-        $container->registerForAutoconfiguration(DocumentInterface::class)->addTag(self::TAG_DOCUMENT);
-        $container->registerForAutoconfiguration(IndexDocumentInterface::class)->addTag(self::TAG_DOCUMENT_INDEX);
+        $container->registerForAutoconfiguration(DocumentInterface::class)->addTag(self::TAG_DOCUMENT_INDEX);
 
         $configuration = new Configuration();
         $config = $this->processConfiguration($configuration, $configs);
@@ -43,6 +40,9 @@ class ValanticElasticaBridgeExtension extends Extension
         $loader->load('services.yml');
 
         $clientConfig = $config['client'] ?? ['host' => 'localhost', 'port' => '9200'];
-        array_walk($clientConfig, fn ($value, $key) => $container->setParameter('valantic_elastica_bridge.client.' . $key, $value));
+        array_walk(
+            $clientConfig,
+            fn ($value, $key) => $container->setParameter('valantic_elastica_bridge.client.' . $key, $value)
+        );
     }
 }
