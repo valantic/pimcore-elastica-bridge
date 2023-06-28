@@ -20,19 +20,19 @@ abstract class AbstractRepository
     ) {
     }
 
-     /** @return TItem */
-     public function get(string $key)
-     {
-         return $this->all()[$key] ?? throw new ItemNotFoundInRepositoryException($key);
-     }
+    /** @return TItem */
+    public function get(string $key)
+    {
+        return $this->all()[$key] ?? throw new ItemNotFoundInRepositoryException($key);
+    }
 
-     /** @return TItem[] */
-     protected function all(): array
-     {
-         $this->items ??= $this->initializeItemsFromIterables();
+    /** @return TItem[] */
+    protected function all(): array
+    {
+        $this->items ??= $this->initializeItemsFromIterables();
 
-         return $this->items;
-     }
+        return $this->items;
+    }
 
     /**
      * @return array<class-string<TItem>,TItem>
