@@ -136,6 +136,10 @@ class Index extends BaseCommand
                 'bin/console', self::COMMAND_NAMESPACE . 'populate-index',
                 '--config', $indexConfig->getName(),
                 '--index', $esIndex->getName(),
+                ...array_filter([$this->output->isVerbose() ? '-v' : null,
+                    $this->output->isVeryVerbose() ? '-vv' : null,
+                    $this->output->isDebug() ? '-vvv' : null,
+                ]),
             ],
             $this->kernel->getProjectDir(),
             timeout: null
