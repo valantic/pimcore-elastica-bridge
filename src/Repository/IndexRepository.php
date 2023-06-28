@@ -18,9 +18,10 @@ class IndexRepository extends AbstractRepository
         foreach ($this->all() as $indexConfig) {
             if ($indexConfig instanceof TenantAwareInterface) {
                 foreach ($indexConfig->getTenants() as $tenant) {
-                    $indexConfig->setTenant($tenant);
+                    $local = clone $indexConfig;
+                    $local->setTenant($tenant);
 
-                    yield $indexConfig->getName() => clone $indexConfig;
+                    yield $local->getName() => clone $local;
                 }
             } else {
                 yield $indexConfig->getName() => $indexConfig;
