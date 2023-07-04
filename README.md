@@ -62,9 +62,9 @@ Options:
 
 ### Specific
 
-The bridge automatically listens to Pimcore events and updates documents as needed.
+The bridge automatically listens to Pimcore events and updates documents as needed. If needed, call `\Valantic\ElasticaBridgeBundle\Service\PropagateChanges::handle` or execute `console valantic:elastica-bridge:refresh`.
 
-This can be globally disabled by calling `\Valantic\ElasticaBridgeBundle\EventListener\Pimcore\ChangeListener::disableListener();` or by implementing `\Valantic\ElasticaBridgeBundle\Index\IndexInterface::subscribedDocuments`.
+This can be globally disabled by calling `\Valantic\ElasticaBridgeBundle\EventListener\Pimcore\ChangeListener::disableListener();`.
 
 ## Status
 
