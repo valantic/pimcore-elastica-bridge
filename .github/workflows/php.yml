@@ -5,7 +5,7 @@ on: [ push, pull_request ]
 
 jobs:
 
-  phpstan_pimcore10:
+  phpstan:
 
     name: phpstan (PHP ${{ matrix.php }} with Pimcore ${{ matrix.pimcore }} (${{ matrix.stability }}) on ${{ matrix.operating-system }})
     runs-on: ${{ matrix.operating-system }}
