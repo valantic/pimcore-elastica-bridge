@@ -16,8 +16,12 @@ class SentryBreadcrumbLogger implements LoggerInterface
     /**
      * @param LogLevel::*|mixed $level
      */
-    public function log($level, $message, array $context = []): void
+    public function log($level, string|\Stringable $message, array $context = []): void
     {
+        if ($message instanceof \Stringable) {
+            $message = $message->__toString();
+        }
+
         \Sentry\addBreadcrumb(
             new Breadcrumb(
                 match ($level) {

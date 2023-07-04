@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Valantic\ElasticaBridgeBundle\Command;
 
 use Elastica\Exception\ResponseException;
+use Symfony\Component\Console\Helper\QuestionHelper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -42,10 +43,11 @@ class Cleanup extends BaseCommand
                 ? 'Deleting ALL indices in the cluster'
                 : 'Only deleting KNOWN indices'
         );
+        /** @var QuestionHelper $helper */
         $helper = $this->getHelper('question');
         $question = new ConfirmationQuestion('Are you sure you want to proceed deleting indices and aliases? (y/N)', false);
 
-        if (!$helper->ask($input, $output, $question)) {
+        if ($helper->ask($input, $output, $question) === false) {
             return self::FAILURE;
         }
 
