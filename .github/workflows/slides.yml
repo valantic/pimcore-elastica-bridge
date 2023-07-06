@@ -1,7 +1,7 @@
 name: Deploy Slides
 on:
   push:
-    branches: ["master", "feature/slides"]
+    branches: ["main"]
 
   workflow_dispatch:
 

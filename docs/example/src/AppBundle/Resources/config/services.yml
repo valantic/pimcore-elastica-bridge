@@ -1,9 +1,0 @@
-services:
-  _defaults:
-    autowire: true
-    autoconfigure: true
-    public: false
-
-  AppBundle\Elasticsearch\Index\Search\Document\PageIndexDocument:
-    arguments:
-      - !tagged_iterator app.elasticsearch.search.inline_dataobject_normalizer

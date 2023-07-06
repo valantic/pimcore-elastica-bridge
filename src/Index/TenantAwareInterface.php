@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Index;
 
-interface TenantAwareInterface
+interface TenantAwareInterface extends IndexInterface
 {
     /**
      * Returns a list of tenants supported by this index.
@@ -50,7 +50,7 @@ interface TenantAwareInterface
     public function getTenantUnawareName(): string;
 
     /**
-     * Indicates whether this index has a default tenant.
+     * Indicates whether this index has a default tenant. Override method if your getTenants() method is expensive.
      */
     public function hasDefaultTenant(): bool;
 

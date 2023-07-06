@@ -4,29 +4,22 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Command;
 
-use Pimcore\Event\Model\AssetEvent;
-use Pimcore\Event\Model\DataObjectEvent;
-use Pimcore\Event\Model\DocumentEvent;
 use Pimcore\Model\Asset;
 use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Model\Document;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputOption;
-use Valantic\ElasticaBridgeBundle\EventListener\Pimcore\Asset as AssetListener;
-use Valantic\ElasticaBridgeBundle\EventListener\Pimcore\DataObject as DataObjectListener;
-use Valantic\ElasticaBridgeBundle\EventListener\Pimcore\Document as DocumentListener;
+use Symfony\Component\Console\Output\OutputInterface;
+use Valantic\ElasticaBridgeBundle\Service\PropagateChanges;
 
 class Refresh extends BaseCommand
 {
-    protected const OPTION_ASSETS = 'assets';
-    protected const OPTION_DOCUMENTS = 'documents';
-    protected const OPTION_OBJECTS = 'objects';
+    private const OPTION_ASSETS = 'assets';
+    private const OPTION_DOCUMENTS = 'documents';
+    private const OPTION_OBJECTS = 'objects';
 
     public function __construct(
-        protected AssetListener $assetListener,
-        protected DataObjectListener $dataObjectListener,
-        protected DocumentListener $documentListener,
+        private readonly PropagateChanges $propagateChanges,
     ) {
         parent::__construct();
     }
@@ -78,18 +71,6 @@ class Refresh extends BaseCommand
     private function handle(
         string $optionName,
     ): void {
-        $listener = match ($optionName) {
-            self::OPTION_ASSETS => $this->assetListener,
-            self::OPTION_DOCUMENTS => $this->documentListener,
-            self::OPTION_OBJECTS => $this->dataObjectListener,
-        };
-
-        $eventClass = match ($optionName) {
-            self::OPTION_ASSETS => AssetEvent::class,
-            self::OPTION_DOCUMENTS => DocumentEvent::class,
-            self::OPTION_OBJECTS => DataObjectEvent::class,
-        };
-
         $objClass = match ($optionName) {
             self::OPTION_ASSETS => Asset::class,
             self::OPTION_DOCUMENTS => Document::class,
@@ -101,11 +82,14 @@ class Refresh extends BaseCommand
             $element = $objClass::getById($id);
 
             if ($element === null) {
-                $this->output->writeln(sprintf('-> ID %d of type %s not found, skipped', $id, $this->getShortName($objClass)));
+                $this->output->writeln(
+                    sprintf('-> ID %d of type %s not found, skipped', $id, $this->getShortName($objClass))
+                );
+
                 continue;
             }
 
-            $listener->updated(new $eventClass($element));
+            $this->propagateChanges->handle($element);
         }
         $this->output->writeln('');
     }
