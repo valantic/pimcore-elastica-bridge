@@ -13,6 +13,7 @@ services:
     arguments:
       $host: '%valantic_elastica_bridge.client.host%'
       $port: '%valantic_elastica_bridge.client.port%'
+      $addSentryBreadcrumbs: '%valantic_elastica_bridge.client.addSentryBreadcrumbs%'
 
   Valantic\ElasticaBridgeBundle\Service\:
     resource: '../../Service/*'

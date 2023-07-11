@@ -26,6 +26,7 @@ class Configuration implements ConfigurationInterface
             ->children()
             ->scalarNode('host')->defaultValue('localhost')->end()
             ->integerNode('port')->defaultValue(9200)->end()
+            ->booleanNode('addSentryBreadcrumbs')->defaultValue(false)->end()
             ->end()
             ->end();
 
