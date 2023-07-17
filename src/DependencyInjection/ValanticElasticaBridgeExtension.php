@@ -39,7 +39,7 @@ class ValanticElasticaBridgeExtension extends Extension
         $loader = new Loader\YamlFileLoader($container, new FileLocator(__DIR__ . '/../Resources/config'));
         $loader->load('services.yml');
 
-        $clientConfig = $config['client'] ?? ['host' => 'localhost', 'port' => '9200'];
+        $clientConfig = $config['client'];
         array_walk(
             $clientConfig,
             fn ($value, $key) => $container->setParameter('valantic_elastica_bridge.client.' . $key, $value)
