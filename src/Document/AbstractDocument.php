@@ -171,6 +171,23 @@ abstract class AbstractDocument implements DocumentInterface
      */
     protected function getTypeMappingForDocuments(): array
     {
+        $possibleBundleTypes = [
+            '\Pimcore\Model\DocumentNewsletter' => 'newsletter',
+            '\Pimcore\Model\DocumentPrintpage' => 'printpage',
+            '\Pimcore\Model\DocumentPrintcontainer' => 'printcontainer',
+        ];
+
+        /** @var array<class-string,string> $availableBundleTypes */
+        $availableBundleTypes = [];
+
+        foreach ($possibleBundleTypes as $className => $mapped) {
+            if (!class_exists($className)) {
+                continue;
+            }
+
+            $availableBundleTypes[$className] = $mapped;
+        }
+
         return [
             PimcoreDocument\Folder::class => 'folder',
             PimcoreDocument\Page::class => 'page',
@@ -178,9 +195,7 @@ abstract class AbstractDocument implements DocumentInterface
             PimcoreDocument\Link::class => 'link',
             PimcoreDocument\Hardlink::class => 'hardlink',
             PimcoreDocument\Email::class => 'email',
-            PimcoreDocument\Newsletter::class => 'newsletter',
-            PimcoreDocument\Printpage::class => 'printpage',
-            PimcoreDocument\Printcontainer::class => 'printcontainer',
+            ...$availableBundleTypes,
         ];
     }
 

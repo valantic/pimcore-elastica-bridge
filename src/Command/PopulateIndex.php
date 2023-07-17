@@ -91,7 +91,7 @@ class PopulateIndex extends BaseCommand
                     $listing->setOffset($batchNumber * $indexConfig->getBatchSize());
                     $listing->setLimit($indexConfig->getBatchSize());
 
-                    foreach ($listing->getData() as $dataObject) {
+                    foreach ($listing->getData() ?? [] as $dataObject) {
                         $progressBar->advance();
 
                         if (!$documentInstance->shouldIndex($dataObject)) {
