@@ -11,13 +11,6 @@ class ValanticElasticaBridgeBundle extends AbstractPimcoreBundle
 {
     use PackageVersionTrait;
 
-    public function getJsPaths()
-    {
-        return [
-            '/bundles/valanticelasticabridge/js/pimcore/startup.js',
-        ];
-    }
-
     protected function getComposerPackageName(): string
     {
         $composer = file_get_contents(__DIR__ . '/../composer.json');
