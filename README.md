@@ -48,6 +48,16 @@ See the [`ProductIndex` provided in the example](docs/example/src/Elasticsearch/
 
 See the [`ProductDocument` provided in the example](docs/example/src/Elasticsearch/Document/ProductDocument.php) for more details.
 
+## Configuration
+
+```yaml
+valantic_elastica_bridge:
+    client:
+        host:                 localhost
+        port:                 9200
+        addSentryBreadcrumbs: false
+```
+
 ## Indexing
 
 ### Bulk
