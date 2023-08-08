@@ -85,6 +85,6 @@ class ChangeListener implements EventSubscriberInterface
             throw $e;
         }
 
-        return $elementClass::getById($element->getId(), true) ?? throw $e;
+        return $elementClass::getById($element->getId(), ['force' => true]) ?? throw $e;
     }
 }
