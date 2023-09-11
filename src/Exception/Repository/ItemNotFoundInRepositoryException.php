@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Valantic\ElasticaBridgeBundle\Exception\Index;
+namespace Valantic\ElasticaBridgeBundle\Exception\Repository;
 
 use Valantic\ElasticaBridgeBundle\Exception\BaseException;
 

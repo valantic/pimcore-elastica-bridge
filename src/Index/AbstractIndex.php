@@ -9,7 +9,7 @@ use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Enum\IndexBlueGreenSuffix;
-use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
+use Valantic\ElasticaBridgeBundle\Exception\Repository\BlueGreenIndicesIncorrectlySetupException;
 use Valantic\ElasticaBridgeBundle\Repository\DocumentRepository;
 
 abstract class AbstractIndex implements IndexInterface

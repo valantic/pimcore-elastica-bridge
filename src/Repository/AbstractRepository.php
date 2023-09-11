@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Repository;
 
-use Valantic\ElasticaBridgeBundle\Exception\Index\ItemNotFoundInRepositoryException;
+use Valantic\ElasticaBridgeBundle\Exception\Repository\ItemNotFoundInRepositoryException;
 
 /**
  * @template TItem

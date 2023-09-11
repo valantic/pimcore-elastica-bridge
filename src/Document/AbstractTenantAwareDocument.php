@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Valantic\ElasticaBridgeBundle\Document;
 
 use Pimcore\Model\Element\AbstractElement;
-use Valantic\ElasticaBridgeBundle\Exception\Index\TenantNotSetException;
+use Valantic\ElasticaBridgeBundle\Exception\Repository\TenantNotSetException;
 
 /**
  * @template TElement of AbstractElement
