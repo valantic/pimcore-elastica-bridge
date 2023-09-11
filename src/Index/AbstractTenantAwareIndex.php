@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Index;
 
-use Valantic\ElasticaBridgeBundle\Exception\Repository\TenantNotSetException;
+use Valantic\ElasticaBridgeBundle\Exception\Index\TenantNotSetException;
 
 abstract class AbstractTenantAwareIndex extends AbstractIndex implements TenantAwareInterface
 {
