@@ -11,12 +11,17 @@ class ElasticsearchClientFactory
     public static function createElasticsearchClient(
         string $host,
         int $port,
+        ?string $dsn,
         bool $addSentryBreadcrumbs,
     ): ElasticsearchClient {
-        $esClient = new ElasticsearchClient([
-            'host' => $host,
-            'port' => $port,
-        ]);
+        $config = $dsn !== null && $dsn !== ''
+            ? $dsn
+            : [
+                'host' => $host,
+                'port' => $port,
+            ];
+
+        $esClient = new ElasticsearchClient($config);
 
         if ($addSentryBreadcrumbs && class_exists('\Sentry\Breadcrumb')) {
             $esClient->setLogger(new SentryBreadcrumbLogger());
