@@ -29,8 +29,7 @@ class ChangeListener implements EventSubscriberInterface
 
     public function __construct(
         private readonly PropagateChanges $propagateChanges,
-    ) {
-    }
+    ) {}
 
     public function handle(AssetEvent|DataObjectEvent|DocumentEvent $event): void
     {
