@@ -12,11 +12,14 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\HttpKernel\KernelInterface;
+use Symfony\Component\Lock\LockFactory;
+use Symfony\Component\Lock\LockInterface;
 use Symfony\Component\Process\Process;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Enum\IndexBlueGreenSuffix;
 use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
+use Valantic\ElasticaBridgeBundle\Repository\ConfigurationRepository;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 
 class Index extends BaseCommand
@@ -24,12 +27,15 @@ class Index extends BaseCommand
     private const ARGUMENT_INDEX = 'index';
     private const OPTION_DELETE = 'delete';
     private const OPTION_POPULATE = 'populate';
+    private const OPTION_LOCK_RELEASE = 'lock-release';
     public static bool $isPopulating = false;
 
     public function __construct(
         private readonly IndexRepository $indexRepository,
         private readonly ElasticsearchClient $esClient,
         private readonly KernelInterface $kernel,
+        private readonly LockFactory $lockFactory,
+        private readonly ConfigurationRepository $configurationRepository,
     ) {
         parent::__construct();
     }
@@ -54,6 +60,12 @@ class Index extends BaseCommand
                 'p',
                 InputOption::VALUE_NONE,
                 'Populate indices'
+            )
+            ->addOption(
+                self::OPTION_LOCK_RELEASE,
+                'l',
+                InputOption::VALUE_NONE,
+                'Force all indexing locks to be released'
             );
     }
 
@@ -72,7 +84,34 @@ class Index extends BaseCommand
                 continue;
             }
 
-            $this->processIndex($indexConfig);
+            $lock = $this->getLock($indexConfig);
+
+            if (!$lock->acquire()) {
+                if ($this->input->getOption(self::OPTION_LOCK_RELEASE) === true) {
+                    $lock->release();
+                    $this->output->writeln(sprintf(
+                        "\n<comment>Force-released lock for %s.</comment>\n",
+                        $indexConfig->getName()
+                    ));
+                }
+
+                if ($this->input->getOption(self::OPTION_LOCK_RELEASE) === false) {
+                    $this->output->writeln(
+                        sprintf(
+                            "\n<comment>Lock for %s is held by another process.</comment>\n",
+                            $indexConfig->getName(),
+                        )
+                    );
+
+                    continue;
+                }
+            }
+
+            try {
+                $this->processIndex($indexConfig);
+            } finally {
+                $lock->release();
+            }
         }
 
         if (count($skippedIndices) > 0) {
@@ -219,5 +258,14 @@ class Index extends BaseCommand
         }
 
         $this->output->writeln('<comment>-> Ensured indices are correctly set up with alias</comment>');
+    }
+
+    private function getLock(mixed $indexConfig): LockInterface
+    {
+        return $this->lockFactory
+            ->createLock(
+                __METHOD__ . '->' . $indexConfig->getName(),
+                ttl: $this->configurationRepository->getIndexingLockTimeout()
+            );
     }
 }
