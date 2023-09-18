@@ -24,8 +24,9 @@ class Configuration implements ConfigurationInterface
             ->children()
             ->arrayNode('client')
             ->children()
-            ->scalarNode('host')->defaultValue('localhost')->end()
-            ->integerNode('port')->defaultValue(9200)->end()
+            ->scalarNode('host')->defaultValue('localhost')->setDeprecated('valantic/pimcore-elastica-bridge', '3.1.0', 'Use the "dsn" option instead, e.g. http://username:password@localhost:9200/')->end()
+            ->integerNode('port')->defaultValue(9200)->setDeprecated('valantic/pimcore-elastica-bridge', '3.1.0', 'Use the "dsn" option instead, e.g. http://username:password@localhost:9200/')->end()
+            ->scalarNode('dsn')->defaultNull()->end()
             ->booleanNode('addSentryBreadcrumbs')->defaultValue(false)->end()
             ->end()
             ->end();
