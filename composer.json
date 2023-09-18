@@ -9,7 +9,8 @@
     "pimcore/pimcore": "^11.0",
     "psr/log": "^3.0",
     "ruflin/elastica": "^7.1 || 8.x-dev",
-    "symfony/console": "^6.2"
+    "symfony/console": "^6.2",
+    "symfony/lock": "^6.2"
   },
   "require-dev": {
     "bamarni/composer-bin-plugin": "^1.8.2",

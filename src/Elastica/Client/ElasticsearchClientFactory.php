@@ -5,20 +5,19 @@ declare(strict_types=1);
 namespace Valantic\ElasticaBridgeBundle\Elastica\Client;
 
 use Valantic\ElasticaBridgeBundle\Logger\SentryBreadcrumbLogger;
+use Valantic\ElasticaBridgeBundle\Repository\ConfigurationRepository;
 
 class ElasticsearchClientFactory
 {
-    public static function createElasticsearchClient(
-        string $host,
-        int $port,
-        bool $addSentryBreadcrumbs,
-    ): ElasticsearchClient {
-        $esClient = new ElasticsearchClient([
-            'host' => $host,
-            'port' => $port,
-        ]);
+    public function __construct(
+        private readonly ConfigurationRepository $configurationRepository,
+    ) {}
 
-        if ($addSentryBreadcrumbs && class_exists('\Sentry\Breadcrumb')) {
+    public function __invoke(
+    ): ElasticsearchClient {
+        $esClient = new ElasticsearchClient($this->configurationRepository->getClient());
+
+        if ($this->configurationRepository->getAddSentryBreadcrumbs() && class_exists('\Sentry\Breadcrumb')) {
             $esClient->setLogger(new SentryBreadcrumbLogger());
         }
 
