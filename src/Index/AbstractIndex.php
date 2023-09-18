@@ -17,8 +17,7 @@ abstract class AbstractIndex implements IndexInterface
     public function __construct(
         private readonly ElasticsearchClient $client,
         private readonly DocumentRepository $documentRepository,
-    ) {
-    }
+    ) {}
 
     public function getMapping(): array
     {

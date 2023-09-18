@@ -16,8 +16,7 @@ class PropagateChanges
     public function __construct(
         private readonly IndexRepository $indexRepository,
         private readonly DocumentHelper $documentHelper,
-    ) {
-    }
+    ) {}
 
     /**
      * Whenever an event occurs, a decision needs to be made:

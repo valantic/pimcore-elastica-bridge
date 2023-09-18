@@ -17,8 +17,7 @@ abstract class AbstractRepository
     public function __construct(
         /** @var \Iterator<TItem> */
         protected iterable $iterables,
-    ) {
-    }
+    ) {}
 
     /** @return TItem */
     public function get(string $key)

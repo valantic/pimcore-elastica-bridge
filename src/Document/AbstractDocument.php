@@ -12,7 +12,6 @@ use Pimcore\Model\Document as PimcoreDocument;
 use Pimcore\Model\Document\Listing as DocumentListing;
 use Pimcore\Model\Element\AbstractElement;
 use Pimcore\Model\Listing\AbstractListing;
-use UnhandledMatchError;
 use Valantic\ElasticaBridgeBundle\Enum\DocumentType;
 use Valantic\ElasticaBridgeBundle\Exception\DocumentType\PimcoreListingClassNotFoundException;
 use Valantic\ElasticaBridgeBundle\Exception\DocumentType\UnknownPimcoreElementType;
@@ -134,7 +133,7 @@ abstract class AbstractDocument implements DocumentInterface
                 DocumentType::DOCUMENT => DocumentListing::class,
                 DocumentType::DATA_OBJECT, DocumentType::VARIANT => $this->getDataObjectListingClass(),
             };
-        } catch (UnhandledMatchError) {
+        } catch (\UnhandledMatchError) {
             throw new UnknownPimcoreElementType($this->getType()->value);
         }
     }
