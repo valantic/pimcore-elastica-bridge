@@ -29,6 +29,14 @@ class Configuration implements ConfigurationInterface
             ->scalarNode('dsn')->defaultNull()->end()
             ->booleanNode('addSentryBreadcrumbs')->defaultValue(false)->end()
             ->end()
+            ->end()
+            ->arrayNode('indexing')
+            ->addDefaultsIfNotSet()
+            ->children()
+            ->integerNode('lock_timeout')->defaultValue(5 * 60)->info('To prevent overlapping indexing jobs. Set to a value higher than the slowest index. Value is specified in seconds.')->end()
+            ->end()
+            ->end()
+            ->end()
             ->end();
 
         return $treeBuilder;
