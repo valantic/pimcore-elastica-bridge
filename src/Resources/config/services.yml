@@ -8,18 +8,18 @@ services:
     resource: '../../Command/*'
     tags: [ 'console.command' ]
 
+  Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClientFactory: ~
+
   Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient:
-    factory: [ 'Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClientFactory', 'createElasticsearchClient' ]
-    arguments:
-      $host: '%valantic_elastica_bridge.client.host%'
-      $port: '%valantic_elastica_bridge.client.port%'
-      $addSentryBreadcrumbs: '%valantic_elastica_bridge.client.addSentryBreadcrumbs%'
+    factory: '@Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClientFactory'
 
   Valantic\ElasticaBridgeBundle\Service\:
     resource: '../../Service/*'
 
   Valantic\ElasticaBridgeBundle\EventListener\:
     resource: '../../EventListener/*'
+
+  Valantic\ElasticaBridgeBundle\Repository\ConfigurationRepository:
 
   Valantic\ElasticaBridgeBundle\Repository\IndexRepository:
     arguments:
