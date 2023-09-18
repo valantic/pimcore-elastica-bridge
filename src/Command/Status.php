@@ -112,8 +112,8 @@ class Status extends BaseCommand
         $activeBlueGreen = 'N/A';
 
         if ($exists) {
-            $stats = $indexConfig->getElasticaIndex()->getStats()->get()['indices'];
-            $stats = array_values($stats)[0]['total'];
+            $stats = $indexConfig->getElasticaIndex()->getStats()->get('indices');
+            $stats = array_values($stats)[0]['primaries'];
             $numDocs = $stats['docs']['count'];
             $size = $stats['store']['size_in_bytes'];
         }
@@ -149,7 +149,7 @@ class Status extends BaseCommand
         $index = $this->esClient->getIndex($indexName);
 
         $stats = $index->getStats()->get()['indices'];
-        $stats = array_values($stats)[0]['total'];
+        $stats = array_values($stats)[0]['primaries'];
         $numDocs = $stats['docs']['count'];
         $size = $stats['store']['size_in_bytes'];
 
