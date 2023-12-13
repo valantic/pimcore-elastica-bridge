@@ -4,7 +4,7 @@
     "release": "release-it"
   },
   "devDependencies": {
-    "@release-it/bumper": "^5.1.0",
-    "release-it": "^16.1.5"
+    "@release-it/bumper": "^6.0.1",
+    "release-it": "^17.0.1"
   }
 }
