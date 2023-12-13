@@ -11,6 +11,7 @@ use Pimcore\Event\Model\AssetEvent;
 use Pimcore\Event\Model\DataObjectEvent;
 use Pimcore\Event\Model\DocumentEvent;
 use Pimcore\Model\Asset;
+use Pimcore\Model\Asset\Unknown;
 use Pimcore\Model\DataObject\AbstractObject;
 use Pimcore\Model\Document;
 use Pimcore\Model\Element\AbstractElement;
@@ -37,7 +38,15 @@ class ChangeListener implements EventSubscriberInterface
             return;
         }
 
-        $this->propagateChanges->handle($this->getFreshElement($event->getElement()));
+        $element = $event->getElement();
+
+        // If a folder is created in the assets section in Pimcore 11 the type is set to Unknown.
+        // https://github.com/pimcore/pimcore/issues/16363
+        if ($element instanceof Unknown && $element->getType() === 'folder') {
+            return;
+        }
+
+        $this->propagateChanges->handle($this->getFreshElement($element));
     }
 
     public static function enableListener(): void
