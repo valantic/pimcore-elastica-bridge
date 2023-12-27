@@ -229,7 +229,7 @@ class Index extends BaseCommand
         // In case an index with the same name as the blue/green alias exists, delete it
         if (
             $nonAliasIndex->exists()
-            && !$this->esClient->request('_alias/' . $indexConfig->getName(), Request::HEAD)->isOk()
+            && !$this->esClient->request(Request::HEAD, '_alias/' . $indexConfig->getName())->asBool()
         ) {
             $nonAliasIndex->delete();
             $this->output->writeln('<comment>-> Deleted non-blue/green index to prepare for blue/green usage</comment>');

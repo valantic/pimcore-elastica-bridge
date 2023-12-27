@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Command;
 
-use Elastica\Exception\ResponseException;
+use Elastic\Elasticsearch\Exception\ElasticsearchException;
 use Symfony\Component\Console\Helper\QuestionHelper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -62,7 +62,7 @@ class Cleanup extends BaseCommand
 
             try {
                 $client->delete();
-            } catch (ResponseException $e) {
+            } catch (ElasticsearchException $e) {
                 $this->output->writeln(sprintf('<error>%s</error>', $e->getMessage()));
             }
         }

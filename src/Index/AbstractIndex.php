@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Valantic\ElasticaBridgeBundle\Index;
 
 use Elastica\Index;
+use Elastica\Request;
 use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
@@ -113,7 +114,7 @@ abstract class AbstractIndex implements IndexInterface
         }
 
         $aliases = array_filter(
-            $this->client->request('_aliases')->getData(),
+            json_decode((string) $this->client->request(Request::GET, '_aliases')->getBody(), true, flags: \JSON_THROW_ON_ERROR),
             fn (array $datum): bool => array_key_exists($this->getName(), $datum['aliases'])
         );
 

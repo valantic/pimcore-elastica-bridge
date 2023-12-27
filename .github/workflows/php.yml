@@ -17,7 +17,6 @@ jobs:
         php: [ '8.1', '8.2' ]
         pimcore: [ '^11.0' ]
         stability: [ prefer-lowest, prefer-stable ]
-        elastica: [ '^7.1', '8.x-dev#0f6b04b' ]
 
     steps:
       - name: Checkout code
@@ -34,7 +33,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          composer require "pimcore/pimcore:${{ matrix.pimcore }}" "ruflin/elastica:${{ matrix.elastica }}" --no-interaction --no-update
+          composer require "pimcore/pimcore:${{ matrix.pimcore }}" --no-interaction --no-update
           composer update --${{ matrix.stability }} --prefer-dist --no-interaction
 
       - name: List installed dependencies
