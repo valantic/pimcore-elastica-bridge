@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Valantic\ElasticaBridgeBundle\Index;
 
 use Elastica\Index;
-use Elastica\Request;
 use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Enum\IndexBlueGreenSuffix;
 use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
 use Valantic\ElasticaBridgeBundle\Repository\DocumentRepository;
+use Valantic\ElasticaBridgeBundle\Util\ElasticsearchResponse;
 
 abstract class AbstractIndex implements IndexInterface
 {
@@ -114,7 +114,7 @@ abstract class AbstractIndex implements IndexInterface
         }
 
         $aliases = array_filter(
-            json_decode((string) $this->client->request(Request::GET, '_aliases')->getBody(), true, flags: \JSON_THROW_ON_ERROR),
+            ElasticsearchResponse::getResponse($this->client->indices()->getAlias(['name' => $this->getName()]))->asArray(),
             fn (array $datum): bool => array_key_exists($this->getName(), $datum['aliases'])
         );
 

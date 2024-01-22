@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Valantic\ElasticaBridgeBundle\Command;
 
 use Elastica\Index as ElasticaIndex;
-use Elastica\Request;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -21,6 +20,7 @@ use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySet
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 use Valantic\ElasticaBridgeBundle\Repository\ConfigurationRepository;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
+use Valantic\ElasticaBridgeBundle\Util\ElasticsearchResponse;
 
 class Index extends BaseCommand
 {
@@ -227,9 +227,10 @@ class Index extends BaseCommand
         $nonAliasIndex = $this->esClient->getIndex($indexConfig->getName());
 
         // In case an index with the same name as the blue/green alias exists, delete it
+
         if (
             $nonAliasIndex->exists()
-            && !$this->esClient->request(Request::HEAD, '_alias/' . $indexConfig->getName())->asBool()
+            && !ElasticsearchResponse::getResponse($this->esClient->indices()->existsAlias(['name' => $indexConfig->getName()]))->asBool()
         ) {
             $nonAliasIndex->delete();
             $this->output->writeln('<comment>-> Deleted non-blue/green index to prepare for blue/green usage</comment>');
