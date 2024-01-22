@@ -10,8 +10,10 @@ use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Valantic\ElasticaBridgeBundle\Exception\Command\DocumentFailedException;
 use Valantic\ElasticaBridgeBundle\Exception\Command\IndexingFailedException;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
+use Valantic\ElasticaBridgeBundle\Repository\ConfigurationRepository;
 use Valantic\ElasticaBridgeBundle\Repository\DocumentRepository;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 use Valantic\ElasticaBridgeBundle\Service\DocumentHelper;
@@ -25,6 +27,7 @@ class PopulateIndex extends BaseCommand
         private readonly IndexRepository $indexRepository,
         private readonly DocumentRepository $documentRepository,
         private readonly DocumentHelper $documentHelper,
+        private readonly ConfigurationRepository $configurationRepository,
     ) {
         parent::__construct();
     }
@@ -92,13 +95,21 @@ class PopulateIndex extends BaseCommand
                     $listing->setLimit($indexConfig->getBatchSize());
 
                     foreach ($listing->getData() ?? [] as $dataObject) {
-                        $progressBar->advance();
+                        try {
+                            $progressBar->advance();
 
-                        if (!$documentInstance->shouldIndex($dataObject)) {
-                            continue;
+                            if (!$documentInstance->shouldIndex($dataObject)) {
+                                continue;
+                            }
+
+                            $esDocuments[] = $this->documentHelper->elementToDocument($documentInstance, $dataObject);
+                        } catch (\Throwable $throwable) {
+                            $this->displayDocumentError($indexConfig, $document, $dataObject, $throwable);
+
+                            if (!$this->configurationRepository->shouldSkipFailingDocuments()) {
+                                throw new DocumentFailedException($throwable);
+                            }
                         }
-
-                        $esDocuments[] = $this->documentHelper->elementToDocument($documentInstance, $dataObject);
                     }
 
                     if (count($esDocuments) > 0) {
@@ -116,22 +127,7 @@ class PopulateIndex extends BaseCommand
                 }
             }
         } catch (\Throwable $throwable) {
-            $this->output->writeln('');
-            $this->output->writeln(sprintf(
-                '<fg=red;options=bold>Error while populating index %s, processing documents of type %s, last processed element ID %s.</>',
-                $indexConfig::class,
-                $document ?? '(N/A)',
-                isset($dataObject) && $dataObject instanceof AbstractElement ? $dataObject->getId() : '(N/A)'
-            ));
-            $this->output->writeln('');
-            $this->output->writeln(sprintf('In %s line %d', $throwable->getFile(), $throwable->getLine()));
-            $this->output->writeln('');
-
-            $this->output->writeln($throwable->getMessage());
-            $this->output->writeln('');
-
-            $this->output->writeln($throwable->getTraceAsString());
-            $this->output->writeln('');
+            $this->displayIndexError($indexConfig, $throwable);
 
             throw new IndexingFailedException($throwable);
         } finally {
@@ -141,6 +137,49 @@ class PopulateIndex extends BaseCommand
         }
 
         $progressBar->finish();
+        $this->output->writeln('');
+    }
+
+    private function displayDocumentError(
+        IndexInterface $indexConfig,
+        string $document,
+        AbstractElement $dataObject,
+        \Throwable $throwable,
+    ): void {
+        $this->output->writeln('');
+        $this->output->writeln(sprintf(
+            '<fg=red;options=bold>Error while populating index %s, processing documents of type %s, last processed element ID %s.</>',
+            $indexConfig::class,
+            $document,
+            $dataObject->getId()
+        ));
+        $this->output->writeln('');
+        $this->output->writeln(sprintf('In %s line %d', $throwable->getFile(), $throwable->getLine()));
+        $this->output->writeln('');
+
+        $this->output->writeln($throwable->getMessage());
+        $this->output->writeln('');
+
+        $this->output->writeln($throwable->getTraceAsString());
+        $this->output->writeln('');
+    }
+
+    private function displayIndexError(IndexInterface $indexConfig, \Throwable $throwable): void
+    {
+        $this->output->writeln('');
+        $this->output->writeln(sprintf(
+            '<fg=red;options=bold>Error while populating index %s.</>',
+            $indexConfig::class,
+        ));
+
+        $this->output->writeln('');
+        $this->output->writeln(sprintf('In %s line %d', $throwable->getFile(), $throwable->getLine()));
+        $this->output->writeln('');
+
+        $this->output->writeln($throwable->getMessage());
+        $this->output->writeln('');
+
+        $this->output->writeln($throwable->getTraceAsString());
         $this->output->writeln('');
     }
 }

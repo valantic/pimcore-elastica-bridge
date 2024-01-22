@@ -29,4 +29,9 @@ class ConfigurationRepository
     {
         return $this->containerBag->get('valantic_elastica_bridge')['indexing']['lock_timeout'];
     }
+
+    public function shouldSkipFailingDocuments(): bool
+    {
+        return $this->containerBag->get('valantic_elastica_bridge')['indexing']['should_skip_failing_documents'];
+    }
 }
