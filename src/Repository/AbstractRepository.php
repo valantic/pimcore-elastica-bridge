@@ -8,6 +8,8 @@ use Valantic\ElasticaBridgeBundle\Exception\Repository\ItemNotFoundInRepositoryE
 
 /**
  * @template TItem
+ *
+ * @internal
  */
 abstract class AbstractRepository
 {

@@ -7,7 +7,11 @@ namespace Valantic\ElasticaBridgeBundle\Repository;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 use Valantic\ElasticaBridgeBundle\Index\TenantAwareInterface;
 
-/** @extends AbstractRepository<IndexInterface> */
+/**
+ * @extends AbstractRepository<IndexInterface>
+ *
+ * @internal
+ */
 class IndexRepository extends AbstractRepository
 {
     /**

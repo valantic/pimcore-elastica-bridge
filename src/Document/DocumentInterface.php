@@ -63,7 +63,7 @@ interface DocumentInterface
      *
      * Returning null will result in all elements of getType() being included.
      *
-     * @return ?class-string
+     * @return ?class-string<AbstractElement>
      */
     public function getSubType(): ?string;
 

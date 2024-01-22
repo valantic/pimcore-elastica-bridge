@@ -12,8 +12,8 @@ The only job of the bundle is to store Pimcore elements (assets, documents, data
 
 1. `composer require valantic/pimcore-elastica-bridge`
 1. Edit `config/bundles.php` and add `\Valantic\ElasticaBridgeBundle\ValanticElasticaBridgeBundle::class => ['all' => true],`
-1. Configure the connection to your Elasticsearch cluster as seen in [`example/app/config/config.yml`](example/app/config/config.yml)
-1. Don't forget to register your newly created services (implementing `IndexInterface` etc.) in your `services.yml`
+1. Configure the connection to your Elasticsearch cluster as seen in [`example/app/config/config.yaml`](example/app/config/config.yaml)
+1. Don't forget to register your newly created services (implementing `IndexInterface` etc.) in your `services.yaml`
    ```yml
    App\Elasticsearch\:
    resource: '../../Elasticsearch'
