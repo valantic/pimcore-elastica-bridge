@@ -90,7 +90,7 @@ class Cleanup extends BaseCommand
 
         $indices = [];
 
-        foreach ($this->indexRepository->flattened() as $indexConfig) {
+        foreach ($this->indexRepository->flattenedAll() as $indexConfig) {
             if ($indexConfig->usesBlueGreenIndices()) {
                 $indices[] = $indexConfig->getBlueGreenActiveElasticaIndex()->getName();
                 $indices[] = $indexConfig->getBlueGreenInactiveElasticaIndex()->getName();

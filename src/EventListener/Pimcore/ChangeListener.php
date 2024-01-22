@@ -15,8 +15,9 @@ use Pimcore\Model\DataObject\AbstractObject;
 use Pimcore\Model\Document;
 use Pimcore\Model\Element\AbstractElement;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Valantic\ElasticaBridgeBundle\Exception\EventListener\PimcoreElementNotFoundException;
-use Valantic\ElasticaBridgeBundle\Service\PropagateChanges;
+use Valantic\ElasticaBridgeBundle\Messenger\Message\RefreshElement;
 
 /**
  * An abstract listener for DataObject and Document listeners.
@@ -28,7 +29,7 @@ class ChangeListener implements EventSubscriberInterface
     private static bool $isEnabled = true;
 
     public function __construct(
-        private readonly PropagateChanges $propagateChanges,
+        private readonly MessageBusInterface $messageBus,
     ) {}
 
     public function handle(AssetEvent|DataObjectEvent|DocumentEvent $event): void
@@ -45,7 +46,7 @@ class ChangeListener implements EventSubscriberInterface
             return;
         }
 
-        $this->propagateChanges->handle($this->getFreshElement($element));
+        $this->messageBus->dispatch(new RefreshElement($this->getFreshElement($element)));
     }
 
     public static function enableListener(): void

@@ -58,7 +58,7 @@ class PopulateIndex extends BaseCommand
 
     private function getIndex(): ?IndexInterface
     {
-        foreach ($this->indexRepository->flattened() as $indexConfig) {
+        foreach ($this->indexRepository->flattenedAll() as $indexConfig) {
             if ($indexConfig->getName() === $this->input->getOption(self::OPTION_CONFIG)) {
                 return $indexConfig;
             }

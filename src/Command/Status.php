@@ -56,7 +56,7 @@ class Status extends BaseCommand
 
         $this->output->writeln('');
 
-        foreach ($this->indexRepository->flattened() as $indexConfig) {
+        foreach ($this->indexRepository->flattenedAll() as $indexConfig) {
             $this->processBundleIndex($indexConfig);
         }
 
