@@ -17,7 +17,7 @@ class ElasticsearchClientFactory
     ): ElasticsearchClient {
         $esClient = new ElasticsearchClient($this->configurationRepository->getClientDsn());
 
-        if ($this->configurationRepository->getAddSentryBreadcrumbs() && class_exists('\Sentry\Breadcrumb')) {
+        if ($this->configurationRepository->shouldAddSentryBreadcrumbs() && class_exists('\Sentry\Breadcrumb')) {
             $esClient->setLogger(new SentryBreadcrumbLogger());
         }
 

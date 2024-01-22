@@ -6,6 +6,9 @@ namespace Valantic\ElasticaBridgeBundle\Repository;
 
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 
+/**
+ * @internal
+ */
 class ConfigurationRepository
 {
     public function __construct(
@@ -17,9 +20,9 @@ class ConfigurationRepository
         return $this->containerBag->get('valantic_elastica_bridge')['client']['dsn'];
     }
 
-    public function getAddSentryBreadcrumbs(): bool
+    public function shouldAddSentryBreadcrumbs(): bool
     {
-        return $this->containerBag->get('valantic_elastica_bridge')['client']['addSentryBreadcrumbs'];
+        return $this->containerBag->get('valantic_elastica_bridge')['client']['should_add_sentry_breadcrumbs'];
     }
 
     public function getIndexingLockTimeout(): int

@@ -25,7 +25,7 @@ class Configuration implements ConfigurationInterface
             ->arrayNode('client')
             ->children()
             ->scalarNode('dsn')->defaultNull()->end()
-            ->booleanNode('addSentryBreadcrumbs')->defaultValue(false)->end()
+            ->booleanNode('should_add_sentry_breadcrumbs')->defaultFalse()->info('If true, breadcrumbs are added to Sentry for every request made to Elasticsearch via Elastica.')->end()
             ->end()
             ->end()
             ->arrayNode('indexing')
