@@ -23,7 +23,19 @@ abstract class AbstractIndex implements IndexInterface
 
     public function getMapping(): array
     {
-        return [];
+        return [
+            'properties' => [
+                DocumentInterface::META_ID => [
+                    'type' => 'keyword',
+                ],
+                DocumentInterface::META_TYPE => [
+                    'type' => 'keyword',
+                ],
+                DocumentInterface::META_SUB_TYPE => [
+                    'type' => 'keyword',
+                ],
+            ],
+        ];
     }
 
     public function getSettings(): array

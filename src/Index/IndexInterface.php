@@ -35,7 +35,7 @@ interface IndexInterface
      * Defines the mapping to be used for this index.
      * Passed 1:1 to Elasticsearch.
      *
-     * @return array<array<mixed>>
+     * @return array{properties:array<string,mixed>}
      */
     public function getMapping(): array;
 
