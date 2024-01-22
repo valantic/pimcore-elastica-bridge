@@ -46,7 +46,7 @@ See the [`ProductIndex` provided in the example](docs/example/src/Elasticsearch/
   - `relationAttributes` allow to store just a reference, i.e. the ID of a Pimcore element, instead of the entire object in the index.
   - The mapping can either be an array defined without keys, in which case the Pimcore element's property will be indexed using the same name or a key-value pair if the property should be named differently in the index. **If a key-value pair is used, it is also possible to pass a function retrieving the Pimcore element and returning an arbitrary array.** This is very powerful and allows to implement almost any use case. Mind that it is also possible to mix both approaches, i.e. define some entries with a key and others without one.
 
-See the [`ProductDocument` provided in the example](docs/example/src/Elasticsearch/Document/ProductDocument.php) for more details.
+See the [`ProductIndexDocument` provided in the example](docs/example/src/Elasticsearch/Index/Product/Document/ProductIndexDocument.php) for more details.
 
 ## Configuration
 
