@@ -15,7 +15,7 @@ class ElasticsearchClientFactory
 
     public function __invoke(
     ): ElasticsearchClient {
-        $esClient = new ElasticsearchClient($this->configurationRepository->getClient());
+        $esClient = new ElasticsearchClient($this->configurationRepository->getClientDsn());
 
         if ($this->configurationRepository->getAddSentryBreadcrumbs() && class_exists('\Sentry\Breadcrumb')) {
             $esClient->setLogger(new SentryBreadcrumbLogger());

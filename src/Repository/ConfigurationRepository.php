@@ -12,19 +12,9 @@ class ConfigurationRepository
         private readonly ContainerBagInterface $containerBag,
     ) {}
 
-    /**
-     * @return array{host:string,port:int}|string
-     */
-    public function getClient(): array|string
+    public function getClientDsn(): string
     {
-        $config = $this->containerBag->get('valantic_elastica_bridge')['client'];
-
-        return $config['dsn'] !== null && $config['dsn'] !== ''
-              ? $config['dsn']
-              : [
-                  'host' => $config['host'],
-                  'port' => $config['port'],
-              ];
+        return $this->containerBag->get('valantic_elastica_bridge')['client']['dsn'];
     }
 
     public function getAddSentryBreadcrumbs(): bool

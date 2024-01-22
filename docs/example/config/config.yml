@@ -1,4 +1,3 @@
 valantic_elastica_bridge:
   client:
-    host: 'localhost'
-    port: 9200
+    dsn: 'http://localhost:9200'

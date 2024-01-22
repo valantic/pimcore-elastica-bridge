@@ -53,9 +53,19 @@ See the [`ProductIndexDocument` provided in the example](docs/example/src/Elasti
 ```yaml
 valantic_elastica_bridge:
     client:
-        host:                 localhost
-        port:                 9200
-        addSentryBreadcrumbs: false
+
+        # The DSN to connect to the Elasticsearch cluster.
+        dsn:                  'http://localhost:9200'
+
+        # If true, breadcrumbs are added to Sentry for every request made to Elasticsearch via Elastica.
+        should_add_sentry_breadcrumbs: false
+    indexing:
+
+        # To prevent overlapping indexing jobs. Set to a value higher than the slowest index. Value is specified in seconds.
+        lock_timeout:         300
+
+        # If true, when a document fails to be indexed, it will be skipped and indexing continue with the next document. If false, indexing that index will be aborted.
+        should_skip_failing_documents: false
 ```
 
 ## Indexing
