@@ -1,14 +1,25 @@
-# Upgrade from v1 to v2
+# UPGRADE
+
+## Upgrade from v3 to v4
+
+- Remove deprecated options `valantic_elastica_bridge.client.host` and `valantic_elastica_bridge.client.port`. Use `valantic_elastica_bridge.client.dsn` instead, e.g. `http://localhost:9200`
+- Renamed `valantic_elastica_bridge.client.addSentryBreadcrumbs` to `valantic_elastica_bridge.client.should_add_sentry_breadcrumbs`
+
+## Upgrade from v2 to v3
+
+- no code changes necessary
+
+## Upgrade from v1 to v2
 
 
-## Migration
+### Migration
 
 - `IndexDocumentInterface` implementations should now extend `\Valantic\ElasticaBridgeBundle\Document\AbstractDocument`. `getType()` should now return one of `\Valantic\ElasticaBridgeBundle\Enum\DocumentType`
 - `Valantic\ElasticaBridgeBundle\DocumentType\Index\ListingTrait` was removed, remove any references to it [#30](https://github.com/valantic/pimcore-elastica-bridge/issues/30)
 - Update references to renamed classes and interfaces (see next section)
 - see also the example in [`docs/example/`](./docs/example/)
 
-## Breaking Changes
+### Breaking Changes
 
 - PHP 8.1+ [#26](https://github.com/valantic/pimcore-elastica-bridge/issues/26)
 - `\Valantic\ElasticaBridgeBundle\EventListener\Pimcore\AbstractListener` was renamed to `\Valantic\ElasticaBridgeBundle\EventListener\Pimcore\ChangeListener`
@@ -23,14 +34,14 @@
 - `Valantic\ElasticaBridgeBundle\Document\TenantAwareTrait` has been replaced by `Valantic\ElasticaBridgeBundle\Document\AbstractTenantAwareDocument`
 - `Valantic\ElasticaBridgeBundle\DocumentType\Index\DataObjectNormalizerTrait` was moved to `Valantic\ElasticaBridgeBundle\Document\DataObjectNormalizerTrait`
 
-## New Features
+### New Features
 
 - PHPStan generics annotations for `\Valantic\ElasticaBridgeBundle\Document\DocumentInterface` and related helper traits [#32](https://github.com/valantic/pimcore-elastica-bridge/issues/32)
 - Added `\Valantic\ElasticaBridgeBundle\Service\PropagateChanges::handle` to programmatically update an element in all indices [#33](https://github.com/valantic/pimcore-elastica-bridge/issues/33)
 - Added support for assets [#34](https://github.com/valantic/pimcore-elastica-bridge/issues/34)
 - Allow `\Valantic\ElasticaBridgeBundle\Document\DocumentInterface::getSubType` to return `null` for generic, element-level indices [#42](https://github.com/valantic/pimcore-elastica-bridge/issues/42)
 
-## Other changes
+### Other changes
 
 - `:cleanup` now defaults to only cleaning up bundle indices [#27](https://github.com/valantic/pimcore-elastica-bridge/issues/27)
 - Removed `--check` from `:index` [#41](https://github.com/valantic/pimcore-elastica-bridge/issues/41)
