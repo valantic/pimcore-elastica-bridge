@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Index;
 
+use Elastic\Elasticsearch\Exception\ClientResponseException;
 use Elastica\Index;
 use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
@@ -113,10 +114,14 @@ abstract class AbstractIndex implements IndexInterface
             throw new BlueGreenIndicesIncorrectlySetupException();
         }
 
-        $aliases = array_filter(
-            ElasticsearchResponse::getResponse($this->client->indices()->getAlias(['name' => $this->getName()]))->asArray(),
-            fn (array $datum): bool => array_key_exists($this->getName(), $datum['aliases'])
-        );
+        try {
+            $aliases = array_filter(
+                ElasticsearchResponse::getResponse($this->client->indices()->getAlias(['name' => $this->getName()]))->asArray(),
+                fn (array $datum): bool => array_key_exists($this->getName(), $datum['aliases'])
+            );
+        } catch (ClientResponseException) {
+            throw new BlueGreenIndicesIncorrectlySetupException();
+        }
 
         if (count($aliases) !== 1) {
             throw new BlueGreenIndicesIncorrectlySetupException();
