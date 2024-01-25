@@ -15,6 +15,7 @@ use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 
 class Cleanup extends BaseCommand
 {
+    use NonBundleIndexTrait;
     private const OPTION_ALL_IN_CLUSTER = 'all';
 
     public function __construct(
@@ -54,7 +55,15 @@ class Cleanup extends BaseCommand
         $indices = $this->getIndices();
 
         foreach ($indices as $index) {
+            if (!$this->shouldProcessNonBundleIndex($index)) {
+                continue;
+            }
+
             $client = $this->esClient->getIndex($index);
+
+            if ($client->getSettings()->getBool('hidden')) {
+                continue;
+            }
 
             foreach ($client->getAliases() as $alias) {
                 $client->removeAlias($alias);

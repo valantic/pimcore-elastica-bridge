@@ -14,6 +14,7 @@ use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 
 class Status extends BaseCommand
 {
+    use NonBundleIndexTrait;
     /**
      * @var array<int,array<int,mixed>>
      */
@@ -67,7 +68,7 @@ class Status extends BaseCommand
         $table->render();
 
         foreach ($this->esClient->getCluster()->getIndexNames() as $indexName) {
-            if (in_array($indexName, $this->skipOtherIndices, true)) {
+            if (in_array($indexName, $this->skipOtherIndices, true) || !$this->shouldProcessNonBundleIndex($indexName)) {
                 continue;
             }
             $this->processOtherIndex($indexName);
