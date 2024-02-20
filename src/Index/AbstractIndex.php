@@ -6,7 +6,6 @@ namespace Valantic\ElasticaBridgeBundle\Index;
 
 use Elastic\Elasticsearch\Exception\ClientResponseException;
 use Elastica\Index;
-use Elastica\Request;
 use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
