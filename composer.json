@@ -8,7 +8,7 @@
     "ext-json": "*",
     "pimcore/pimcore": "^11.0",
     "psr/log": "^3.0",
-    "ruflin/elastica": "^7.1 || 8.x-dev#0f6b04b5ebe6df51015fb54b4c455bd7af5b093f",
+    "ruflin/elastica": "^7.1 || 8.x-dev#0f6b04b",
     "symfony/console": "^6.2",
     "symfony/lock": "^6.2"
   },
