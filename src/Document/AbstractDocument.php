@@ -206,7 +206,7 @@ abstract class AbstractDocument implements DocumentInterface
         $subType = $this->getSubType();
 
         if ($subType === null) {
-            return DataObject\Listing::class;
+            return DataObjectListing::class;
         }
 
         $className = $subType . '\Listing';
