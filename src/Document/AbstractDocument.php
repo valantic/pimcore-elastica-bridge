@@ -46,12 +46,20 @@ abstract class AbstractDocument implements DocumentInterface
             $listingInstance->setUnpublished($this->includeUnpublishedElementsInListing());
         }
 
-        if ($this->getType() === DocumentType::DATA_OBJECT && $this->treatObjectVariantsAsDocuments()) {
+        if ($this->getType() === DocumentType::DATA_OBJECT) {
             /** @var DataObjectListing $listingInstance */
-            $listingInstance->setObjectTypes([
-                DataObject\AbstractObject::OBJECT_TYPE_OBJECT,
-                DataObject\AbstractObject::OBJECT_TYPE_VARIANT,
-            ]);
+            if ($this->treatObjectVariantsAsDocuments()) {
+                $listingInstance->setObjectTypes([
+                    DataObject\AbstractObject::OBJECT_TYPE_OBJECT,
+                    DataObject\AbstractObject::OBJECT_TYPE_VARIANT,
+                ]);
+            }
+
+            if (!$this->treatObjectVariantsAsDocuments()) {
+                $listingInstance->setObjectTypes([
+                    DataObject\AbstractObject::OBJECT_TYPE_OBJECT,
+                ]);
+            }
         }
 
         if ($this->getSubType() !== null && in_array($this->getType(), DocumentType::casesSubTypeListing(), true)) {
