@@ -44,7 +44,7 @@ abstract class AbstractDocument implements DocumentInterface
         }
 
         if ($this->getType() === DocumentType::DATA_OBJECT) {
-            /** @var DataObjectListing $listingInstance */
+            /** @var DataObject\Listing $listingInstance */
             if ($this->treatObjectVariantsAsDocuments()) {
                 $listingInstance->setObjectTypes([
                     DataObject\AbstractObject::OBJECT_TYPE_OBJECT,
