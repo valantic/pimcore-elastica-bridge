@@ -67,11 +67,19 @@ class Status extends BaseCommand
             ->setHeaderTitle('Indices (managed by this bundle)');
         $table->render();
 
+        $otherIndexNames = [];
+
         foreach ($this->esClient->getCluster()->getIndexNames() as $indexName) {
             if (in_array($indexName, $this->skipOtherIndices, true) || !$this->shouldProcessNonBundleIndex($indexName)) {
                 continue;
             }
-            $this->processOtherIndex($indexName);
+            $otherIndexNames[] = $indexName;
+        }
+
+        sort($otherIndexNames);
+
+        foreach ($otherIndexNames as $otherIndexName) {
+            $this->processOtherIndex($otherIndexName);
         }
 
         $this->output->writeln('');
