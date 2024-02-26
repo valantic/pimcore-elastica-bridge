@@ -153,15 +153,7 @@ class PopulateIndex extends BaseCommand
             $document,
             $dataObject->getId()
         ));
-        $this->output->writeln('');
-        $this->output->writeln(sprintf('In %s line %d', $throwable->getFile(), $throwable->getLine()));
-        $this->output->writeln('');
-
-        $this->output->writeln($throwable->getMessage());
-        $this->output->writeln('');
-
-        $this->output->writeln($throwable->getTraceAsString());
-        $this->output->writeln('');
+        $this->displayThrowable($throwable);
     }
 
     private function displayIndexError(IndexInterface $indexConfig, \Throwable $throwable): void
@@ -172,6 +164,11 @@ class PopulateIndex extends BaseCommand
             $indexConfig::class,
         ));
 
+        $this->displayThrowable($throwable);
+    }
+
+    private function displayThrowable(\Throwable $throwable): void
+    {
         $this->output->writeln('');
         $this->output->writeln(sprintf('In %s line %d', $throwable->getFile(), $throwable->getLine()));
         $this->output->writeln('');

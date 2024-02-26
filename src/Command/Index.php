@@ -227,7 +227,6 @@ class Index extends BaseCommand
         $nonAliasIndex = $this->esClient->getIndex($indexConfig->getName());
 
         // In case an index with the same name as the blue/green alias exists, delete it
-
         if (
             $nonAliasIndex->exists()
             && !ElasticsearchResponse::getResponse($this->esClient->indices()->existsAlias(['name' => $indexConfig->getName()]))->asBool()
