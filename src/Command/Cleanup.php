@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Command;
 
-use Elastica\Exception\ResponseException;
+use Elastic\Elasticsearch\Exception\ElasticsearchException;
 use Symfony\Component\Console\Helper\QuestionHelper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -15,6 +15,7 @@ use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 
 class Cleanup extends BaseCommand
 {
+    use NonBundleIndexTrait;
     private const OPTION_ALL_IN_CLUSTER = 'all';
 
     public function __construct(
@@ -54,7 +55,15 @@ class Cleanup extends BaseCommand
         $indices = $this->getIndices();
 
         foreach ($indices as $index) {
+            if (!$this->shouldProcessNonBundleIndex($index)) {
+                continue;
+            }
+
             $client = $this->esClient->getIndex($index);
+
+            if ($client->getSettings()->getBool('hidden')) {
+                continue;
+            }
 
             foreach ($client->getAliases() as $alias) {
                 $client->removeAlias($alias);
@@ -62,7 +71,7 @@ class Cleanup extends BaseCommand
 
             try {
                 $client->delete();
-            } catch (ResponseException $e) {
+            } catch (ElasticsearchException $e) {
                 $this->output->writeln(sprintf('<error>%s</error>', $e->getMessage()));
             }
         }
@@ -81,7 +90,7 @@ class Cleanup extends BaseCommand
 
         $indices = [];
 
-        foreach ($this->indexRepository->flattened() as $indexConfig) {
+        foreach ($this->indexRepository->flattenedAll() as $indexConfig) {
             if ($indexConfig->usesBlueGreenIndices()) {
                 $indices[] = $indexConfig->getBlueGreenActiveElasticaIndex()->getName();
                 $indices[] = $indexConfig->getBlueGreenInactiveElasticaIndex()->getName();

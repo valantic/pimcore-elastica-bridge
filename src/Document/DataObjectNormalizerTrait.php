@@ -9,6 +9,7 @@ use Pimcore\Model\DataObject\AbstractObject;
 use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Model\DataObject\Localizedfield;
 use Pimcore\Tool;
+use Symfony\Contracts\Service\Attribute\Required;
 
 /**
  * Collection of helpers for normalizing a DataObject.
@@ -19,11 +20,7 @@ trait DataObjectNormalizerTrait
 {
     protected LocaleService $localeService;
 
-    /**
-     * Injects the LocaleService using Symfony's DI.
-     *
-     * @required
-     */
+    #[Required]
     public function setLocaleService(LocaleService $localeService): void
     {
         $this->localeService = $localeService;

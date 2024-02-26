@@ -5,11 +5,8 @@ declare(strict_types=1);
 namespace Valantic\ElasticaBridgeBundle\Document;
 
 use Pimcore\Model\Asset;
-use Pimcore\Model\Asset\Listing as AssetListing;
 use Pimcore\Model\DataObject;
-use Pimcore\Model\DataObject\Listing as DataObjectListing;
 use Pimcore\Model\Document as PimcoreDocument;
-use Pimcore\Model\Document\Listing as DocumentListing;
 use Pimcore\Model\Element\AbstractElement;
 use Pimcore\Model\Listing\AbstractListing;
 use Valantic\ElasticaBridgeBundle\Enum\DocumentType;
@@ -42,12 +39,12 @@ abstract class AbstractDocument implements DocumentInterface
         }
 
         if (in_array($this->getType(), DocumentType::casesPublishedState(), true)) {
-            /** @var DocumentListing|DataObjectListing $listingInstance */
+            /** @var PimcoreDocument\Listing|DataObject\Listing $listingInstance */
             $listingInstance->setUnpublished($this->includeUnpublishedElementsInListing());
         }
 
         if ($this->getType() === DocumentType::DATA_OBJECT) {
-            /** @var DataObjectListing $listingInstance */
+            /** @var DataObject\Listing $listingInstance */
             if ($this->treatObjectVariantsAsDocuments()) {
                 $listingInstance->setObjectTypes([
                     DataObject\AbstractObject::OBJECT_TYPE_OBJECT,
@@ -137,8 +134,8 @@ abstract class AbstractDocument implements DocumentInterface
     {
         try {
             return match ($this->getType()) {
-                DocumentType::ASSET => AssetListing::class,
-                DocumentType::DOCUMENT => DocumentListing::class,
+                DocumentType::ASSET => Asset\Listing::class,
+                DocumentType::DOCUMENT => PimcoreDocument\Listing::class,
                 DocumentType::DATA_OBJECT, DocumentType::VARIANT => $this->getDataObjectListingClass(),
             };
         } catch (\UnhandledMatchError) {
@@ -214,7 +211,7 @@ abstract class AbstractDocument implements DocumentInterface
         $subType = $this->getSubType();
 
         if ($subType === null) {
-            return DataObjectListing::class;
+            return DataObject\Listing::class;
         }
 
         $className = $subType . '\Listing';

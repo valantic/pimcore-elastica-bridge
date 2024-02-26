@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace Valantic\ElasticaBridgeBundle\Service;
 
 use Elastica\Exception\NotFoundException;
+use Elastica\Index;
 use Pimcore\Model\DataObject\AbstractObject;
 use Pimcore\Model\Element\AbstractElement;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
+use Valantic\ElasticaBridgeBundle\Messenger\Message\RefreshElementInIndex;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 
 class PropagateChanges
@@ -16,6 +19,7 @@ class PropagateChanges
     public function __construct(
         private readonly IndexRepository $indexRepository,
         private readonly DocumentHelper $documentHelper,
+        private readonly MessageBusInterface $messageBus,
     ) {}
 
     /**
@@ -26,15 +30,27 @@ class PropagateChanges
      */
     public function handle(AbstractElement $element): void
     {
-        $indices = $this->matchingIndicesForElement($this->indexRepository->flattened(), $element);
+        $indices = $this->matchingIndicesForElement($this->indexRepository->flattenedAll(), $element);
 
         foreach ($indices as $index) {
-            $this->handleIndex($element, $index);
+            $this->messageBus->dispatch(new RefreshElementInIndex($element, $index->getName()));
         }
     }
 
-    private function handleIndex(AbstractElement $element, IndexInterface $index): void
-    {
+    public function handleIndex(
+        AbstractElement $element,
+        IndexInterface $index,
+        ?Index $elasticaIndex = null,
+    ): void {
+        $this->doHandleIndex($element, $index, $elasticaIndex ?? $index->getElasticaIndex());
+    }
+
+    private function doHandleIndex(
+        AbstractElement $element,
+        IndexInterface $index,
+        Index $elasticaIndex,
+    ): void {
+        // TODO: actually use $elasticaIndex
         $document = $index->findDocumentInstanceByPimcore($element);
 
         if (!$document instanceof DocumentInterface) {
@@ -52,20 +68,20 @@ class PropagateChanges
             return;
         }
 
-        $isPresent = $this->isIdInIndex($document::getElasticsearchId($element), $index);
+        $isPresent = $this->isIdInIndex($document::getElasticsearchId($element), $elasticaIndex);
 
         if ($document->shouldIndex($element)) {
             if ($isPresent) {
-                $this->updateElementInIndex($element, $index, $document);
+                $this->updateElementInIndex($element, $elasticaIndex, $document);
             }
 
             if (!$isPresent) {
-                $this->addElementToIndex($element, $index, $document);
+                $this->addElementToIndex($element, $elasticaIndex, $document);
             }
         }
 
         if ($isPresent && !$document->shouldIndex($element)) {
-            $this->deleteElementFromIndex($element, $index, $document);
+            $this->deleteElementFromIndex($element, $elasticaIndex, $document);
         }
 
         $this->documentHelper->resetTenantIfNeeded($document, $index);
@@ -76,11 +92,11 @@ class PropagateChanges
      */
     private function addElementToIndex(
         AbstractElement $element,
-        IndexInterface $index,
+        Index $index,
         DocumentInterface $document,
     ): void {
         $document = $this->documentHelper->elementToDocument($document, $element);
-        $index->getElasticaIndex()->addDocument($document);
+        $index->addDocument($document);
     }
 
     /**
@@ -88,12 +104,12 @@ class PropagateChanges
      */
     private function updateElementInIndex(
         AbstractElement $element,
-        IndexInterface $index,
+        Index $index,
         DocumentInterface $document,
     ): void {
         $document = $this->documentHelper->elementToDocument($document, $element);
         // updateDocument() allows partial updates, hence the full replace here
-        $index->getElasticaIndex()->addDocument($document);
+        $index->addDocument($document);
     }
 
     /**
@@ -101,11 +117,11 @@ class PropagateChanges
      */
     private function deleteElementFromIndex(
         AbstractElement $element,
-        IndexInterface $index,
+        Index $index,
         DocumentInterface $document,
     ): void {
         $elasticsearchId = $document::getElasticsearchId($element);
-        $index->getElasticaIndex()->deleteById($elasticsearchId);
+        $index->deleteById($elasticsearchId);
     }
 
     /**
@@ -134,10 +150,10 @@ class PropagateChanges
     /**
      * Checks whether a given ID is in an index.
      */
-    private function isIdInIndex(string $id, IndexInterface $index): bool
+    private function isIdInIndex(string $id, Index $index): bool
     {
         try {
-            $index->getElasticaIndex()->getDocument($id);
+            $index->getDocument($id);
         } catch (NotFoundException) {
             return false;
         }

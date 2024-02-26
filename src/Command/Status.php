@@ -14,6 +14,7 @@ use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 
 class Status extends BaseCommand
 {
+    use NonBundleIndexTrait;
     /**
      * @var array<int,array<int,mixed>>
      */
@@ -55,7 +56,7 @@ class Status extends BaseCommand
 
         $this->output->writeln('');
 
-        foreach ($this->indexRepository->flattened() as $indexConfig) {
+        foreach ($this->indexRepository->flattenedAll() as $indexConfig) {
             $this->processBundleIndex($indexConfig);
         }
 
@@ -66,11 +67,19 @@ class Status extends BaseCommand
             ->setHeaderTitle('Indices (managed by this bundle)');
         $table->render();
 
+        $otherIndexNames = [];
+
         foreach ($this->esClient->getCluster()->getIndexNames() as $indexName) {
-            if (in_array($indexName, $this->skipOtherIndices, true)) {
+            if (in_array($indexName, $this->skipOtherIndices, true) || !$this->shouldProcessNonBundleIndex($indexName)) {
                 continue;
             }
-            $this->processOtherIndex($indexName);
+            $otherIndexNames[] = $indexName;
+        }
+
+        sort($otherIndexNames);
+
+        foreach ($otherIndexNames as $otherIndexName) {
+            $this->processOtherIndex($otherIndexName);
         }
 
         $this->output->writeln('');

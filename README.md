@@ -12,8 +12,8 @@ The only job of the bundle is to store Pimcore elements (assets, documents, data
 
 1. `composer require valantic/pimcore-elastica-bridge`
 1. Edit `config/bundles.php` and add `\Valantic\ElasticaBridgeBundle\ValanticElasticaBridgeBundle::class => ['all' => true],`
-1. Configure the connection to your Elasticsearch cluster as seen in [`example/app/config/config.yml`](example/app/config/config.yml)
-1. Don't forget to register your newly created services (implementing `IndexInterface` etc.) in your `services.yml`
+1. Configure the connection to your Elasticsearch cluster as seen in [`example/app/config/config.yaml`](example/app/config/config.yaml)
+1. Don't forget to register your newly created services (implementing `IndexInterface` etc.) in your `services.yaml`
    ```yml
    App\Elasticsearch\:
    resource: '../../Elasticsearch'
@@ -53,10 +53,24 @@ See the [`ProductIndexDocument` provided in the example](docs/example/src/Elasti
 ```yaml
 valantic_elastica_bridge:
     client:
-        host:                 localhost
-        port:                 9200
-        addSentryBreadcrumbs: false
+
+        # The DSN to connect to the Elasticsearch cluster.
+        dsn:                  'http://localhost:9200'
+
+        # If true, breadcrumbs are added to Sentry for every request made to Elasticsearch via Elastica.
+        should_add_sentry_breadcrumbs: false
+    indexing:
+
+        # To prevent overlapping indexing jobs. Set to a value higher than the slowest index. Value is specified in seconds.
+        lock_timeout:         300
+
+        # If true, when a document fails to be indexed, it will be skipped and indexing continue with the next document. If false, indexing that index will be aborted.
+        should_skip_failing_documents: false
 ```
+
+## Queue
+
+[Set up a worker](https://symfony.com/doc/current/messenger.html#consuming-messages-running-the-worker) to process `elastica_bridge_index`. Alternatively you can route the transport to use the `sync` handler: `framework.messenger.transports.elastica_bridge_index: 'sync'`.
 
 ## Indexing
 
@@ -85,6 +99,8 @@ Options:
 The bridge automatically listens to Pimcore events and updates documents as needed. If needed, call `\Valantic\ElasticaBridgeBundle\Service\PropagateChanges::handle` or execute `console valantic:elastica-bridge:refresh`.
 
 This can be globally disabled by calling `\Valantic\ElasticaBridgeBundle\EventListener\Pimcore\ChangeListener::disableListener();`.
+
+You can also dispatch a `Valantic\ElasticaBridgeBundle\Messenger\Message\RefreshElement` message to handle updates to related objects which are not triggered by the `ChangeListener`.
 
 ## Status
 

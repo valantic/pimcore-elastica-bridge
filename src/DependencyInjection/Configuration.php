@@ -7,16 +7,8 @@ namespace Valantic\ElasticaBridgeBundle\DependencyInjection;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 
-/**
- * This is the class that validates and merges configuration from your app/config files.
- *
- * To learn more see {@link http://symfony.com/doc/current/cookbook/bundles/configuration.html}
- */
 class Configuration implements ConfigurationInterface
 {
-    /**
-     * {@inheritDoc}
-     */
     public function getConfigTreeBuilder()
     {
         $treeBuilder = new TreeBuilder('valantic_elastica_bridge');
@@ -24,16 +16,15 @@ class Configuration implements ConfigurationInterface
             ->children()
             ->arrayNode('client')
             ->children()
-            ->scalarNode('host')->defaultValue('localhost')->setDeprecated('valantic/pimcore-elastica-bridge', '3.1.0', 'Use the "dsn" option instead, e.g. http://username:password@localhost:9200')->end()
-            ->integerNode('port')->defaultValue(9200)->setDeprecated('valantic/pimcore-elastica-bridge', '3.1.0', 'Use the "dsn" option instead, e.g. http://username:password@localhost:9200')->end()
-            ->scalarNode('dsn')->defaultNull()->end()
-            ->booleanNode('addSentryBreadcrumbs')->defaultValue(false)->end()
+            ->scalarNode('dsn')->defaultValue('http://localhost:9200')->info('The DSN to connect to the Elasticsearch cluster.')->end()
+            ->booleanNode('should_add_sentry_breadcrumbs')->defaultFalse()->info('If true, breadcrumbs are added to Sentry for every request made to Elasticsearch via Elastica.')->end()
             ->end()
             ->end()
             ->arrayNode('indexing')
             ->addDefaultsIfNotSet()
             ->children()
             ->integerNode('lock_timeout')->defaultValue(5 * 60)->info('To prevent overlapping indexing jobs. Set to a value higher than the slowest index. Value is specified in seconds.')->end()
+            ->booleanNode('should_skip_failing_documents')->defaultFalse()->info('If true, when a document fails to be indexed, it will be skipped and indexing continue with the next document. If false, indexing that index will be aborted.')->end()
             ->end()
             ->end()
             ->end()

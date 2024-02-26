@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Index;
 
+use Elastic\Elasticsearch\Exception\ClientResponseException;
 use Elastica\Index;
 use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
@@ -11,6 +12,7 @@ use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Enum\IndexBlueGreenSuffix;
 use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
 use Valantic\ElasticaBridgeBundle\Repository\DocumentRepository;
+use Valantic\ElasticaBridgeBundle\Util\ElasticsearchResponse;
 
 abstract class AbstractIndex implements IndexInterface
 {
@@ -21,7 +23,19 @@ abstract class AbstractIndex implements IndexInterface
 
     public function getMapping(): array
     {
-        return [];
+        return [
+            'properties' => [
+                DocumentInterface::META_ID => [
+                    'type' => 'keyword',
+                ],
+                DocumentInterface::META_TYPE => [
+                    'type' => 'keyword',
+                ],
+                DocumentInterface::META_SUB_TYPE => [
+                    'type' => 'keyword',
+                ],
+            ],
+        ];
     }
 
     public function getSettings(): array
@@ -112,10 +126,14 @@ abstract class AbstractIndex implements IndexInterface
             throw new BlueGreenIndicesIncorrectlySetupException();
         }
 
-        $aliases = array_filter(
-            $this->client->request('_aliases')->getData(),
-            fn (array $datum): bool => array_key_exists($this->getName(), $datum['aliases'])
-        );
+        try {
+            $aliases = array_filter(
+                ElasticsearchResponse::getResponse($this->client->indices()->getAlias(['name' => $this->getName()]))->asArray(),
+                fn (array $datum): bool => array_key_exists($this->getName(), $datum['aliases'])
+            );
+        } catch (ClientResponseException) {
+            throw new BlueGreenIndicesIncorrectlySetupException();
+        }
 
         if (count($aliases) !== 1) {
             throw new BlueGreenIndicesIncorrectlySetupException();

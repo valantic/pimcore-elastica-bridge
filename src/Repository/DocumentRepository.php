@@ -6,5 +6,9 @@ namespace Valantic\ElasticaBridgeBundle\Repository;
 
 use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
 
-/** @extends AbstractRepository<DocumentInterface> */
+/**
+ * @extends AbstractRepository<DocumentInterface>
+ *
+ * @internal
+ */
 class DocumentRepository extends AbstractRepository {}

@@ -5,22 +5,20 @@ declare(strict_types=1);
 namespace Valantic\ElasticaBridgeBundle\Command;
 
 use Elastica\Index as ElasticaIndex;
-use Elastica\Request;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\HttpKernel\KernelInterface;
-use Symfony\Component\Lock\LockFactory;
-use Symfony\Component\Lock\LockInterface;
 use Symfony\Component\Process\Process;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Enum\IndexBlueGreenSuffix;
 use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
-use Valantic\ElasticaBridgeBundle\Repository\ConfigurationRepository;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
+use Valantic\ElasticaBridgeBundle\Service\LockService;
+use Valantic\ElasticaBridgeBundle\Util\ElasticsearchResponse;
 
 class Index extends BaseCommand
 {
@@ -34,8 +32,7 @@ class Index extends BaseCommand
         private readonly IndexRepository $indexRepository,
         private readonly ElasticsearchClient $esClient,
         private readonly KernelInterface $kernel,
-        private readonly LockFactory $lockFactory,
-        private readonly ConfigurationRepository $configurationRepository,
+        private readonly LockService $lockService,
     ) {
         parent::__construct();
     }
@@ -73,7 +70,7 @@ class Index extends BaseCommand
     {
         $skippedIndices = [];
 
-        foreach ($this->indexRepository->flattened() as $indexConfig) {
+        foreach ($this->indexRepository->flattenedAll() as $indexConfig) {
             if (
                 is_array($this->input->getArgument(self::ARGUMENT_INDEX))
                 && count($this->input->getArgument(self::ARGUMENT_INDEX)) > 0
@@ -84,7 +81,7 @@ class Index extends BaseCommand
                 continue;
             }
 
-            $lock = $this->getLock($indexConfig);
+            $lock = $this->lockService->getIndexingLock($indexConfig);
 
             if (!$lock->acquire()) {
                 if ($this->input->getOption(self::OPTION_LOCK_RELEASE) === true) {
@@ -229,7 +226,7 @@ class Index extends BaseCommand
         // In case an index with the same name as the blue/green alias exists, delete it
         if (
             $nonAliasIndex->exists()
-            && !$this->esClient->request('_alias/' . $indexConfig->getName(), Request::HEAD)->isOk()
+            && !ElasticsearchResponse::getResponse($this->esClient->indices()->existsAlias(['name' => $indexConfig->getName()]))->asBool()
         ) {
             $nonAliasIndex->delete();
             $this->output->writeln('<comment>-> Deleted non-blue/green index to prepare for blue/green usage</comment>');
@@ -258,14 +255,5 @@ class Index extends BaseCommand
         }
 
         $this->output->writeln('<comment>-> Ensured indices are correctly set up with alias</comment>');
-    }
-
-    private function getLock(mixed $indexConfig): LockInterface
-    {
-        return $this->lockFactory
-            ->createLock(
-                __METHOD__ . '->' . $indexConfig->getName(),
-                ttl: $this->configurationRepository->getIndexingLockTimeout()
-            );
     }
 }

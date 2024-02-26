@@ -35,7 +35,7 @@ interface IndexInterface
      * Defines the mapping to be used for this index.
      * Passed 1:1 to Elasticsearch.
      *
-     * @return array<array<mixed>>
+     * @return array{properties:array<string,mixed>}
      */
     public function getMapping(): array;
 
@@ -57,7 +57,7 @@ interface IndexInterface
     /**
      * Defines the types of documents found in this index. Array of classes implementing DocumentInterface.
      *
-     * @return string[] Class names of DocumentInterface classes
+     * @return class-string[] Class names of DocumentInterface classes
      *
      * @see DocumentInterface
      */
@@ -66,7 +66,7 @@ interface IndexInterface
     /**
      * The documents this index subscribes to i.e. the documents which are updated using event listeners.
      *
-     * @return string[] Class names of DocumentInterface instances
+     * @return class-string[] Class names of DocumentInterface instances
      *
      * @see DocumentInterface
      */
