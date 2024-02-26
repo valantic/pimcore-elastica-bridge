@@ -28,3 +28,8 @@ services:
   Valantic\ElasticaBridgeBundle\Repository\DocumentRepository:
     arguments:
       - !tagged_iterator valantic.elastica_bridge.document
+
+  Valantic\ElasticaBridgeBundle\Messenger\Handler\:
+    resource: '../../Messenger/Handler/*'
+    tags:
+      - { name: messenger.message_handler }

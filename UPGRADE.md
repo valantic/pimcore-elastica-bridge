@@ -4,6 +4,7 @@
 
 - Remove deprecated options `valantic_elastica_bridge.client.host` and `valantic_elastica_bridge.client.port`. Use `valantic_elastica_bridge.client.dsn` instead, e.g. `http://localhost:9200`
 - Renamed `valantic_elastica_bridge.client.addSentryBreadcrumbs` to `valantic_elastica_bridge.client.should_add_sentry_breadcrumbs`
+- See [README#Queue](./README#queue) to set up the **required** Symfony Messenger workers.
 
 ## Upgrade from v2 to v3
 

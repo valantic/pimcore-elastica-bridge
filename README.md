@@ -68,6 +68,10 @@ valantic_elastica_bridge:
         should_skip_failing_documents: false
 ```
 
+## Queue
+
+[Set up a worker](https://symfony.com/doc/current/messenger.html#consuming-messages-running-the-worker) to process `elastica_bridge_index`. Alternatively you can route the transport to use the `sync` handler: `framework.messenger.transports.elastica_bridge_index: 'sync'`.
+
 ## Indexing
 
 ### Bulk
@@ -95,6 +99,8 @@ Options:
 The bridge automatically listens to Pimcore events and updates documents as needed. If needed, call `\Valantic\ElasticaBridgeBundle\Service\PropagateChanges::handle` or execute `console valantic:elastica-bridge:refresh`.
 
 This can be globally disabled by calling `\Valantic\ElasticaBridgeBundle\EventListener\Pimcore\ChangeListener::disableListener();`.
+
+You can also dispatch a `Valantic\ElasticaBridgeBundle\Messenger\Message\RefreshElement` message to handle updates to related objects which are not triggered by the `ChangeListener`.
 
 ## Status
 
