@@ -84,6 +84,8 @@ class PropagateChanges
             $this->deleteElementFromIndex($element, $elasticaIndex, $document);
         }
 
+        $this->handleRelatedObjects($element, $document);
+        $this->cachesToClear($document);
         $this->documentHelper->resetTenantIfNeeded($document, $index);
     }
 
@@ -159,5 +161,31 @@ class PropagateChanges
         }
 
         return true;
+    }
+
+    /**
+     * @param AbstractElement $element
+     * @param DocumentInterface<AbstractElement> $document
+     *
+     * @return void
+     */
+    private function handleRelatedObjects(AbstractElement $element, DocumentInterface $document): void
+    {
+        $relatedObjects = $document->relatedObjects($element);
+
+        foreach ($relatedObjects as $relatedObject) {
+            $this->handle($relatedObject);
+        }
+    }
+
+    /**
+     * @param DocumentInterface<AbstractElement> $document
+     *
+     * @return void
+     */
+    private function cachesToClear(DocumentInterface $document): void
+    {
+        $tags = $document->getCacheTags();
+        $this->documentHelper->clearCaches($tags);
     }
 }
