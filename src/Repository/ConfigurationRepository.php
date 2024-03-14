@@ -34,4 +34,19 @@ class ConfigurationRepository
     {
         return $this->containerBag->get('valantic_elastica_bridge')['indexing']['should_skip_failing_documents'];
     }
+
+    public function shouldHandleAssetAutoSave(): bool
+    {
+        return $this->containerBag->get('valantic_elastica_bridge')['events']['auto_save']['asset'];
+    }
+
+    public function shouldHandleDataObjectAutoSave(): bool
+    {
+        return $this->containerBag->get('valantic_elastica_bridge')['events']['auto_save']['data_object'];
+    }
+
+    public function shouldHandleDocumentAutoSave(): bool
+    {
+        return $this->containerBag->get('valantic_elastica_bridge')['events']['auto_save']['document'];
+    }
 }

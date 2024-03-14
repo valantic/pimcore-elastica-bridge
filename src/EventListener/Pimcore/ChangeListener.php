@@ -18,6 +18,7 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Valantic\ElasticaBridgeBundle\Exception\EventListener\PimcoreElementNotFoundException;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\RefreshElement;
+use Valantic\ElasticaBridgeBundle\Repository\ConfigurationRepository;
 
 /**
  * An abstract listener for DataObject and Document listeners.
@@ -30,11 +31,12 @@ class ChangeListener implements EventSubscriberInterface
 
     public function __construct(
         private readonly MessageBusInterface $messageBus,
+        private readonly ConfigurationRepository $configurationRepository,
     ) {}
 
     public function handle(AssetEvent|DataObjectEvent|DocumentEvent $event): void
     {
-        if (!self::$isEnabled) {
+        if (!$this->shouldHandle($event)) {
             return;
         }
 
@@ -94,5 +96,32 @@ class ChangeListener implements EventSubscriberInterface
         }
 
         return $elementClass::getById($element->getId(), ['force' => true]) ?? throw $e;
+    }
+
+    private function shouldHandle(AssetEvent|DataObjectEvent|DocumentEvent $event): bool
+    {
+        if (!self::$isEnabled) {
+            return false;
+        }
+
+        $isAutoSave = $event->hasArgument('isAutoSave') && $event->getArgument('isAutoSave') === true;
+
+        if ($isAutoSave) {
+            return true;
+        }
+
+        if ($event instanceof AssetEvent && $this->configurationRepository->shouldHandleAssetAutoSave()) {
+            return true;
+        }
+
+        if ($event instanceof DataObjectEvent && $this->configurationRepository->shouldHandleDataObjectAutoSave()) {
+            return true;
+        }
+
+        if ($event instanceof DocumentEvent && $this->configurationRepository->shouldHandleDocumentAutoSave()) {
+            return true;
+        }
+
+        return false;
     }
 }
