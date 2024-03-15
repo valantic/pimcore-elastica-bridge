@@ -46,8 +46,6 @@ class PropagateChanges
     }
 
     /**
-     * @param AbstractElement $element
-     *
      * @return void
      */
     public function handleRelatedObjects(AbstractElement $element): void
