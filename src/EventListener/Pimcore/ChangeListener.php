@@ -48,7 +48,12 @@ class ChangeListener implements EventSubscriberInterface
             return;
         }
 
-        $this->messageBus->dispatch(new RefreshElement($this->getFreshElement($element)));
+        try {
+            $this->messageBus->dispatch(new RefreshElement($this->getFreshElement($element)));
+        } catch (PimcoreElementNotFoundException) {
+            // If the element is not found, it has been deleted and we should remove it from index.
+            $this->messageBus->dispatch(new RefreshElement($element));
+        }
     }
 
     public static function enableListener(): void
@@ -66,13 +71,13 @@ class ChangeListener implements EventSubscriberInterface
         return [
             AssetEvents::POST_ADD => 'handle',
             AssetEvents::POST_UPDATE => 'handle',
-            AssetEvents::PRE_DELETE => 'handle',
+            AssetEvents::POST_DELETE => 'handle',
             DataObjectEvents::POST_ADD => 'handle',
             DataObjectEvents::POST_UPDATE => 'handle',
-            DataObjectEvents::PRE_DELETE => 'handle',
+            DataObjectEvents::POST_DELETE => 'handle',
             DocumentEvents::POST_ADD => 'handle',
             DocumentEvents::POST_UPDATE => 'handle',
-            DocumentEvents::PRE_DELETE => 'handle',
+            DocumentEvents::POST_DELETE => 'handle',
         ];
     }
 
