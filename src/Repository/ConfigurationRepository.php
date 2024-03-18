@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Repository;
 
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 
 /**
@@ -15,8 +17,18 @@ class ConfigurationRepository
         private readonly ContainerBagInterface $containerBag,
     ) {}
 
-    public function getClientDsn(): string
+    /**
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     *
+     * @return string|array<string>
+     */
+    public function getClientDsn(): string|array
     {
+        if ($this->containerBag->get('valantic_elastica_bridge')['client']['connections'] !== []) {
+            return ['connections' => $this->containerBag->get('valantic_elastica_bridge')['client']['connections']];
+        }
+
         return $this->containerBag->get('valantic_elastica_bridge')['client']['dsn'];
     }
 
