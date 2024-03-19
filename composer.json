@@ -1,6 +1,6 @@
 {
   "name": "valantic/pimcore-elastica-bridge",
-  "version": "4.1.1",
+  "version": "4.2.0-beta1",
   "description": "Elastica bridge for Pimcore",
   "type": "pimcore-bundle",
   "require": {
