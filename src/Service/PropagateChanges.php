@@ -114,8 +114,8 @@ class PropagateChanges
         Index $index,
         DocumentInterface $document,
     ): void {
-        $document = $this->documentHelper->elementToDocument($document, $element);
-        $index->addDocument($document);
+        $doc = $this->documentHelper->elementToDocument($document, $element);
+        $index->addDocument($doc);
     }
 
     /**
@@ -126,9 +126,9 @@ class PropagateChanges
         Index $index,
         DocumentInterface $document,
     ): void {
-        $document = $this->documentHelper->elementToDocument($document, $element);
+        $doc = $this->documentHelper->elementToDocument($document, $element);
         // updateDocument() allows partial updates, hence the full replace here
-        $index->addDocument($document);
+        $index->addDocument($doc);
     }
 
     /**
