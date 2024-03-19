@@ -45,6 +45,24 @@ class PropagateChanges
         $this->doHandleIndex($element, $index, $elasticaIndex ?? $index->getElasticaIndex());
     }
 
+    /**
+     * @return void
+     */
+    public function handleRelatedObjects(AbstractElement $element): void
+    {
+        $indices = $this->matchingIndicesForElement($this->indexRepository->flattenedAll(), $element);
+        $relatedObjects = [];
+
+        foreach ($indices as $index) {
+            $document = $index->findDocumentInstanceByPimcore($element);
+            $relatedObjects += $document?->relatedObjects($element);
+        }
+
+        foreach ($relatedObjects as $relatedObject) {
+            $this->handle($relatedObject);
+        }
+    }
+
     private function doHandleIndex(
         AbstractElement $element,
         IndexInterface $index,
@@ -84,6 +102,7 @@ class PropagateChanges
             $this->deleteElementFromIndex($element, $elasticaIndex, $document);
         }
 
+        $this->cachesToClear($document);
         $this->documentHelper->resetTenantIfNeeded($document, $index);
     }
 
@@ -159,5 +178,16 @@ class PropagateChanges
         }
 
         return true;
+    }
+
+    /**
+     * @param DocumentInterface<AbstractElement> $document
+     *
+     * @return void
+     */
+    private function cachesToClear(DocumentInterface $document): void
+    {
+        $tags = $document->getCacheTags();
+        $this->documentHelper->clearCaches($tags);
     }
 }
