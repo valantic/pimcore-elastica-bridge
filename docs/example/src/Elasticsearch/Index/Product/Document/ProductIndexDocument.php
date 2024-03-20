@@ -29,9 +29,6 @@ class ProductIndexDocument extends AbstractTenantAwareDocument
         return Product::class;
     }
 
-    /**
-     * @return array<AbstractElement>
-     */
     public function relatedObjects(AbstractElement $element): array
     {
         if ($element instanceof Product) {

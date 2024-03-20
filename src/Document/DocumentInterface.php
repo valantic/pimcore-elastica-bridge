@@ -105,7 +105,7 @@ interface DocumentInterface
     public function getCacheTags(): array;
 
     /**
-     * @return array<AbstractElement>
+     * @return list<AbstractElement>|array<string, list<AbstractElement>>
      */
     public function relatedObjects(AbstractElement $element): array;
 

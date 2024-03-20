@@ -34,7 +34,7 @@ class ChangeListener implements EventSubscriberInterface
         private readonly ConfigurationRepository $configurationRepository,
     ) {}
 
-    public function handle(AssetEvent|DataObjectEvent|DocumentEvent $event): void
+    public function handle(AssetEvent|DataObjectEvent|DocumentEvent $event, string $eventName): void
     {
         if (!$this->shouldHandle($event)) {
             return;
@@ -48,7 +48,7 @@ class ChangeListener implements EventSubscriberInterface
             return;
         }
 
-        $this->messageBus->dispatch(new RefreshElement($this->getFreshElement($element)));
+        $this->messageBus->dispatch(new RefreshElement($this->getFreshElement($element), $eventName));
     }
 
     public static function enableListener(): void

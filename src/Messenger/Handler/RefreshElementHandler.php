@@ -25,6 +25,6 @@ class RefreshElementHandler extends AbstractRefreshHandler
 
         $this->propagateChanges->handle($element);
 
-        $this->propagateChanges->handleRelatedObjects($element);
+        $this->propagateChanges->handleRelatedObjects($element, $message->getEventName());
     }
 }

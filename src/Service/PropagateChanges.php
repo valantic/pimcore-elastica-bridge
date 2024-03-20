@@ -45,17 +45,33 @@ class PropagateChanges
         $this->doHandleIndex($element, $index, $elasticaIndex ?? $index->getElasticaIndex());
     }
 
-    /**
-     * @return void
-     */
-    public function handleRelatedObjects(AbstractElement $element): void
+    public function handleRelatedObjects(AbstractElement $element, string $eventName): void
     {
         $indices = $this->matchingIndicesForElement($this->indexRepository->flattenedAll(), $element);
         $relatedObjects = [];
 
         foreach ($indices as $index) {
             $document = $index->findDocumentInstanceByPimcore($element);
-            $relatedObjects += $document?->relatedObjects($element);
+            $elements = $document?->relatedObjects($element);
+
+            if ($elements === null) {
+                continue;
+            }
+
+            // we need to check if we filter for event name
+            // IDEA: Allow filter for Publish/Unpublish where no events exist yet, as it is often only necessary to update relations.
+            if (is_array($elements) && array_keys($elements) !== range(0, count($elements) - 1)) {
+                foreach ($elements as $key => $objects) {
+                    if ($key !== $eventName) {
+                        continue;
+                    }
+                    $relatedObjects += $objects;
+                }
+
+                continue;
+            }
+
+            $relatedObjects += $elements;
         }
 
         foreach ($relatedObjects as $relatedObject) {
