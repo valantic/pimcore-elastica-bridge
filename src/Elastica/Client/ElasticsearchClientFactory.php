@@ -15,12 +15,15 @@ class ElasticsearchClientFactory
 
     public function __invoke(
     ): ElasticsearchClient {
-        $esClient = new ElasticsearchClient($this->configurationRepository->getClientDsn());
+        $logger = null;
 
         if ($this->configurationRepository->shouldAddSentryBreadcrumbs() && class_exists('\Sentry\Breadcrumb')) {
-            $esClient->setLogger(new SentryBreadcrumbLogger());
+            $logger = (new SentryBreadcrumbLogger());
         }
 
-        return $esClient;
+        return new ElasticsearchClient(
+            $this->configurationRepository->getClientDsn(),
+            logger: $logger
+        );
     }
 }

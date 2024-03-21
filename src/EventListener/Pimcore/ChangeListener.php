@@ -111,7 +111,7 @@ class ChangeListener implements EventSubscriberInterface
 
         $isAutoSave = $event->hasArgument('isAutoSave') && $event->getArgument('isAutoSave') === true;
 
-        if ($isAutoSave) {
+        if (!$isAutoSave) {
             return true;
         }
 
