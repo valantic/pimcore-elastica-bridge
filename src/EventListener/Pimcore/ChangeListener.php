@@ -34,7 +34,7 @@ class ChangeListener implements EventSubscriberInterface
         private readonly ConfigurationRepository $configurationRepository,
     ) {}
 
-    public function handle(AssetEvent|DataObjectEvent|DocumentEvent $event, string $eventName): void
+    public function handle(AssetEvent|DataObjectEvent|DocumentEvent $event): void
     {
         if (!$this->shouldHandle($event)) {
             return;
@@ -48,7 +48,7 @@ class ChangeListener implements EventSubscriberInterface
             return;
         }
 
-        $this->messageBus->dispatch(new RefreshElement($this->getFreshElement($element), $eventName));
+        $this->messageBus->dispatch(new RefreshElement($this->getFreshElement($element)));
     }
 
     public static function enableListener(): void
@@ -106,7 +106,7 @@ class ChangeListener implements EventSubscriberInterface
 
         $isAutoSave = $event->hasArgument('isAutoSave') && $event->getArgument('isAutoSave') === true;
 
-        if (!$isAutoSave) {
+        if ($isAutoSave) {
             return true;
         }
 

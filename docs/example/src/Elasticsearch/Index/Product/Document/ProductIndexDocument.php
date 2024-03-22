@@ -29,20 +29,6 @@ class ProductIndexDocument extends AbstractTenantAwareDocument
         return Product::class;
     }
 
-    public function relatedObjects(AbstractElement $element): array
-    {
-        if ($element instanceof Product) {
-            return $element->getRelatedProducts();
-        }
-
-        return [];
-    }
-
-    public function getCacheTags(): array
-    {
-        return ['navigation'];
-    }
-
     public function getNormalized(AbstractElement $element): array
     {
         return [
