@@ -18,4 +18,24 @@ class RefreshedElementInIndexEvent extends Event
         public readonly Index $elasticaIndex,
         public readonly Operation $operation,
     ) {}
+
+    public function getElement(): AbstractElement
+    {
+        return $this->element;
+    }
+
+    public function getIndex(): IndexInterface
+    {
+        return $this->index;
+    }
+
+    public function getElasticaIndex(): Index
+    {
+        return $this->elasticaIndex;
+    }
+
+    public function getOperation(): Operation
+    {
+        return $this->operation;
+    }
 }

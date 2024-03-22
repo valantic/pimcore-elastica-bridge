@@ -21,6 +21,8 @@ use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 
 class PropagateChanges
 {
+    private static bool $triggerEvents = true;
+
     public function __construct(
         private readonly IndexRepository $indexRepository,
         private readonly DocumentHelper $documentHelper,
@@ -39,7 +41,10 @@ class PropagateChanges
         $indices = $this->matchingIndicesForElement($this->indexRepository->flattenedAll(), $element);
 
         $event = new RefreshedElementEvent($element, $indices);
-        $this->eventDispatcher->dispatch($event, ElasticaBridgeEvents::PRE_REFRESH_ELEMENT);
+
+        if (self::$triggerEvents) {
+            $this->eventDispatcher->dispatch($event, ElasticaBridgeEvents::PRE_REFRESH_ELEMENT);
+        }
 
         if ($event->isPropagationStopped()) {
             return;
@@ -49,7 +54,9 @@ class PropagateChanges
             $this->messageBus->dispatch(new RefreshElementInIndex($element, $index->getName()));
         }
 
-        $this->eventDispatcher->dispatch($event, ElasticaBridgeEvents::POST_REFRESH_ELEMENT);
+        if (self::$triggerEvents) {
+            $this->eventDispatcher->dispatch($event, ElasticaBridgeEvents::POST_REFRESH_ELEMENT);
+        }
     }
 
     public function handleIndex(
@@ -58,6 +65,11 @@ class PropagateChanges
         ?Index $elasticaIndex = null,
     ): void {
         $this->doHandleIndex($element, $index, $elasticaIndex ?? $index->getElasticaIndex());
+    }
+
+    public static function disableTriggerEvents(): void
+    {
+        self::$triggerEvents = false;
     }
 
     private function doHandleIndex(
@@ -91,7 +103,10 @@ class PropagateChanges
             default => Operation::NOTHING,
         };
         $event = new RefreshedElementInIndexEvent($element, $index, $elasticaIndex, $operation);
-        $this->eventDispatcher->dispatch($event, ElasticaBridgeEvents::PRE_REFRESH_ELEMENT_IN_INDEX);
+
+        if (self::$triggerEvents) {
+            $this->eventDispatcher->dispatch($event, ElasticaBridgeEvents::PRE_REFRESH_ELEMENT_IN_INDEX);
+        }
 
         if ($event->isPropagationStopped()) {
             return;
@@ -104,7 +119,9 @@ class PropagateChanges
             Operation::UPDATE => $this->updateElementInIndex($element, $elasticaIndex, $document),
         };
 
-        $this->eventDispatcher->dispatch($event, ElasticaBridgeEvents::POST_REFRESH_ELEMENT_IN_INDEX);
+        if (self::$triggerEvents) {
+            $this->eventDispatcher->dispatch($event, ElasticaBridgeEvents::POST_REFRESH_ELEMENT_IN_INDEX);
+        }
 
         $this->documentHelper->resetTenantIfNeeded($document, $index);
     }

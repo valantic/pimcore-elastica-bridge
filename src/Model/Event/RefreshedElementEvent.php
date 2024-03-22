@@ -12,10 +12,23 @@ class RefreshedElementEvent extends Event
 {
     /**
      * @param AbstractElement $element
-     * @param array<IndexInterface> $index
+     * @param array<IndexInterface> $indices
      */
     public function __construct(
-        public readonly AbstractElement $element,
-        public readonly array $index,
+        private readonly AbstractElement $element,
+        private readonly array $indices,
     ) {}
+
+    public function getElement(): AbstractElement
+    {
+        return $this->element;
+    }
+
+    /**
+     * @return array<IndexInterface>
+     */
+    public function getIndices(): array
+    {
+        return $this->indices;
+    }
 }
