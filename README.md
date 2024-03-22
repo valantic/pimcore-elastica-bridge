@@ -72,6 +72,26 @@ valantic_elastica_bridge:
 
 [Set up a worker](https://symfony.com/doc/current/messenger.html#consuming-messages-running-the-worker) to process `elastica_bridge_index`. Alternatively you can route the transport to use the `sync` handler: `framework.messenger.transports.elastica_bridge_index: 'sync'`.
 
+## Events
+
+This project uses Symfony's event dispatcher. Here are the events that you can listen to:
+
+| Description                                         | Example Usage                                                        | Event Constant (`ElasticaBridgeEvents::`) | Event Object (`Model\Event\`)  |
+|-----------------------------------------------------|----------------------------------------------------------------------|-------------------------------------------|--------------------------------|
+| After an element has been refreshed in an index.    | Log Event, send notification                                         | `POST_REFRESH_ELEMENT_IN_INDEX`           | `RefreshedElementInIndexEvent` |
+| Before an element is refreshed in an index.         | Stop propagation of element in specific index                        | `PRE_REFRESH_ELEMENT_IN_INDEX`            | `RefreshedElementInIndexEvent` |
+| After an element has been refreshed in all indices. | Clear caches, refresh related Objects,  Log Event, send notification | `POST_REFRESH_ELEMENT`                    | `RefreshedElementEvent`        |
+| Before an element is refreshed in all indices.      | Stop propagation of element in all indices                           | `PRE_REFRESH_ELEMENT`                     | `RefreshedElementEvent`        |
+
+You can create an event subscriber or an event listener to listen to these events. Please refer to the [Symfony documentation](https://symfony.com/doc/current/event_dispatcher.html) for more information on how to use the event dispatcher.
+
+### Possible Use Cases for Events
+- clear cache after an element has been refreshed
+- send a notification after an element has been refreshed
+- log the event
+- update related elements in the index
+- etc
+
 ## Indexing
 
 ### Bulk

@@ -100,16 +100,6 @@ interface DocumentInterface
     public function treatObjectVariantsAsDocuments(): bool;
 
     /**
-     * @return array<string>
-     */
-    public function getCacheTags(): array;
-
-    /**
-     * @return array<AbstractElement>
-     */
-    public function relatedObjects(AbstractElement $element): array;
-
-    /**
      * Returns the Elasticsearch ID for a Pimcore element.
      *
      * @param TElement $element

@@ -74,16 +74,6 @@ abstract class AbstractDocument implements DocumentInterface
         return $listingInstance;
     }
 
-    public function relatedObjects(AbstractElement $element): array
-    {
-        return [];
-    }
-
-    public function getCacheTags(): array
-    {
-        return [];
-    }
-
     final public static function getElasticsearchId(AbstractElement $element): string
     {
         $documentType = DocumentType::tryFrom($element->getType());
