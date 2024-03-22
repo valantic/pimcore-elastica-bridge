@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Valantic\ElasticaBridgeBundle\Service;
 
 use Elastica\Document;
-use Pimcore\Cache;
 use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Document\TenantAwareInterface as DocumentTenantAwareInterface;
@@ -67,18 +66,5 @@ class DocumentHelper
         ) {
             $document->resetTenant();
         }
-    }
-
-    /**
-     * @param array<string> $tags
-     *
-     * @return void
-     */
-    public function clearCaches(array $tags): void
-    {
-        if ($tags === []) {
-            return;
-        }
-        Cache::clearTags($tags);
     }
 }

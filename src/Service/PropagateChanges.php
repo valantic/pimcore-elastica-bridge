@@ -8,10 +8,15 @@ use Elastica\Exception\NotFoundException;
 use Elastica\Index;
 use Pimcore\Model\DataObject\AbstractObject;
 use Pimcore\Model\Element\AbstractElement;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
+use Valantic\ElasticaBridgeBundle\Enum\Operation;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\RefreshElementInIndex;
+use Valantic\ElasticaBridgeBundle\Model\Event\ElasticaBridgeEvents;
+use Valantic\ElasticaBridgeBundle\Model\Event\RefreshedElementEvent;
+use Valantic\ElasticaBridgeBundle\Model\Event\RefreshedElementInIndexEvent;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 
 class PropagateChanges
@@ -20,6 +25,7 @@ class PropagateChanges
         private readonly IndexRepository $indexRepository,
         private readonly DocumentHelper $documentHelper,
         private readonly MessageBusInterface $messageBus,
+        private readonly EventDispatcherInterface $eventDispatcher,
     ) {}
 
     /**
@@ -32,9 +38,18 @@ class PropagateChanges
     {
         $indices = $this->matchingIndicesForElement($this->indexRepository->flattenedAll(), $element);
 
+        $event = new RefreshedElementEvent($element, $indices);
+        $this->eventDispatcher->dispatch($event, ElasticaBridgeEvents::PRE_REFRESH_ELEMENT);
+
+        if ($event->isPropagationStopped()) {
+            return;
+        }
+
         foreach ($indices as $index) {
             $this->messageBus->dispatch(new RefreshElementInIndex($element, $index->getName()));
         }
+
+        $this->eventDispatcher->dispatch($event, ElasticaBridgeEvents::POST_REFRESH_ELEMENT);
     }
 
     public function handleIndex(
@@ -43,40 +58,6 @@ class PropagateChanges
         ?Index $elasticaIndex = null,
     ): void {
         $this->doHandleIndex($element, $index, $elasticaIndex ?? $index->getElasticaIndex());
-    }
-
-    public function handleRelatedObjects(AbstractElement $element, string $eventName): void
-    {
-        $indices = $this->matchingIndicesForElement($this->indexRepository->flattenedAll(), $element);
-        $relatedObjects = [];
-
-        foreach ($indices as $index) {
-            $document = $index->findDocumentInstanceByPimcore($element);
-            $elements = $document?->relatedObjects($element);
-
-            if ($elements === null) {
-                continue;
-            }
-
-            // we need to check if we filter for event name
-            // IDEA: Allow filter for Publish/Unpublish where no events exist yet, as it is often only necessary to update relations.
-            if (is_array($elements) && array_keys($elements) !== range(0, count($elements) - 1)) {
-                foreach ($elements as $key => $objects) {
-                    if ($key !== $eventName) {
-                        continue;
-                    }
-                    $relatedObjects += $objects;
-                }
-
-                continue;
-            }
-
-            $relatedObjects += $elements;
-        }
-
-        foreach ($relatedObjects as $relatedObject) {
-            $this->handle($relatedObject);
-        }
     }
 
     private function doHandleIndex(
@@ -103,22 +84,28 @@ class PropagateChanges
         }
 
         $isPresent = $this->isIdInIndex($document::getElasticsearchId($element), $elasticaIndex);
+        $operation = match (true) {
+            !$isPresent && $document->shouldIndex($element) => Operation::INSERT,
+            $isPresent && !$document->shouldIndex($element) => Operation::DELETE,
+            $isPresent && $document->shouldIndex($element) => Operation::UPDATE,
+            default => Operation::NOTHING,
+        };
+        $event = new RefreshedElementInIndexEvent($element, $index, $elasticaIndex, $operation);
+        $this->eventDispatcher->dispatch($event, ElasticaBridgeEvents::PRE_REFRESH_ELEMENT_IN_INDEX);
 
-        if ($document->shouldIndex($element)) {
-            if ($isPresent) {
-                $this->updateElementInIndex($element, $elasticaIndex, $document);
-            }
-
-            if (!$isPresent) {
-                $this->addElementToIndex($element, $elasticaIndex, $document);
-            }
+        if ($event->isPropagationStopped()) {
+            return;
         }
 
-        if ($isPresent && !$document->shouldIndex($element)) {
-            $this->deleteElementFromIndex($element, $elasticaIndex, $document);
-        }
+        match ($operation) {
+            Operation::DELETE => $this->deleteElementFromIndex($element, $elasticaIndex, $document),
+            Operation::NOTHING => null,
+            Operation::INSERT => $this->addElementToIndex($element, $elasticaIndex, $document),
+            Operation::UPDATE => $this->updateElementInIndex($element, $elasticaIndex, $document),
+        };
 
-        $this->cachesToClear($document);
+        $this->eventDispatcher->dispatch($event, ElasticaBridgeEvents::POST_REFRESH_ELEMENT_IN_INDEX);
+
         $this->documentHelper->resetTenantIfNeeded($document, $index);
     }
 
@@ -194,16 +181,5 @@ class PropagateChanges
         }
 
         return true;
-    }
-
-    /**
-     * @param DocumentInterface<AbstractElement> $document
-     *
-     * @return void
-     */
-    private function cachesToClear(DocumentInterface $document): void
-    {
-        $tags = $document->getCacheTags();
-        $this->documentHelper->clearCaches($tags);
     }
 }
