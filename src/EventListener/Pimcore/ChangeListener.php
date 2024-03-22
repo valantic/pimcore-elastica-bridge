@@ -36,24 +36,24 @@ class ChangeListener implements EventSubscriberInterface
 
     public function handle(AssetEvent|DataObjectEvent|DocumentEvent $event): void
     {
-        if (!$this->shouldHandle($event)) {
+        $element = $this->prepareHandle($event);
+
+        if ($element === null) {
             return;
         }
 
-        $element = $event->getElement();
+        $this->messageBus->dispatch(new RefreshElement($this->getFreshElement($element)));
+    }
 
-        // If a folder is created in the assets section in Pimcore 11 the type is set to Unknown.
-        // https://github.com/pimcore/pimcore/issues/16363
-        if ($element instanceof Asset\Unknown && $element->getType() === 'folder') {
+    public function handleDeleted(AssetEvent|DataObjectEvent|DocumentEvent $event): void
+    {
+        $element = $this->prepareHandle($event);
+
+        if ($element === null) {
             return;
         }
 
-        try {
-            $this->messageBus->dispatch(new RefreshElement($this->getFreshElement($element)));
-        } catch (PimcoreElementNotFoundException) {
-            // If the element is not found, it has been deleted and we should remove it from index.
-            $this->messageBus->dispatch(new RefreshElement($element));
-        }
+        $this->messageBus->dispatch(new RefreshElement($element));
     }
 
     public static function enableListener(): void
@@ -71,14 +71,31 @@ class ChangeListener implements EventSubscriberInterface
         return [
             AssetEvents::POST_ADD => 'handle',
             AssetEvents::POST_UPDATE => 'handle',
-            AssetEvents::POST_DELETE => 'handle',
+            AssetEvents::POST_DELETE => 'handleDeleted',
             DataObjectEvents::POST_ADD => 'handle',
             DataObjectEvents::POST_UPDATE => 'handle',
-            DataObjectEvents::POST_DELETE => 'handle',
+            DataObjectEvents::POST_DELETE => 'handleDeleted',
             DocumentEvents::POST_ADD => 'handle',
             DocumentEvents::POST_UPDATE => 'handle',
-            DocumentEvents::POST_DELETE => 'handle',
+            DocumentEvents::POST_DELETE => 'handleDeleted',
         ];
+    }
+
+    private function prepareHandle(AssetEvent|DataObjectEvent|DocumentEvent $event): Asset|Document|AbstractObject|null
+    {
+        if (!$this->shouldHandle($event)) {
+            return null;
+        }
+
+        $element = $event->getElement();
+
+        // If a folder is created in the assets section in Pimcore 11 the type is set to Unknown.
+        // https://github.com/pimcore/pimcore/issues/16363
+        if ($element instanceof Asset\Unknown && $element->getType() === 'folder') {
+            return null;
+        }
+
+        return $element;
     }
 
     /**
@@ -123,10 +140,6 @@ class ChangeListener implements EventSubscriberInterface
             return true;
         }
 
-        if ($event instanceof DocumentEvent && $this->configurationRepository->shouldHandleDocumentAutoSave()) {
-            return true;
-        }
-
-        return false;
+        return $event instanceof DocumentEvent && $this->configurationRepository->shouldHandleDocumentAutoSave();
     }
 }
