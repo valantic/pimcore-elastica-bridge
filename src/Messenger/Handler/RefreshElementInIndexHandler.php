@@ -28,8 +28,8 @@ class RefreshElementInIndexHandler extends AbstractRefreshHandler
         $index = $this->indexRepository->flattenedGet($message->index);
         $element = $this->resolveElement($message);
 
-        if (!$message->shouldTriggerEvents()) {
-            PropagateChanges::disableTriggerEvents();
+        if (!$message->isEventPropagationStopped()) {
+            PropagateChanges::stopPropagation();
         }
 
         if ($index->usesBlueGreenIndices() && !$this->lockService->getIndexingLock($index)->acquire()) {

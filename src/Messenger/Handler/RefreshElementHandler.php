@@ -23,8 +23,8 @@ class RefreshElementHandler extends AbstractRefreshHandler
     {
         $element = $this->resolveElement($message);
 
-        if (!$message->shouldTriggerEvents()) {
-            PropagateChanges::disableTriggerEvents();
+        if ($message->isEventPropagationStopped()) {
+            PropagateChanges::stopPropagation();
         }
 
         $this->propagateChanges->handle($element);

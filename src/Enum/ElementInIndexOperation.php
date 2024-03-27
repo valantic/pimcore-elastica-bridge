@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Enum;
 
-enum Operation: int
+enum ElementInIndexOperation: int
 {
     case NOTHING = 0;
     case DELETE = 1;

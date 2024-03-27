@@ -11,7 +11,6 @@ use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 class RefreshedElementEvent extends Event
 {
     /**
-     * @param AbstractElement $element
      * @param array<IndexInterface> $indices
      */
     public function __construct(

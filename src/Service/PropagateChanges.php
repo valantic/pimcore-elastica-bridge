@@ -11,7 +11,7 @@ use Pimcore\Model\Element\AbstractElement;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
-use Valantic\ElasticaBridgeBundle\Enum\Operation;
+use Valantic\ElasticaBridgeBundle\Enum\ElementInIndexOperation;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\RefreshElementInIndex;
 use Valantic\ElasticaBridgeBundle\Model\Event\ElasticaBridgeEvents;
@@ -21,7 +21,7 @@ use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 
 class PropagateChanges
 {
-    private static bool $triggerEvents = true;
+    private static bool $propagationStopped = false;
 
     public function __construct(
         private readonly IndexRepository $indexRepository,
@@ -42,19 +42,21 @@ class PropagateChanges
 
         $event = new RefreshedElementEvent($element, $indices);
 
-        if (self::$triggerEvents) {
+        if (!self::$propagationStopped) {
             $this->eventDispatcher->dispatch($event, ElasticaBridgeEvents::PRE_REFRESH_ELEMENT);
         }
 
-        if ($event->isPropagationStopped()) {
-            return;
-        }
-
         foreach ($indices as $index) {
-            $this->messageBus->dispatch(new RefreshElementInIndex($element, $index->getName()));
+            $this->messageBus->dispatch(
+                new RefreshElementInIndex(
+                    $element,
+                    $index->getName(),
+                    self::$propagationStopped || $event->isPropagationStopped()
+                )
+            );
         }
 
-        if (self::$triggerEvents) {
+        if (!self::$propagationStopped && !$event->isPropagationStopped()) {
             $this->eventDispatcher->dispatch($event, ElasticaBridgeEvents::POST_REFRESH_ELEMENT);
         }
     }
@@ -67,9 +69,9 @@ class PropagateChanges
         $this->doHandleIndex($element, $index, $elasticaIndex ?? $index->getElasticaIndex());
     }
 
-    public static function disableTriggerEvents(): void
+    public static function stopPropagation(): void
     {
-        self::$triggerEvents = false;
+        self::$propagationStopped = true;
     }
 
     private function doHandleIndex(
@@ -96,30 +98,29 @@ class PropagateChanges
         }
 
         $isPresent = $this->isIdInIndex($document::getElasticsearchId($element), $elasticaIndex);
+        $shouldIndex = $document->shouldIndex($element);
+
         $operation = match (true) {
-            !$isPresent && $document->shouldIndex($element) => Operation::INSERT,
-            $isPresent && !$document->shouldIndex($element) => Operation::DELETE,
-            $isPresent && $document->shouldIndex($element) => Operation::UPDATE,
-            default => Operation::NOTHING,
+            !$isPresent && $shouldIndex => ElementInIndexOperation::INSERT,
+            $isPresent && !$shouldIndex => ElementInIndexOperation::DELETE,
+            $isPresent && $shouldIndex => ElementInIndexOperation::UPDATE,
+            default => ElementInIndexOperation::NOTHING,
         };
+
         $event = new RefreshedElementInIndexEvent($element, $index, $elasticaIndex, $operation);
 
-        if (self::$triggerEvents) {
+        if (!self::$propagationStopped) {
             $this->eventDispatcher->dispatch($event, ElasticaBridgeEvents::PRE_REFRESH_ELEMENT_IN_INDEX);
         }
 
-        if ($event->isPropagationStopped()) {
-            return;
-        }
-
         match ($operation) {
-            Operation::DELETE => $this->deleteElementFromIndex($element, $elasticaIndex, $document),
-            Operation::NOTHING => null,
-            Operation::INSERT => $this->addElementToIndex($element, $elasticaIndex, $document),
-            Operation::UPDATE => $this->updateElementInIndex($element, $elasticaIndex, $document),
+            ElementInIndexOperation::DELETE => $this->deleteElementFromIndex($element, $elasticaIndex, $document),
+            ElementInIndexOperation::NOTHING => null,
+            ElementInIndexOperation::INSERT => $this->addElementToIndex($element, $elasticaIndex, $document),
+            ElementInIndexOperation::UPDATE => $this->updateElementInIndex($element, $elasticaIndex, $document),
         };
 
-        if (self::$triggerEvents) {
+        if (!self::$propagationStopped && !$event->isPropagationStopped()) {
             $this->eventDispatcher->dispatch($event, ElasticaBridgeEvents::POST_REFRESH_ELEMENT_IN_INDEX);
         }
 

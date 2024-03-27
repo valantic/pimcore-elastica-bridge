@@ -7,7 +7,7 @@ namespace Valantic\ElasticaBridgeBundle\Model\Event;
 use Elastica\Index;
 use Pimcore\Model\Element\AbstractElement;
 use Symfony\Contracts\EventDispatcher\Event;
-use Valantic\ElasticaBridgeBundle\Enum\Operation;
+use Valantic\ElasticaBridgeBundle\Enum\ElementInIndexOperation;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 
 class RefreshedElementInIndexEvent extends Event
@@ -16,7 +16,7 @@ class RefreshedElementInIndexEvent extends Event
         public readonly AbstractElement $element,
         public readonly IndexInterface $index,
         public readonly Index $elasticaIndex,
-        public readonly Operation $operation,
+        public readonly ElementInIndexOperation $operation,
     ) {}
 
     public function getElement(): AbstractElement
@@ -34,7 +34,7 @@ class RefreshedElementInIndexEvent extends Event
         return $this->elasticaIndex;
     }
 
-    public function getOperation(): Operation
+    public function getOperation(): ElementInIndexOperation
     {
         return $this->operation;
     }

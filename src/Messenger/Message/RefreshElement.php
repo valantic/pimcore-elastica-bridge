@@ -8,13 +8,9 @@ use Pimcore\Model\Element\ElementInterface;
 
 class RefreshElement extends AbstractRefresh
 {
-    public function __construct(ElementInterface $element, private readonly bool $shouldTriggerEvents = true)
+    public function __construct(ElementInterface $element, bool $stopPropagateEvents = false)
     {
         $this->setElement($element);
-    }
-
-    public function shouldTriggerEvents(): bool
-    {
-        return $this->shouldTriggerEvents;
+        $this->setPropagateEvents($stopPropagateEvents);
     }
 }
