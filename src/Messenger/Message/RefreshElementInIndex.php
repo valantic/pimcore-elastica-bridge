@@ -11,9 +11,9 @@ class RefreshElementInIndex extends AbstractRefresh
     public function __construct(
         ElementInterface $element,
         public readonly string $index,
-        bool $stopPropagateEvents = false,
+        bool $stopEventPropagation = false,
     ) {
-        $this->setPropagateEvents($stopPropagateEvents);
+        $this->setShouldStopEventPropagation($stopEventPropagation);
         $this->setElement($element);
     }
 }

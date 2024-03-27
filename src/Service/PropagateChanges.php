@@ -21,7 +21,7 @@ use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 
 class PropagateChanges
 {
-    private static bool $propagationStopped = false;
+    private static bool $isPropagationStopped = false;
 
     public function __construct(
         private readonly IndexRepository $indexRepository,
@@ -42,7 +42,7 @@ class PropagateChanges
 
         $event = new RefreshedElementEvent($element, $indices);
 
-        if (!self::$propagationStopped) {
+        if (!self::$isPropagationStopped) {
             $this->eventDispatcher->dispatch($event, ElasticaBridgeEvents::PRE_REFRESH_ELEMENT);
         }
 
@@ -51,12 +51,12 @@ class PropagateChanges
                 new RefreshElementInIndex(
                     $element,
                     $index->getName(),
-                    self::$propagationStopped || $event->isPropagationStopped()
+                    self::$isPropagationStopped || $event->isPropagationStopped()
                 )
             );
         }
 
-        if (!self::$propagationStopped && !$event->isPropagationStopped()) {
+        if (!self::$isPropagationStopped && !$event->isPropagationStopped()) {
             $this->eventDispatcher->dispatch($event, ElasticaBridgeEvents::POST_REFRESH_ELEMENT);
         }
     }
@@ -71,7 +71,7 @@ class PropagateChanges
 
     public static function stopPropagation(): void
     {
-        self::$propagationStopped = true;
+        self::$isPropagationStopped = true;
     }
 
     private function doHandleIndex(
@@ -109,7 +109,7 @@ class PropagateChanges
 
         $event = new RefreshedElementInIndexEvent($element, $index, $elasticaIndex, $operation);
 
-        if (!self::$propagationStopped) {
+        if (!self::$isPropagationStopped) {
             $this->eventDispatcher->dispatch($event, ElasticaBridgeEvents::PRE_REFRESH_ELEMENT_IN_INDEX);
         }
 
@@ -120,7 +120,7 @@ class PropagateChanges
             ElementInIndexOperation::NOTHING => null,
         };
 
-        if (!self::$propagationStopped && !$event->isPropagationStopped()) {
+        if (!self::$isPropagationStopped && !$event->isPropagationStopped()) {
             $this->eventDispatcher->dispatch($event, ElasticaBridgeEvents::POST_REFRESH_ELEMENT_IN_INDEX);
         }
 

@@ -11,16 +11,16 @@ abstract class AbstractRefresh
     /** @var class-string<ElementInterface> */
     public string $className;
     public int $id;
-    private bool $stopPropagateEvents = false;
+    private bool $shouldStopEventPropagation = false;
 
     public function isEventPropagationStopped(): bool
     {
-        return $this->stopPropagateEvents;
+        return $this->shouldStopEventPropagation;
     }
 
     public function stopEventPropagation(): void
     {
-        $this->stopPropagateEvents = true;
+        $this->setShouldStopEventPropagation(true);
     }
 
     protected function setElement(ElementInterface $element): void
@@ -29,8 +29,8 @@ abstract class AbstractRefresh
         $this->id = $element->getId() ?? throw new \InvalidArgumentException('Pimcore ID is null.');
     }
 
-    protected function setPropagateEvents(bool $stopPropagateEvents): void
+    protected function setShouldStopEventPropagation(bool $stopEventPropagation): void
     {
-        $this->stopPropagateEvents = $stopPropagateEvents;
+        $this->shouldStopEventPropagation = $stopEventPropagation;
     }
 }
