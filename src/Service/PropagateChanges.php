@@ -95,8 +95,8 @@ class PropagateChanges
         Index $index,
         DocumentInterface $document,
     ): void {
-        $document = $this->documentHelper->elementToDocument($document, $element);
-        $index->addDocument($document);
+        $elasticaDocument = $this->documentHelper->elementToDocument($document, $element);
+        $index->addDocument($elasticaDocument);
     }
 
     /**
@@ -107,9 +107,9 @@ class PropagateChanges
         Index $index,
         DocumentInterface $document,
     ): void {
-        $document = $this->documentHelper->elementToDocument($document, $element);
+        $elasticaDocument = $this->documentHelper->elementToDocument($document, $element);
         // updateDocument() allows partial updates, hence the full replace here
-        $index->addDocument($document);
+        $index->addDocument($elasticaDocument);
     }
 
     /**
