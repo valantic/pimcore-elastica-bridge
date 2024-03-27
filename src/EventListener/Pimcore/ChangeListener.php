@@ -110,6 +110,7 @@ class ChangeListener implements EventSubscriberInterface
      */
     private function getFreshElement(AbstractElement $element): AbstractElement
     {
+        /** @var class-string<TElement> $elementClass */
         $elementClass = $element::class;
         $e = new PimcoreElementNotFoundException($element->getId(), $elementClass);
 
@@ -117,6 +118,7 @@ class ChangeListener implements EventSubscriberInterface
             throw $e;
         }
 
+        /** @var TElement */
         return $elementClass::getById($element->getId(), ['force' => true]) ?? throw $e;
     }
 
