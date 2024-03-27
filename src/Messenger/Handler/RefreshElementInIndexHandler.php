@@ -28,7 +28,7 @@ class RefreshElementInIndexHandler extends AbstractRefreshHandler
         $index = $this->indexRepository->flattenedGet($message->index);
         $element = $this->resolveElement($message);
 
-        if (!$message->isEventPropagationStopped()) {
+        if ($message->isEventPropagationStopped()) {
             PropagateChanges::stopPropagation();
         }
 
