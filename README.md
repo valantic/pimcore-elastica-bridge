@@ -67,6 +67,30 @@ valantic_elastica_bridge:
         # If true, when a document fails to be indexed, it will be skipped and indexing continue with the next document. If false, indexing that index will be aborted.
         should_skip_failing_documents: false
 ```
+## Events
+
+This project uses Symfony's event dispatcher. Here are the events that you can listen to:
+
+| Description                                         | Example Usage                                                        | Event Constant (`ElasticaBridgeEvents::`) | Event Object (`Model\Event\`)  |
+|-----------------------------------------------------|----------------------------------------------------------------------|-------------------------------------------|--------------------------------|
+| After an element has been refreshed in an index.    | Log Event, send notification                                         | `POST_REFRESH_ELEMENT_IN_INDEX`           | `RefreshedElementInIndexEvent` |
+| Before an element is refreshed in an index.         | Stop propagation of element in specific index                        | `PRE_REFRESH_ELEMENT_IN_INDEX`            | `RefreshedElementInIndexEvent` |
+| After an element has been refreshed in all indices. | Clear caches, refresh related Objects,  Log Event, send notification | `POST_REFRESH_ELEMENT`                    | `RefreshedElementEvent`        |
+| Before an element is refreshed in all indices.      | Stop propagation of element in all indices                           | `PRE_REFRESH_ELEMENT`                     | `RefreshedElementEvent`        |
+
+You can create an event subscriber or an event listener to listen to these events. Please refer to the [Symfony documentation](https://symfony.com/doc/current/event_dispatcher.html) for more information on how to use the event dispatcher.
+
+### Possible Use Cases for Events
+
+- clear cache after an element has been refreshed
+- send a notification after an element has been refreshed
+- log the event
+- update related elements in the index
+
+### Event Propagation
+
+When refreshing multiple elements, each refresh triggers an event that could potentially lead to another refresh, resulting in an endless loop. To prevent this, you can disable event propagation during the refresh process.
+You can disable event propagation by setting `$stopPropagateEvents` to `true` in the `RefreshElement` Message constructor or by calling `stopEventPropagation()` on the message before you add it to the queue.
 
 ## Queue
 
