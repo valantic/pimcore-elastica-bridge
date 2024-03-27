@@ -18,6 +18,11 @@ abstract class AbstractRefresh
         return $this->stopPropagateEvents;
     }
 
+    public function stopEventPropagation(): void
+    {
+        $this->stopPropagateEvents = true;
+    }
+
     protected function setElement(ElementInterface $element): void
     {
         $this->className = $element::class;
@@ -27,10 +32,5 @@ abstract class AbstractRefresh
     protected function setPropagateEvents(bool $stopPropagateEvents): void
     {
         $this->stopPropagateEvents = $stopPropagateEvents;
-    }
-
-    public function stopEventPropagation(): void
-    {
-        $this->stopPropagateEvents = true;
     }
 }
