@@ -7,13 +7,13 @@
     "export": "slidev export"
   },
   "dependencies": {
-    "@slidev/cli": "^0.40.16",
-    "@slidev/theme-default": "*",
-    "@slidev/theme-seriph": "*",
+    "@slidev/cli": "^0.48.7",
+    "@slidev/theme-default": "^0.25.0",
+    "@slidev/theme-seriph": "^0.25.0",
     "prism-theme-vars": "^0.2.4",
     "slidev-theme-geist": "^0.8.1"
   },
   "devDependencies": {
-    "playwright-chromium": "^1.33.0"
+    "playwright-chromium": "^1.42.1"
   }
 }
