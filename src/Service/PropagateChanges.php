@@ -102,8 +102,8 @@ class PropagateChanges
 
         $operation = match (true) {
             !$isPresent && $shouldIndex => ElementInIndexOperation::INSERT,
-            $isPresent && !$shouldIndex => ElementInIndexOperation::DELETE,
             $isPresent && $shouldIndex => ElementInIndexOperation::UPDATE,
+            $isPresent && !$shouldIndex => ElementInIndexOperation::DELETE,
             default => ElementInIndexOperation::NOTHING,
         };
 
@@ -114,10 +114,10 @@ class PropagateChanges
         }
 
         match ($operation) {
-            ElementInIndexOperation::DELETE => $this->deleteElementFromIndex($element, $elasticaIndex, $document),
-            ElementInIndexOperation::NOTHING => null,
             ElementInIndexOperation::INSERT => $this->addElementToIndex($element, $elasticaIndex, $document),
             ElementInIndexOperation::UPDATE => $this->updateElementInIndex($element, $elasticaIndex, $document),
+            ElementInIndexOperation::DELETE => $this->deleteElementFromIndex($element, $elasticaIndex, $document),
+            ElementInIndexOperation::NOTHING => null,
         };
 
         if (!self::$propagationStopped && !$event->isPropagationStopped()) {

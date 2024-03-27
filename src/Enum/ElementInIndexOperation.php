@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Enum;
 
-enum ElementInIndexOperation: int
+enum ElementInIndexOperation
 {
-    case NOTHING = 0;
-    case DELETE = 1;
-    case INSERT = 2;
-    case UPDATE = 3;
+    case INSERT;
+    case UPDATE;
+    case DELETE;
+    case NOTHING;
 }
