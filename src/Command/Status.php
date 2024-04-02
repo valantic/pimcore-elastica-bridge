@@ -45,10 +45,9 @@ class Status extends BaseCommand
     {
         $table = new Table($output);
         $table
-            ->setHeaders(['Host', 'Port', 'Version'])
+            ->setHeaders(['Hosts', 'Version'])
             ->setRows([[
-                $this->esClient->getConfig('host'),
-                $this->esClient->getConfig('port'),
+                join(", ", $this->esClient->getConfig('hosts')),
                 $this->esClient->getVersion(),
             ]])
             ->setHeaderTitle('Cluster');
