@@ -128,6 +128,8 @@ trait DataObjectNormalizerTrait
             $data = is_callable($source) ? $source($element) : $element->get($source);
 
             if ($data === null) {
+                $result[$target] = null;
+
                 continue;
             }
 
