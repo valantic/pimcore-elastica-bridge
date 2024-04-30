@@ -47,8 +47,8 @@ class Status extends BaseCommand
         $table
             ->setHeaders(['Host', 'Port', 'Version'])
             ->setRows([[
-                $this->esClient->getConfig('host'),
-                $this->esClient->getConfig('port'),
+                $this->esClient->getTransport()->getNodePool()->nextNode()->getUri()->getHost(),
+                $this->esClient->getTransport()->getNodePool()->nextNode()->getUri()->getPort(),
                 $this->esClient->getVersion(),
             ]])
             ->setHeaderTitle('Cluster');
