@@ -12,6 +12,7 @@ use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Component\Process\Process;
+use Valantic\ElasticaBridgeBundle\Constant\CommandConstants;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Enum\IndexBlueGreenSuffix;
 use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
@@ -39,7 +40,7 @@ class Index extends BaseCommand
 
     protected function configure(): void
     {
-        $this->setName(self::COMMAND_NAMESPACE . 'index')
+        $this->setName(CommandConstants::COMMAND_INDEX)
             ->setDescription('Ensures all the indices are present and populated.')
             ->addArgument(
                 self::ARGUMENT_INDEX,
@@ -169,9 +170,9 @@ class Index extends BaseCommand
         self::$isPopulating = true;
         $process = new Process(
             [
-                'bin/console', self::COMMAND_NAMESPACE . 'populate-index',
-                '--config', $indexConfig->getName(),
-                '--index', $esIndex->getName(),
+                'bin/console', CommandConstants::COMMAND_POPULATE_INDEX,
+                '--' . CommandConstants::OPTION_CONFIG, $indexConfig->getName(),
+                '--' . CommandConstants::OPTION_INDEX, $esIndex->getName(),
                 ...array_filter([$this->output->isVerbose() ? '-v' : null,
                     $this->output->isVeryVerbose() ? '-vv' : null,
                     $this->output->isDebug() ? '-vvv' : null,

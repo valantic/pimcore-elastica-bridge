@@ -7,6 +7,7 @@ namespace Valantic\ElasticaBridgeBundle\Command;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Valantic\ElasticaBridgeBundle\Constant\CommandConstants;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
@@ -37,7 +38,7 @@ class Status extends BaseCommand
 
     protected function configure(): void
     {
-        $this->setName(self::COMMAND_NAMESPACE . 'status')
+        $this->setName(CommandConstants::COMMAND_STATUS)
             ->setDescription('Displays the status of the configured Elasticsearch indices');
     }
 

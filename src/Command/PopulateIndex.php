@@ -5,40 +5,37 @@ declare(strict_types=1);
 namespace Valantic\ElasticaBridgeBundle\Command;
 
 use Elastica\Index as ElasticaIndex;
-use Pimcore\Model\Element\AbstractElement;
-use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\OutputInterface;
-use Valantic\ElasticaBridgeBundle\Exception\Command\DocumentFailedException;
+use Symfony\Component\HttpKernel\KernelInterface;
+use Symfony\Component\Process\Process;
+use Valantic\ElasticaBridgeBundle\Constant\CommandConstants;
 use Valantic\ElasticaBridgeBundle\Exception\Command\IndexingFailedException;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
-use Valantic\ElasticaBridgeBundle\Repository\ConfigurationRepository;
 use Valantic\ElasticaBridgeBundle\Repository\DocumentRepository;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 use Valantic\ElasticaBridgeBundle\Service\DocumentHelper;
 
 class PopulateIndex extends BaseCommand
 {
-    private const OPTION_CONFIG = 'config';
-    private const OPTION_INDEX = 'index';
-
     public function __construct(
         private readonly IndexRepository $indexRepository,
         private readonly DocumentRepository $documentRepository,
         private readonly DocumentHelper $documentHelper,
-        private readonly ConfigurationRepository $configurationRepository,
+        private readonly KernelInterface $kernel,
     ) {
         parent::__construct();
     }
 
     protected function configure(): void
     {
-        $this->setName(self::COMMAND_NAMESPACE . 'populate-index')
+        $this->setName(CommandConstants::COMMAND_POPULATE_INDEX)
             ->setHidden(true)
             ->setDescription('[INTERNAL]')
-            ->addOption(self::OPTION_CONFIG, mode: InputOption::VALUE_REQUIRED)
-            ->addOption(self::OPTION_INDEX, mode: InputOption::VALUE_REQUIRED)
+            ->addOption(CommandConstants::OPTION_CONFIG, mode: InputOption::VALUE_REQUIRED)
+            ->addOption(CommandConstants::OPTION_INDEX, mode: InputOption::VALUE_REQUIRED)
         ;
     }
 
@@ -51,15 +48,14 @@ class PopulateIndex extends BaseCommand
         }
 
         $index = $indexConfig->getBlueGreenInactiveElasticaIndex();
-        $this->populateIndex($indexConfig, $index);
 
-        return self::SUCCESS;
+        return $this->populateIndex($indexConfig, $index);
     }
 
     private function getIndex(): ?IndexInterface
     {
         foreach ($this->indexRepository->flattenedAll() as $indexConfig) {
-            if ($indexConfig->getName() === $this->input->getOption(self::OPTION_CONFIG)) {
+            if ($indexConfig->getName() === $this->input->getOption(CommandConstants::OPTION_CONFIG)) {
                 return $indexConfig;
             }
         }
@@ -67,63 +63,70 @@ class PopulateIndex extends BaseCommand
         return null;
     }
 
-    private function populateIndex(IndexInterface $indexConfig, ElasticaIndex $esIndex): void
+    private function populateIndex(IndexInterface $indexConfig, ElasticaIndex $esIndex): int
     {
-        ProgressBar::setFormatDefinition('custom', "%percent%%\t%remaining%\t%memory%\n%message%");
-
-        $progressBar = new ProgressBar($this->output, 1);
-        $progressBar->setMessage('');
-        $progressBar->setFormat('custom');
-
         try {
             foreach ($indexConfig->getAllowedDocuments() as $document) {
-                $progressBar->setProgress(0);
-                $progressBar->setMessage($document);
-
                 $documentInstance = $this->documentRepository->get($document);
 
                 $this->documentHelper->setTenantIfNeeded($documentInstance, $indexConfig);
 
                 $listingCount = $documentInstance->getListingInstance($indexConfig)->count();
-                $progressBar->setMaxSteps($listingCount > 0 ? $listingCount : 1);
-                $esDocuments = [];
                 $numberOfBatches = ceil($listingCount / $indexConfig->getBatchSize());
 
+                $this->output->getFormatter()->setDecorated(true);
+                $this->output->writeln('');
+
+                if (
+                    !$indexConfig->shouldPopulateInSubprocesses()
+                        && $this->kernel->getEnvironment() === 'dev'
+                        && $listingCount > 10000
+                ) {
+                    $this->output->writeln(
+                        '<info>For large indices please consider to implement `shouldPopulateInSubprocesses` to prevent memory exhaustion.',
+                    );
+                    $numberOfBatches = 1;
+                } else {
+                    $this->output->writeln(sprintf(
+                        '<info>Populating index %s with %d documents in %d subprocesses.',
+                        $indexConfig::class,
+                        $listingCount,
+                        $numberOfBatches
+                    ));
+                }
+
                 for ($batchNumber = 0; $batchNumber < $numberOfBatches; $batchNumber++) {
-                    $listing = $documentInstance->getListingInstance($indexConfig);
-                    $listing->setOffset($batchNumber * $indexConfig->getBatchSize());
-                    $listing->setLimit($indexConfig->getBatchSize());
+                    $this->output->writeln('');
+                    $this->output->writeln(sprintf('<comment>-> Populating index %s batch %d/%d.', $indexConfig::class, $batchNumber + 1, $numberOfBatches));
+                    $this->output->writeln('');
+                    $process = new Process(
+                        [
+                            'bin/console', CommandConstants::COMMAND_DO_POPULATE_INDEX,
+                            '--' . CommandConstants::OPTION_CONFIG, $indexConfig->getName(),
+                            '--' . CommandConstants::OPTION_INDEX, $esIndex->getName(),
+                            '--' . CommandConstants::OPTION_BATCH_NUMBER, $batchNumber,
+                            '--' . CommandConstants::OPTION_LISTING_COUNT, $listingCount,
+                            '--' . CommandConstants::OPTION_DOCUMENT, $document,
+                            ...array_filter([$this->output->isVerbose() ? '-v' : null,
+                                $this->output->isVeryVerbose() ? '-vv' : null,
+                                $this->output->isDebug() ? '-vvv' : null,
+                            ]),
+                        ],
+                        $this->kernel->getProjectDir(),
+                        timeout: null
+                    );
 
-                    foreach ($listing->getData() ?? [] as $dataObject) {
-                        try {
-                            $progressBar->advance();
-
-                            if (!$documentInstance->shouldIndex($dataObject)) {
-                                continue;
-                            }
-
-                            $esDocuments[] = $this->documentHelper->elementToDocument($documentInstance, $dataObject);
-                        } catch (\Throwable $throwable) {
-                            $this->displayDocumentError($indexConfig, $document, $dataObject, $throwable);
-
-                            if (!$this->configurationRepository->shouldSkipFailingDocuments()) {
-                                throw new DocumentFailedException($throwable);
-                            }
+                    $exitCode = $process->run(function($type, $buffer): void {
+                        if ($type === Process::ERR && $this->output instanceof ConsoleOutput) {
+                            $this->output->getErrorOutput()->write($buffer);
+                        } else {
+                            $this->output->write($buffer);
                         }
+                    });
+
+                    if ($exitCode !== self::SUCCESS) {
+                        return self::FAILURE;
                     }
-
-                    if (count($esDocuments) > 0) {
-                        $esIndex->addDocuments($esDocuments);
-                        $esDocuments = [];
-                    }
-                }
-
-                if (count($esDocuments) > 0) {
-                    $esIndex->addDocuments($esDocuments);
-                }
-
-                if ($indexConfig->refreshIndexAfterEveryDocumentWhenPopulating()) {
-                    $esIndex->refresh();
                 }
             }
         } catch (\Throwable $throwable) {
@@ -136,24 +139,9 @@ class PopulateIndex extends BaseCommand
             }
         }
 
-        $progressBar->finish();
         $this->output->writeln('');
-    }
 
-    private function displayDocumentError(
-        IndexInterface $indexConfig,
-        string $document,
-        AbstractElement $dataObject,
-        \Throwable $throwable,
-    ): void {
-        $this->output->writeln('');
-        $this->output->writeln(sprintf(
-            '<fg=red;options=bold>Error while populating index %s, processing documents of type %s, last processed element ID %s.</>',
-            $indexConfig::class,
-            $document,
-            $dataObject->getId()
-        ));
-        $this->displayThrowable($throwable);
+        return self::SUCCESS;
     }
 
     private function displayIndexError(IndexInterface $indexConfig, \Throwable $throwable): void
@@ -165,18 +153,5 @@ class PopulateIndex extends BaseCommand
         ));
 
         $this->displayThrowable($throwable);
-    }
-
-    private function displayThrowable(\Throwable $throwable): void
-    {
-        $this->output->writeln('');
-        $this->output->writeln(sprintf('In %s line %d', $throwable->getFile(), $throwable->getLine()));
-        $this->output->writeln('');
-
-        $this->output->writeln($throwable->getMessage());
-        $this->output->writeln('');
-
-        $this->output->writeln($throwable->getTraceAsString());
-        $this->output->writeln('');
     }
 }

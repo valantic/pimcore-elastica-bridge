@@ -10,6 +10,7 @@ use Pimcore\Model\Document;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Valantic\ElasticaBridgeBundle\Constant\CommandConstants;
 use Valantic\ElasticaBridgeBundle\Service\PropagateChanges;
 
 class Refresh extends BaseCommand
@@ -26,7 +27,7 @@ class Refresh extends BaseCommand
 
     protected function configure(): void
     {
-        $this->setName(self::COMMAND_NAMESPACE . 'refresh')
+        $this->setName(CommandConstants::COMMAND_REFRESH)
             ->setDescription('Refresh one or more Elasticsearch documents')
             ->addOption(
                 self::OPTION_ASSETS,
