@@ -10,6 +10,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
+use Valantic\ElasticaBridgeBundle\Constant\CommandConstants;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 
@@ -27,7 +28,7 @@ class Cleanup extends BaseCommand
 
     protected function configure(): void
     {
-        $this->setName(self::COMMAND_NAMESPACE . 'cleanup')
+        $this->setName(CommandConstants::COMMAND_CLEANUP)
             ->setDescription('Deletes Elasticsearch indices and aliases known to (i.e. created by) the bundle')
             ->addOption(
                 self::OPTION_ALL_IN_CLUSTER,

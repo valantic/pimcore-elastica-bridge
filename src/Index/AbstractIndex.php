@@ -61,6 +61,11 @@ abstract class AbstractIndex implements IndexInterface
         return 5000;
     }
 
+    public function shouldPopulateInSubprocesses(): bool
+    {
+        return false;
+    }
+
     public function getElasticaIndex(): Index
     {
         return $this->client->getIndex($this->getName());
