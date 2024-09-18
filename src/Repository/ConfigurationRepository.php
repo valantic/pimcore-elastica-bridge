@@ -15,6 +15,11 @@ class ConfigurationRepository
         private readonly ContainerBagInterface $containerBag,
     ) {}
 
+    public function shouldPopulateAsync(): bool
+    {
+        return $this->containerBag->get('valantic_elastica_bridge')['indexing']['populate_async'];
+    }
+
     public function getClientDsn(): string
     {
         return $this->containerBag->get('valantic_elastica_bridge')['client']['dsn'];
@@ -48,5 +53,10 @@ class ConfigurationRepository
     public function shouldHandleDocumentAutoSave(): bool
     {
         return $this->containerBag->get('valantic_elastica_bridge')['events']['auto_save']['document'];
+    }
+
+    public function getCooldown(): int
+    {
+        return $this->containerBag->get('valantic_elastica_bridge')['indexing']['cooldown'];
     }
 }

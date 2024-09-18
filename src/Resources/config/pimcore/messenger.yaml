@@ -1,8 +1,14 @@
 framework:
   messenger:
+    failure_transport: elastica_bridge_failed
     enabled: true
     transports:
       elastica_bridge_index: 'doctrine://default?queue_name=elastica_bridge_index'
+      elastica_bridge_populate: 'doctrine://default?queue_name=elastica_bridge_populate'
+#      elastica_bridge_populate: 'sync://'
+      elastica_bridge_failed: 'doctrine://default?queue_name=elastica_bridge_failed'
     routing:
       Valantic\ElasticaBridgeBundle\Messenger\Message\RefreshElement: elastica_bridge_index
       Valantic\ElasticaBridgeBundle\Messenger\Message\RefreshElementInIndex: elastica_bridge_index
+      Valantic\ElasticaBridgeBundle\Messenger\Message\CreateDocument: elastica_bridge_populate
+      Valantic\ElasticaBridgeBundle\Messenger\Message\ReleaseIndexLock: elastica_bridge_populate
