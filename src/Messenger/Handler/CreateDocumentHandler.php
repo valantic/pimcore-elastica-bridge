@@ -6,10 +6,14 @@ namespace Valantic\ElasticaBridgeBundle\Messenger\Handler;
 
 use Elastic\Elasticsearch\Exception\MissingParameterException;
 use Elastic\Elasticsearch\Exception\ServerResponseException;
+use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Exception\UnrecoverableMessageHandlingException;
+use Symfony\Component\Messenger\Handler\Acknowledger;
+use Symfony\Component\Messenger\Handler\BatchHandlerInterface;
+use Symfony\Component\Messenger\Handler\BatchHandlerTrait;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Messenger\Stamp\DelayStamp;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\CreateDocument;
@@ -21,8 +25,10 @@ use Valantic\ElasticaBridgeBundle\Service\DocumentHelper;
 use Valantic\ElasticaBridgeBundle\Service\LockService;
 
 #[AsMessageHandler]
-class CreateDocumentHandler
+class CreateDocumentHandler implements BatchHandlerInterface
 {
+    use BatchHandlerTrait;
+
     public function __construct(
         private readonly DocumentHelper $documentHelper,
         private readonly DocumentRepository $documentRepository,
@@ -31,14 +37,44 @@ class CreateDocumentHandler
         private readonly LockService $lockService,
         private readonly MessageBusInterface $messageBus,
         private readonly EventDispatcherInterface $eventDispatcher,
+        private readonly ConsoleOutputInterface $consoleOutput,
     ) {}
+
+    public function __invoke(CreateDocument $message, ?Acknowledger $ack = null): int
+    {
+        return $this->handle($message, $ack);
+    }
+
+    /**
+     * @param list<array{0: object, 1: Acknowledger}> $jobs
+     *
+     * @throws MissingParameterException
+     * @throws ServerResponseException
+     * @throws \Throwable
+     */
+    protected function process(array $jobs): void
+    {
+        $this->consoleOutput->writeln('Processing new batch', ConsoleOutputInterface::VERBOSITY_NORMAL);
+
+        foreach ($jobs as [$message, $ack]) {
+            if ($message instanceof CreateDocument) {
+                $this->consoleOutput->writeln(sprintf('Processing message of %s %s', $message->objectType, $message->objectId), ConsoleOutputInterface::VERBOSITY_VERBOSE);
+                $this->handleMessage($message);
+                $ack->ack();
+
+                continue;
+            }
+
+            $ack->nack(new \InvalidArgumentException('Invalid message type'));
+        }
+    }
 
     /**
      * @throws \Throwable
      * @throws ServerResponseException
      * @throws MissingParameterException
      */
-    public function __invoke(CreateDocument $message, int $retryCount = 0): void
+    private function handleMessage(CreateDocument $message): void
     {
 
         try {

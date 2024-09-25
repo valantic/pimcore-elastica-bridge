@@ -68,7 +68,7 @@ class LockService
     public function lockSwitchBlueGreen(IndexInterface $indexConfig): Key
     {
         $key = $this->getKey($indexConfig->getName(), 'switch-blue-green');
-        $lock = $this->lockFactory->createLockFromKey($key, ttl: $this->configurationRepository->getIndexingLockTimeout(), autoRelease: false);
+        $lock = $this->lockFactory->createLockFromKey($key, ttl: 2 * $this->configurationRepository->getIndexingLockTimeout(), autoRelease: false);
         $lock->acquire();
 
         return $key;
@@ -84,7 +84,7 @@ class LockService
         }
 
         $key = $this->getKey($indexName, 'switch-blue-green');
-        $lock = $this->lockFactory->createLockFromKey($key);
+        $lock = $this->createLockFromKey($key, ttl: 0, autorelease: true);
         $lock->acquire(true);
     }
 }

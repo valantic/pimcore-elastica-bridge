@@ -33,3 +33,8 @@ services:
     resource: '../../Messenger/Handler/*'
     tags:
       - { name: messenger.message_handler }
+
+  Valantic\ElasticaBridgeBundle\Factory\ConsoleOutputFactory: ~
+
+  Symfony\Component\Console\Output\ConsoleOutputInterface:
+    factory: ['@Valantic\ElasticaBridgeBundle\Factory\ConsoleOutputFactory', 'create']
