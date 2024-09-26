@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Service;
 
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Lock\Key;
 use Symfony\Component\Lock\LockFactory;
 use Symfony\Component\Lock\LockInterface;
@@ -18,6 +19,8 @@ class LockService
     public function __construct(
         private readonly LockFactory $lockFactory,
         private readonly ConfigurationRepository $configurationRepository,
+        #[Autowire(service: 'cache.default_redis_provider')]
+        private readonly \Redis $redis,
     ) {}
 
     public function getIndexingLock(IndexInterface $indexConfig): LockInterface
@@ -74,17 +77,63 @@ class LockService
         return $key;
     }
 
-    public function waitForFinish(string $indexName): void
+    public function allMessagesProcessed(string $indexName): bool
     {
+        // the count is eventually consistent.
+        $currentCount = $this->getCurrentCount($indexName);
+
         if (
             Index::$isAsync === false
             || (Index::$isAsync === null && $this->configurationRepository->shouldPopulateAsync() === false)
         ) {
-            return;
+            return $currentCount === 0;
         }
 
         $key = $this->getKey($indexName, 'switch-blue-green');
         $lock = $this->createLockFromKey($key, ttl: 0, autorelease: true);
-        $lock->acquire(true);
+
+        if ($currentCount > 0) {
+            return false;
+        }
+
+        if (!$lock->acquire()) {
+            return false;
+        }
+
+        $lock->release(); // release the lock instantly as we just checked
+        $cacheKey = self::LOCK_PREFIX . $indexName;
+        $this->redis->del($cacheKey); // clean up the cache key.
+
+        return true;
+    }
+
+    public function initializeProcessCount(string $name): void
+    {
+        $cacheKey = self::LOCK_PREFIX . $name;
+        $this->redis->set($cacheKey, 0);
+    }
+
+    public function messageProcessed(string $esIndex): void
+    {
+        $cacheKey = self::LOCK_PREFIX . $esIndex;
+        $this->redis->decr($cacheKey);
+    }
+
+    public function getCurrentCount(string $indexName): int
+    {
+        $cacheKey = self::LOCK_PREFIX . $indexName;
+        $count = $this->redis->get($cacheKey);
+
+        if ($count === false) {
+            $count = 0;
+        }
+
+        return (int) $count;
+    }
+
+    public function messageDispatched(string $getName): void
+    {
+        $cacheKey = self::LOCK_PREFIX . $getName;
+        $this->redis->incr($cacheKey);
     }
 }

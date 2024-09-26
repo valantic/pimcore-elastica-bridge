@@ -10,6 +10,8 @@ use Elastic\Elasticsearch\Exception\ServerResponseException;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Lock\LockFactory;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
+use Symfony\Component\Messenger\MessageBusInterface;
+use Symfony\Component\Messenger\Stamp\DelayStamp;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\ReleaseIndexLock;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 use Valantic\ElasticaBridgeBundle\Service\LockService;
@@ -22,6 +24,7 @@ class SwitchIndexHandler
         private readonly LockFactory $lockFactory,
         private readonly LockService $lockService,
         private readonly ConsoleOutputInterface $consoleOutput,
+        private readonly MessageBusInterface $messageBus,
     ) {}
 
     /**
@@ -31,12 +34,26 @@ class SwitchIndexHandler
      */
     public function __invoke(ReleaseIndexLock $message): void
     {
+        $releaseLock = true;
+
         try {
-            if ($message->swtichIndex === false || $this->lockService->isExecutionLocked($message->indexName)) {
+            if ($message->switchIndex === false || $this->lockService->isExecutionLocked($message->indexName)) {
                 return;
             }
-            $this->consoleOutput->writeln('waiting for lock release', ConsoleOutputInterface::VERBOSITY_VERBOSE);
-            $this->lockService->waitForFinish($message->indexName);
+
+            // try to switch index. If not all messages are processed this will be rescheduled.
+            $key = $this->lockService->getKey($message->indexName, 'switch-blue-green');
+            $count = $this->lockService->getCurrentCount($message->indexName);
+            $this->consoleOutput->writeln(sprintf('waiting for lock release (%s) for %s (%s)', $count, $message->indexName, hash('sha256', (string) $key)), ConsoleOutputInterface::VERBOSITY_VERBOSE);
+
+            if (!$this->lockService->allMessagesProcessed($message->indexName)) {
+                $this->consoleOutput->writeln(sprintf('not all messages processed (~%s remaining), rescheduling', $count), ConsoleOutputInterface::VERBOSITY_VERBOSE);
+                $this->messageBus->dispatch($message->clone(), [new DelayStamp($count * 1000 * 2)]);
+                $releaseLock = false;
+
+                return;
+            }
+
             $indexConfig = $this->indexRepository->flattenedGet($message->indexName);
             $oldIndex = $indexConfig->getBlueGreenActiveElasticaIndex();
             $newIndex = $indexConfig->getBlueGreenInactiveElasticaIndex();
@@ -48,11 +65,13 @@ class SwitchIndexHandler
             $this->consoleOutput->writeln('added alias to ' . $newIndex->getName(), ConsoleOutputInterface::VERBOSITY_NORMAL);
             $oldIndex->flush();
         } finally {
-            $this->consoleOutput->writeln('Releasing lock', ConsoleOutputInterface::VERBOSITY_VERBOSE);
-            $key = $message->key;
+            if ($releaseLock) {
+                $this->consoleOutput->writeln(sprintf('releasing lock %s (%s)', $message->key, hash('sha256', (string) $message->key)), ConsoleOutputInterface::VERBOSITY_VERBOSE);
+                $key = $message->key;
 
-            $lock = $this->lockFactory->createLockFromKey($key);
-            $lock->release();
+                $lock = $this->lockFactory->createLockFromKey($key);
+                $lock->release();
+            }
 
             \Pimcore::collectGarbage();
         }

@@ -242,7 +242,7 @@ class Index extends BaseCommand
             return;
         }
 
-        $message = new ReleaseIndexLock($indexConfig->getName(), $key, swtichIndex: true);
+        $message = new ReleaseIndexLock($indexConfig->getName(), $key, switchIndex: true);
 
         if ($this->async) {
             $this->messageBus->dispatch($message);
@@ -261,9 +261,12 @@ class Index extends BaseCommand
         self::$isPopulating = true;
         $messagesDispatched = 0;
         $blueGreenKey = $this->lockService->lockSwitchBlueGreen($indexConfig);
+        $this->lockService->initializeProcessCount($indexConfig->getName());
 
         try {
-            foreach ($indexConfig->getAllowedDocuments() as $document) {
+            $allowedDocuments = $indexConfig->getAllowedDocuments();
+
+            foreach ($allowedDocuments as $documentKey => $document) {
                 $documentInstance = $this->documentRepository->get($document);
                 $this->documentHelper->setTenantIfNeeded($documentInstance, $indexConfig);
 
@@ -310,7 +313,11 @@ class Index extends BaseCommand
                         $lastItem = false;
                         $cooldown = 0;
 
-                        if ($batchNumber === $numberOfBatches - 1 && $key === array_key_last($data ?? [])) {
+                        if (
+                            $batchNumber === $numberOfBatches - 1
+                            && $key === array_key_last($data ?? [])
+                            && $documentKey === array_key_last($allowedDocuments)
+                        ) {
                             $message = new ReleaseIndexLock($indexConfig->getName(), $blueGreenKey);
                             $this->messageBus->dispatch($message);
                             $lastItem = true;
@@ -341,6 +348,7 @@ class Index extends BaseCommand
                                 $callback
                             );
                             $messagesDispatched++;
+                            $this->lockService->messageDispatched($indexConfig->getName());
 
                             if ($this->async) {
                                 $envelope = new Envelope($message, []);
@@ -363,7 +371,6 @@ class Index extends BaseCommand
 
                     $batchNumber++;
                 }
-
                 $progressBar->finish();
             }
         } catch (\Throwable $throwable) {

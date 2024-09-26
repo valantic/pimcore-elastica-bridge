@@ -55,6 +55,7 @@ trait DataObjectNormalizerTrait
         }
 
         $result = [];
+        $expandedFields = $this->expandFields($fields);
 
         foreach ($this->getLocales() as $locale) {
             if ($useFallbackValues) {
@@ -63,7 +64,7 @@ trait DataObjectNormalizerTrait
 
             $result[$locale] = [];
 
-            foreach ($this->expandFields($fields) as $target => $source) {
+            foreach ($expandedFields as $target => $source) {
                 $result[$locale][$target] = is_callable($source)
                     ? $source($element, $locale)
                     : $element->get($source, $locale);
@@ -198,6 +199,7 @@ trait DataObjectNormalizerTrait
         }
 
         return [DocumentInterface::ATTRIBUTE_CHILDREN_RECURSIVE => array_values(array_filter($carry))];
+
     }
 
     /**

@@ -9,7 +9,6 @@ use Elastic\Elasticsearch\Exception\ServerResponseException;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
-use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Exception\UnrecoverableMessageHandlingException;
 use Symfony\Component\Messenger\Handler\Acknowledger;
 use Symfony\Component\Messenger\Handler\BatchHandlerInterface;
@@ -58,7 +57,10 @@ class CreateDocumentHandler implements BatchHandlerInterface
 
         foreach ($jobs as [$message, $ack]) {
             if ($message instanceof CreateDocument) {
-                $this->consoleOutput->writeln(sprintf('Processing message of %s %s', $message->objectType, $message->objectId), ConsoleOutputInterface::VERBOSITY_VERBOSE);
+                if ($this->consoleOutput->getVerbosity() > ConsoleOutputInterface::VERBOSITY_NORMAL) {
+                    $count = $this->lockService->getCurrentCount($message->esIndex);
+                    $this->consoleOutput->writeln(sprintf('Processing message of %s %s. ~ %s left.', $message->esIndex, $message->objectId, $count), ConsoleOutputInterface::VERBOSITY_VERBOSE);
+                }
                 $this->handleMessage($message);
                 $ack->ack();
 
@@ -76,7 +78,6 @@ class CreateDocumentHandler implements BatchHandlerInterface
      */
     private function handleMessage(CreateDocument $message): void
     {
-
         try {
             if ($this->lockService->isExecutionLocked($message->esIndex)) {
                 return;
@@ -101,8 +102,7 @@ class CreateDocumentHandler implements BatchHandlerInterface
                 } catch (\Throwable $throwable) {
                     if (!$this->configurationRepository->shouldSkipFailingDocuments()) {
                         $key = $this->lockService->lockExecution($message->esIndex);
-                        $envelope = new Envelope(new ReleaseIndexLock($message->esIndex, $key), [new DelayStamp(5000)]);
-                        $this->messageBus->dispatch($envelope);
+                        $this->messageBus->dispatch(new ReleaseIndexLock($message->esIndex, $key), [new DelayStamp(5000)]);
                     }
 
                     if ($this->configurationRepository->shouldPopulateAsync()) {
@@ -115,6 +115,8 @@ class CreateDocumentHandler implements BatchHandlerInterface
                 $key = $this->lockService->getKey($message->esIndex, 'cooldown');
                 $this->lockService->createLockFromKey($key, ttl: $message->cooldown)->acquire();
             }
+
+            $this->lockService->messageProcessed($message->esIndex);
 
             \Pimcore::collectGarbage();
         }
