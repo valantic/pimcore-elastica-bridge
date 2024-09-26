@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Document;
 
+use Pimcore\Cache;
 use Pimcore\Localization\LocaleService;
 use Pimcore\Model\DataObject\AbstractObject;
 use Pimcore\Model\DataObject\Concrete;
@@ -191,14 +192,23 @@ trait DataObjectNormalizerTrait
         array $objectTypes = [AbstractObject::OBJECT_TYPE_OBJECT, AbstractObject::OBJECT_TYPE_FOLDER],
         array $carry = [],
     ): array {
+        $cache = Cache::load('elastica-bridge-children-recursive-' . $element->getId());
+
+        if (is_array($cache)) {
+            return [DocumentInterface::ATTRIBUTE_CHILDREN_RECURSIVE => $cache];
+        }
+
         foreach ($element->getChildren($objectTypes) as $child) {
             /** @var Concrete $child */
             $carry[] = $child->getId();
             $carry = array_values(array_filter($carry));
             $carry = $this->childrenRecursive($child, $objectTypes, $carry)[DocumentInterface::ATTRIBUTE_CHILDREN_RECURSIVE];
         }
+        $values = array_values(array_filter($carry));
 
-        return [DocumentInterface::ATTRIBUTE_CHILDREN_RECURSIVE => array_values(array_filter($carry))];
+        Cache::save($values, 'elastica-bridge-children-recursive-' . $element->getId(), lifetime: 3600, force: true);
+
+        return [DocumentInterface::ATTRIBUTE_CHILDREN_RECURSIVE => array_values(array_filter($values))];
 
     }
 
