@@ -39,7 +39,7 @@ class CreateDocumentHandler implements BatchHandlerInterface
         private readonly ConsoleOutputInterface $consoleOutput,
     ) {}
 
-    public function __invoke(CreateDocument $message, ?Acknowledger $ack = null): int
+    public function __invoke(CreateDocument $message, ?Acknowledger $ack = null): ?int
     {
         return $this->handle($message, $ack);
     }
@@ -53,16 +53,33 @@ class CreateDocumentHandler implements BatchHandlerInterface
      */
     protected function process(array $jobs): void
     {
-        $this->consoleOutput->writeln('Processing new batch', ConsoleOutputInterface::VERBOSITY_NORMAL);
+        $newBatch = true;
 
         foreach ($jobs as [$message, $ack]) {
             if ($message instanceof CreateDocument) {
                 if ($this->consoleOutput->getVerbosity() > ConsoleOutputInterface::VERBOSITY_NORMAL) {
                     $count = $this->lockService->getCurrentCount($message->esIndex);
-                    $this->consoleOutput->writeln(sprintf('Processing message of %s %s. ~ %s left.', $message->esIndex, $message->objectId, $count), ConsoleOutputInterface::VERBOSITY_VERBOSE);
+                    $this->consoleOutput->writeln(
+                        sprintf(
+                            '%sProcessing message of %s %s. ~ %s left. (PID: %s)',
+                            $newBatch ? \PHP_EOL : '',
+                            $message->esIndex,
+                            $message->objectId,
+                            $count,
+                            getmypid(),
+                        ),
+                        ConsoleOutputInterface::VERBOSITY_VERBOSE
+                    );
+                    $newBatch = false;
                 }
-                $this->handleMessage($message);
-                $ack->ack();
+
+                try {
+                    $this->handleMessage($message);
+                    $ack->ack();
+                } catch (\Throwable $e) {
+                    $this->consoleOutput->writeln(sprintf('Error processing message of %s %s (%s)', $message->esIndex, $message->objectId, $e->getMessage()), ConsoleOutputInterface::VERBOSITY_NORMAL);
+                    $ack->nack($e);
+                }
 
                 continue;
             }
@@ -110,13 +127,13 @@ class CreateDocumentHandler implements BatchHandlerInterface
                     }
                 }
             }
+            $this->lockService->messageProcessed($message->esIndex);
         } finally {
             if ($message->lastItem && $message->cooldown > 0) {
                 $key = $this->lockService->getKey($message->esIndex, 'cooldown');
                 $this->lockService->createLockFromKey($key, ttl: $message->cooldown)->acquire();
             }
 
-            $this->lockService->messageProcessed($message->esIndex);
 
             \Pimcore::collectGarbage();
         }
