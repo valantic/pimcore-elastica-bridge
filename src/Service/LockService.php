@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Service;
 
+use Doctrine\DBAL\Connection;
+use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Lock\Key;
 use Symfony\Component\Lock\LockFactory;
@@ -21,6 +23,8 @@ class LockService
         private readonly ConfigurationRepository $configurationRepository,
         #[Autowire(service: 'cache.default_redis_provider')]
         private readonly \Redis $redis,
+        private readonly Connection $connection,
+        private readonly ConsoleOutputInterface $consoleOutput,
     ) {}
 
     public function getIndexingLock(IndexInterface $indexConfig): LockInterface
@@ -77,7 +81,7 @@ class LockService
         return $key;
     }
 
-    public function allMessagesProcessed(string $indexName): bool
+    public function allMessagesProcessed(string $indexName, int $attempt = 0): bool
     {
         // the count is eventually consistent.
         $currentCount = $this->getCurrentCount($indexName);
@@ -92,11 +96,23 @@ class LockService
         $key = $this->getKey($indexName, 'switch-blue-green');
         $lock = $this->createLockFromKey($key, ttl: 0, autorelease: true);
 
+        if ($attempt > 2) {
+            $actualMessageCount = $this->getActualMessageCount($indexName);
+            $this->consoleOutput->writeln(sprintf('%s: %d attempts reached. Getting data from db. (%d => %d)', $indexName, $attempt, $currentCount, $actualMessageCount), ConsoleOutputInterface::VERBOSITY_VERBOSE);
+            $currentCount = $actualMessageCount;
+        }
+
+        if (!$lock->acquire()) {
+            $this->consoleOutput->writeln('Lock is still active. Not all messages processed.', ConsoleOutputInterface::VERBOSITY_VERBOSE);
+
+            return false;
+        }
+
         if ($currentCount > 0) {
             return false;
         }
 
-        if (!$lock->acquire()) {
+        if ($this->getActualMessageCount($indexName) > 0) {
             return false;
         }
 
@@ -135,5 +151,17 @@ class LockService
     {
         $cacheKey = self::LOCK_PREFIX . $getName;
         $this->redis->incr($cacheKey);
+    }
+
+    private function getActualMessageCount(string $indexName): int
+    {
+        $query = 'SELECT
+                COUNT(mm.id) AS remaining_messages
+                FROM messenger_messages mm
+                WHERE mm.queue_name = "elastica_bridge_populate"
+                AND mm.body LIKE CONCAT("%\\\\\"", "news_article_york", "\\\\\"%") AND mm.body LIKE "%CreateDocument%";';
+        $count = $this->connection->executeQuery($query, ['indexName' => $indexName])->fetchOne();
+
+        return (int) $count;
     }
 }

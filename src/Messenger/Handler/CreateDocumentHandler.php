@@ -10,9 +10,6 @@ use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Messenger\Exception\UnrecoverableMessageHandlingException;
-use Symfony\Component\Messenger\Handler\Acknowledger;
-use Symfony\Component\Messenger\Handler\BatchHandlerInterface;
-use Symfony\Component\Messenger\Handler\BatchHandlerTrait;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Messenger\Stamp\DelayStamp;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\CreateDocument;
@@ -24,10 +21,8 @@ use Valantic\ElasticaBridgeBundle\Service\DocumentHelper;
 use Valantic\ElasticaBridgeBundle\Service\LockService;
 
 #[AsMessageHandler]
-class CreateDocumentHandler implements BatchHandlerInterface
+class CreateDocumentHandler
 {
-    use BatchHandlerTrait;
-
     public function __construct(
         private readonly DocumentHelper $documentHelper,
         private readonly DocumentRepository $documentRepository,
@@ -39,53 +34,9 @@ class CreateDocumentHandler implements BatchHandlerInterface
         private readonly ConsoleOutputInterface $consoleOutput,
     ) {}
 
-    public function __invoke(CreateDocument $message, ?Acknowledger $ack = null): ?int
+    public function __invoke(CreateDocument $message): void
     {
-        return $this->handle($message, $ack);
-    }
-
-    /**
-     * @param list<array{0: object, 1: Acknowledger}> $jobs
-     *
-     * @throws MissingParameterException
-     * @throws ServerResponseException
-     * @throws \Throwable
-     */
-    protected function process(array $jobs): void
-    {
-        $newBatch = true;
-
-        foreach ($jobs as [$message, $ack]) {
-            if ($message instanceof CreateDocument) {
-                if ($this->consoleOutput->getVerbosity() > ConsoleOutputInterface::VERBOSITY_NORMAL) {
-                    $count = $this->lockService->getCurrentCount($message->esIndex);
-                    $this->consoleOutput->writeln(
-                        sprintf(
-                            '%sProcessing message of %s %s. ~ %s left. (PID: %s)',
-                            $newBatch ? \PHP_EOL : '',
-                            $message->esIndex,
-                            $message->objectId,
-                            $count,
-                            getmypid(),
-                        ),
-                        ConsoleOutputInterface::VERBOSITY_VERBOSE
-                    );
-                    $newBatch = false;
-                }
-
-                try {
-                    $this->handleMessage($message);
-                    $ack->ack();
-                } catch (\Throwable $e) {
-                    $this->consoleOutput->writeln(sprintf('Error processing message of %s %s (%s)', $message->esIndex, $message->objectId, $e->getMessage()), ConsoleOutputInterface::VERBOSITY_NORMAL);
-                    $ack->nack($e);
-                }
-
-                continue;
-            }
-
-            $ack->nack(new \InvalidArgumentException('Invalid message type'));
-        }
+        $this->handleMessage($message);
     }
 
     /**
@@ -96,6 +47,21 @@ class CreateDocumentHandler implements BatchHandlerInterface
     private function handleMessage(CreateDocument $message): void
     {
         try {
+            if ($this->consoleOutput->getVerbosity() > ConsoleOutputInterface::VERBOSITY_NORMAL) {
+
+                $count = $this->lockService->getCurrentCount($message->esIndex);
+                $this->consoleOutput->writeln(
+                    sprintf(
+                        'Processing message of %s %s. ~ %s left. (PID: %s)',
+                        $message->esIndex,
+                        $message->objectId,
+                        $count,
+                        getmypid(),
+                    ),
+                    ConsoleOutputInterface::VERBOSITY_VERBOSE
+                );
+            }
+
             if ($this->lockService->isExecutionLocked($message->esIndex)) {
                 return;
             }
@@ -105,6 +71,8 @@ class CreateDocumentHandler implements BatchHandlerInterface
             }
 
             if ($message->objectId === null || $message->objectType === null) {
+                $this->lockService->messageProcessed($message->esIndex);
+
                 return;
             }
 

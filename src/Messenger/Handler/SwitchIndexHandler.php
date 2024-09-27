@@ -49,15 +49,26 @@ class SwitchIndexHandler
             $count = $this->lockService->getCurrentCount($message->indexName);
             $this->consoleOutput->writeln(sprintf('waiting for lock release (%s) for %s (%s)', $count, $message->indexName, hash('sha256', (string) $key)), ConsoleOutputInterface::VERBOSITY_VERBOSE);
 
-            while (!$this->lockService->allMessagesProcessed($message->indexName) && $attempt < $maxAttempts) {
-                $this->consoleOutput->writeln(sprintf('not all messages processed (~%s remaining), attempt %d', $count, $attempt + 1), ConsoleOutputInterface::VERBOSITY_VERBOSE);
-                sleep(($count * $attempt) + 15);
+            while (!$this->lockService->allMessagesProcessed($message->indexName, $attempt) && $attempt < $maxAttempts) {
+                $seconds = 3 * $attempt;
+                $this->consoleOutput->writeln(
+                    sprintf(
+                        '%s: not all messages processed (~%s remaining; ), attempt %d, trying again in %s seconds',
+                        $message->indexName,
+                        $count,
+                        $attempt + 1,
+                        $seconds,
+                    ),
+                    ConsoleOutputInterface::VERBOSITY_VERBOSE,
+                );
+                sleep($seconds);
                 $attempt++;
             }
 
             if ($attempt >= $maxAttempts) {
-                $this->consoleOutput->writeln('Max attempts reached, rescheduling', ConsoleOutputInterface::VERBOSITY_VERBOSE);
-                $this->messageBus->dispatch($message->clone(), [new DelayStamp($count * 1000 * 2)]);
+                $delayStamp = new DelayStamp(60 * 1000);
+                $this->consoleOutput->writeln(sprintf('Max attempts reached, rescheduling in %s seconds', $delayStamp->getDelay() / 1000), ConsoleOutputInterface::VERBOSITY_VERBOSE);
+                $this->messageBus->dispatch($message->clone(), [$delayStamp]);
                 $releaseLock = false;
 
                 return;
