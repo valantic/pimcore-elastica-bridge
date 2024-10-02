@@ -260,7 +260,6 @@ class Index extends BaseCommand
     {
         self::$isPopulating = true;
         $messagesDispatched = 0;
-        $blueGreenKey = $this->lockService->lockSwitchBlueGreen($indexConfig);
         $this->lockService->initializeProcessCount($indexConfig->getName());
 
         try {
@@ -318,8 +317,6 @@ class Index extends BaseCommand
                             && $key === array_key_last($data ?? [])
                             && $documentKey === array_key_last($allowedDocuments)
                         ) {
-                            $message = new ReleaseIndexLock($indexConfig->getName(), $blueGreenKey);
-                            $this->messageBus->dispatch($message);
                             $lastItem = true;
                             $cooldown = $this->async ? $this->configurationRepository->getCooldown() : 0;
                         }

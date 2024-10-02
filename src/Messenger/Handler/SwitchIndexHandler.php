@@ -35,7 +35,6 @@ class SwitchIndexHandler
     public function __invoke(ReleaseIndexLock $message): void
     {
         $releaseLock = true;
-        $startTime = microtime(true);
         $maxAttempts = 5; // Set the maximum number of attempts
         $attempt = 0;
 
@@ -45,9 +44,7 @@ class SwitchIndexHandler
             }
 
             // try to switch index. If not all messages are processed this will be rescheduled.
-            $key = $this->lockService->getKey($message->indexName, 'switch-blue-green');
             $count = $this->lockService->getCurrentCount($message->indexName);
-            $this->consoleOutput->writeln(sprintf('waiting for lock release (%s) for %s (%s)', $count, $message->indexName, hash('sha256', (string) $key)), ConsoleOutputInterface::VERBOSITY_VERBOSE);
 
             while (!$this->lockService->allMessagesProcessed($message->indexName, $attempt) && $attempt < $maxAttempts) {
                 $seconds = 3 * $attempt;

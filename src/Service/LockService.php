@@ -59,6 +59,7 @@ class LockService
     public function lockExecution(string $document): Key
     {
         $key = $this->getKey($document, 'failure');
+        $this->consoleOutput->writeln(sprintf('Locking execution for %s (%s)', $document, hash('sha256', (string) $key)), ConsoleOutputInterface::VERBOSITY_VERBOSE);
         $lock = $this->lockFactory->createLockFromKey($key, ttl: $this->configurationRepository->getIndexingLockTimeout(), autoRelease: false);
         $lock->acquire();
 
@@ -68,17 +69,26 @@ class LockService
     public function isExecutionLocked(string $document): bool
     {
         $key = $this->getKey($document, 'failure');
+        $maxAttempts = 5;
+        $attempt = 0;
+        $isLocked = true;
 
-        return !$this->lockFactory->createLockFromKey($key)->acquire();
-    }
+        while ($attempt < $maxAttempts && $isLocked) {
+            $lock = $this->lockFactory->createLockFromKey($key);
+            $isLocked = !$lock->acquireRead();
+            $lock->release();
 
-    public function lockSwitchBlueGreen(IndexInterface $indexConfig): Key
-    {
-        $key = $this->getKey($indexConfig->getName(), 'switch-blue-green');
-        $lock = $this->lockFactory->createLockFromKey($key, ttl: 2 * $this->configurationRepository->getIndexingLockTimeout(), autoRelease: false);
-        $lock->acquire();
+            if ($isLocked) {
+                usleep(300000); // Wait for 300 milliseconds before retrying
+                $attempt++;
+            }
+        }
 
-        return $key;
+        if ($isLocked) {
+            $this->consoleOutput->writeln(sprintf('Execution locked for %s (%s)', $document, hash('sha256', (string) $key)), ConsoleOutputInterface::VERBOSITY_VERBOSE);
+        }
+
+        return $isLocked;
     }
 
     public function allMessagesProcessed(string $indexName, int $attempt = 0): bool
@@ -93,19 +103,10 @@ class LockService
             return $currentCount === 0;
         }
 
-        $key = $this->getKey($indexName, 'switch-blue-green');
-        $lock = $this->createLockFromKey($key, ttl: 0, autorelease: true);
-
         if ($attempt > 2) {
             $actualMessageCount = $this->getActualMessageCount($indexName);
             $this->consoleOutput->writeln(sprintf('%s: %d attempts reached. Getting data from db. (%d => %d)', $indexName, $attempt, $currentCount, $actualMessageCount), ConsoleOutputInterface::VERBOSITY_VERBOSE);
             $currentCount = $actualMessageCount;
-        }
-
-        if (!$lock->acquire()) {
-            $this->consoleOutput->writeln('Lock is still active. Not all messages processed.', ConsoleOutputInterface::VERBOSITY_VERBOSE);
-
-            return false;
         }
 
         if ($currentCount > 0) {
@@ -116,7 +117,6 @@ class LockService
             return false;
         }
 
-        $lock->release(); // release the lock instantly as we just checked
         $cacheKey = self::LOCK_PREFIX . $indexName;
         $this->redis->del($cacheKey); // clean up the cache key.
 
@@ -155,12 +155,15 @@ class LockService
 
     private function getActualMessageCount(string $indexName): int
     {
-        $query = 'SELECT
-                COUNT(mm.id) AS remaining_messages
-                FROM messenger_messages mm
-                WHERE mm.queue_name = "elastica_bridge_populate"
-                AND mm.body LIKE CONCAT("%\\\\\"", "news_article_york", "\\\\\"%") AND mm.body LIKE "%CreateDocument%";';
-        $count = $this->connection->executeQuery($query, ['indexName' => $indexName])->fetchOne();
+        $query = "SELECT
+        COUNT(mm.id) AS remaining_messages
+        FROM messenger_messages mm
+        WHERE mm.queue_name = \"elastica_bridge_populate\"
+          AND mm.body LIKE CONCAT('%\\\\\\\\\"', :indexName, '\\\\\\\\\"%')
+          AND mm.delivered_at IS NULL
+          AND mm.body LIKE \"%CreateDocument%\"";
+
+        $count = $this->connection->executeQuery($query, ['indexName' => $indexName, 'indexNameLength' => strlen($indexName)])->fetchOne();
 
         return (int) $count;
     }
