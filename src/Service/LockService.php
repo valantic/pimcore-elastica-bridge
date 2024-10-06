@@ -103,17 +103,17 @@ class LockService
             return $currentCount === 0;
         }
 
-        if ($attempt > 2) {
-            $actualMessageCount = $this->getActualMessageCount($indexName);
-            $this->consoleOutput->writeln(sprintf('%s: %d attempts reached. Getting data from db. (%d => %d)', $indexName, $attempt, $currentCount, $actualMessageCount), ConsoleOutputInterface::VERBOSITY_VERBOSE);
-            $currentCount = $actualMessageCount;
-        }
-
-        if ($currentCount > 0) {
+        if ($currentCount > 0 && $attempt < 3) {
             return false;
         }
 
-        if ($this->getActualMessageCount($indexName) > 0) {
+        $actualMessageCount = $this->getActualMessageCount($indexName);
+
+        if ($attempt > 2) {
+            $this->consoleOutput->writeln(sprintf('%s: %d attempts reached. Getting data from db. (%d => %d)', $indexName, $attempt, $currentCount, $actualMessageCount), ConsoleOutputInterface::VERBOSITY_VERBOSE);
+        }
+
+        if ($actualMessageCount > 0) {
             return false;
         }
 
