@@ -79,8 +79,10 @@ class CreateDocumentHandler
             $dataObject = $message->objectType::getById($message->objectId) ?? throw new \RuntimeException('DataObject not found');
 
             try {
+                $index = $this->indexRepository->flattenedGet($message->esIndex);
+                $this->documentHelper->setTenantIfNeeded($documentInstance, $index);
+                $esIndex = $index->getBlueGreenInactiveElasticaIndex();
                 $esDocuments = [$this->documentHelper->elementToDocument($documentInstance, $dataObject)];
-                $esIndex = $this->indexRepository->flattenedGet($message->esIndex)->getBlueGreenInactiveElasticaIndex();
 
                 if (count($esDocuments) > 0) {
                     $esIndex->addDocuments($esDocuments);

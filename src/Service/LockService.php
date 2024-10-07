@@ -144,7 +144,7 @@ class LockService
         $this->redis->incr($cacheKey);
     }
 
-    private function getActualMessageCount(string $indexName): int
+    public function getActualMessageCount(string $indexName): int
     {
         $query = "SELECT
         COUNT(mm.id) AS remaining_messages

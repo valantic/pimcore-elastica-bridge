@@ -146,7 +146,7 @@ class Index extends BaseCommand
 
             $key = $this->lockService->getIndexingKey($indexConfig);
             $lock = $this->lockService->createLockFromKey($key);
-            $messagesProcessed = $this->lockService->allMessagesProcessed($indexConfig->getName(), 4);
+            $messagesProcessed = $this->lockService->getActualMessageCount($indexConfig->getName()) === 0;
             $processLocked = !$lock->acquire();
 
             if ($processLocked) {
