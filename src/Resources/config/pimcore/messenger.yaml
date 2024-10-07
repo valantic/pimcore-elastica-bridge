@@ -1,10 +1,12 @@
 framework:
   messenger:
-    failure_transport: elastica_bridge_failed
+#    failure_bridge: elastica_bridge_failed
     enabled: true
     transports:
       elastica_bridge_index: 'doctrine://default?queue_name=elastica_bridge_index'
-      elastica_bridge_populate: 'doctrine://default?queue_name=elastica_bridge_populate'
+      elastica_bridge_populate:
+        dsn: 'doctrine://default?queue_name=elastica_bridge_populate'
+        failure_transport: 'elastica_bridge_failed'
 #      elastica_bridge_populate: 'sync://'
       elastica_bridge_failed: 'doctrine://default?queue_name=elastica_bridge_failed'
     routing:

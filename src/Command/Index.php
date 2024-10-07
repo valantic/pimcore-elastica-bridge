@@ -41,8 +41,9 @@ class Index extends BaseCommand
     private const OPTION_DELETE = 'delete';
     private const OPTION_POPULATE = 'populate';
     private const OPTION_LOCK_RELEASE = 'lock-release';
-    private const SYNC = 'sync';
-    private const ASYNC = 'async';
+    private const OPTION_SYNC = 'sync';
+    private const OPTION_ASYNC = 'async';
+    private const OPTION_NO_COOLDOWN = 'no-cooldown';
     public static bool $isPopulating = false;
     public static ?bool $isAsync = null;
     private bool $async;
@@ -91,16 +92,22 @@ class Index extends BaseCommand
                 'Force all indexing locks to be released'
             )
             ->addOption(
-                self::SYNC,
+                self::OPTION_SYNC,
                 's',
                 InputOption::VALUE_NONE,
                 'Force sync mode',
             )
             ->addOption(
-                self::ASYNC,
+                self::OPTION_ASYNC,
                 'a',
                 InputOption::VALUE_NONE,
                 'Force async mode',
+            )
+            ->addOption(
+                self::OPTION_NO_COOLDOWN,
+                null,
+                InputOption::VALUE_NONE,
+                'disable cooldown',
             );
     }
 
@@ -108,8 +115,8 @@ class Index extends BaseCommand
     {
         parent::initialize($input, $output);
 
-        $sync = $input->getOption(self::SYNC) === true;
-        $async = $input->getOption(self::ASYNC) === true;
+        $sync = $input->getOption(self::OPTION_SYNC) === true;
+        $async = $input->getOption(self::OPTION_ASYNC) === true;
 
         if ($sync && $async) {
             throw new \InvalidArgumentException('Cannot use both sync and async mode at the same time.');
@@ -139,6 +146,7 @@ class Index extends BaseCommand
 
             $key = $this->lockService->getIndexingKey($indexConfig);
             $lock = $this->lockService->createLockFromKey($key);
+            $messagesProcessed = $this->lockService->allMessagesProcessed($indexConfig->getName(), 4);
             $processLocked = !$lock->acquire();
 
             if ($processLocked) {
@@ -162,8 +170,18 @@ class Index extends BaseCommand
                 );
             }
 
-            if ($processLocked || $cooldownLock) {
-                if ($this->input->getOption(self::OPTION_LOCK_RELEASE) === true) {
+            if (!$messagesProcessed) {
+                $lock->release();
+                $this->output->writeln(
+                    sprintf(
+                        "\n<error>Messages for %s are still being processed.</error>\n",
+                        $indexConfig->getName(),
+                    )
+                );
+            }
+
+            if ($processLocked || $cooldownLock || !$messagesProcessed) {
+                if ($messagesProcessed && $this->input->getOption(self::OPTION_LOCK_RELEASE) === true) {
                     $lock->release();
                     $this->output->writeln(sprintf(
                         "\n<comment>Force-released %s lock for %s.</comment>\n",
@@ -177,7 +195,7 @@ class Index extends BaseCommand
                 }
             }
 
-            if ($this->async && $this->configurationRepository->getCooldown() > 0) {
+            if ($this->async && $this->input->getOption(self::OPTION_POPULATE) !== true && $this->configurationRepository->getCooldown() > 0) {
                 $this->output->writeln(
                     sprintf(
                         "\n<comment>Cooldown will be enabled for %s seconds.</comment>\n",
@@ -318,7 +336,7 @@ class Index extends BaseCommand
                             && $documentKey === array_key_last($allowedDocuments)
                         ) {
                             $lastItem = true;
-                            $cooldown = $this->async ? $this->configurationRepository->getCooldown() : 0;
+                            $cooldown = $this->input->getOption(self::OPTION_NO_COOLDOWN) !== true && $this->async ? $this->configurationRepository->getCooldown() : 0;
                         }
 
                         try {

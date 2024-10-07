@@ -9,7 +9,6 @@ use Elastic\Elasticsearch\Exception\ServerResponseException;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
-use Symfony\Component\Messenger\Exception\RecoverableMessageHandlingException;
 use Symfony\Component\Messenger\Exception\UnrecoverableMessageHandlingException;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\CreateDocument;
 use Valantic\ElasticaBridgeBundle\Repository\ConfigurationRepository;
@@ -47,7 +46,7 @@ class CreateDocumentHandler
 
         try {
             if ($this->lockService->isExecutionLocked($message->esIndex)) {
-                throw new RecoverableMessageHandlingException(sprintf('Execution locked (%s: %s)', $message->esIndex, $message->objectId));
+                return;
             }
 
             if ($this->consoleOutput->getVerbosity() > ConsoleOutputInterface::VERBOSITY_NORMAL) {
@@ -55,7 +54,7 @@ class CreateDocumentHandler
                 $count = $this->lockService->getCurrentCount($message->esIndex);
                 $this->consoleOutput->writeln(
                     sprintf(
-                        'Processing message of %s %s. ~ %s left. (PID: %s)',
+                        'Processing message of %s %s. ~%s left. (PID: %s)',
                         $message->esIndex,
                         $message->objectId,
                         $count,

@@ -59,9 +59,8 @@ class LockService
     public function lockExecution(string $document): Key
     {
         $key = $this->getKey($document, 'failure');
+        $this->redis->set((string) $key, 1, ['NX', 'EX' => 5]);
         $this->consoleOutput->writeln(sprintf('Locking execution for %s (%s)', $document, hash('sha256', (string) $key)), ConsoleOutputInterface::VERBOSITY_VERBOSE);
-        $lock = $this->lockFactory->createLockFromKey($key, ttl: $this->configurationRepository->getIndexingLockTimeout(), autoRelease: false);
-        $lock->acquire();
 
         return $key;
     }
@@ -69,26 +68,13 @@ class LockService
     public function isExecutionLocked(string $document): bool
     {
         $key = $this->getKey($document, 'failure');
-        $maxAttempts = 5;
-        $attempt = 0;
-        $isLocked = true;
+        $exists = $this->redis->exists((string) $key);
 
-        while ($attempt < $maxAttempts && $isLocked) {
-            $lock = $this->lockFactory->createLockFromKey($key);
-            $isLocked = !$lock->acquireRead();
-            $lock->release();
-
-            if ($isLocked) {
-                usleep(300000); // Wait for 300 milliseconds before retrying
-                $attempt++;
-            }
+        if (is_int($exists)) {
+            return $exists > 0;
         }
 
-        if ($isLocked) {
-            $this->consoleOutput->writeln(sprintf('Execution locked for %s (%s)', $document, hash('sha256', (string) $key)), ConsoleOutputInterface::VERBOSITY_VERBOSE);
-        }
-
-        return $isLocked;
+        return false;
     }
 
     public function allMessagesProcessed(string $indexName, int $attempt = 0): bool
@@ -109,6 +95,11 @@ class LockService
 
         $actualMessageCount = $this->getActualMessageCount($indexName);
 
+        if ($actualMessageCount > 0 && $currentCount !== $actualMessageCount) {
+            $this->consoleOutput->writeln(sprintf('%s: %d messages remaining in db. %d in cache.', $indexName, $actualMessageCount, $currentCount), ConsoleOutputInterface::VERBOSITY_VERBOSE);
+            $this->initializeProcessCount($indexName, $actualMessageCount);
+        }
+
         if ($attempt > 2) {
             $this->consoleOutput->writeln(sprintf('%s: %d attempts reached. Getting data from db. (%d => %d)', $indexName, $attempt, $currentCount, $actualMessageCount), ConsoleOutputInterface::VERBOSITY_VERBOSE);
         }
@@ -123,10 +114,10 @@ class LockService
         return true;
     }
 
-    public function initializeProcessCount(string $name): void
+    public function initializeProcessCount(string $name, int $count = 0): void
     {
         $cacheKey = self::LOCK_PREFIX . $name;
-        $this->redis->set($cacheKey, 0);
+        $this->redis->set($cacheKey, $count);
     }
 
     public function messageProcessed(string $esIndex): void
