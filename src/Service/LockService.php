@@ -59,7 +59,7 @@ class LockService
     public function lockExecution(string $document): Key
     {
         $key = $this->getKey($document, 'failure');
-        $this->redis->set((string) $key, 1, ['NX', 'EX' => 5]);
+        $this->redis->set((string) $key, 1, ['NX', 'EX' => 1200]);
         $this->consoleOutput->writeln(sprintf('Locking execution for %s (%s)', $document, hash('sha256', (string) $key)), ConsoleOutputInterface::VERBOSITY_VERBOSE);
 
         return $key;
