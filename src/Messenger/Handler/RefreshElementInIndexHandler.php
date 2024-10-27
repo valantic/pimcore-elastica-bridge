@@ -36,9 +36,13 @@ class RefreshElementInIndexHandler extends AbstractRefreshHandler
 
         $this->consoleOutput->writeln(sprintf('Refreshing element %s in index %s', $element->getId(), $index->getName()), ConsoleOutputInterface::VERBOSITY_VERBOSE);
 
-        if ($index->usesBlueGreenIndices() && !$this->lockService->getIndexingLock($index)->acquire()) {
+        $lock = $this->lockService->getIndexingLock($index, true);
+
+        if ($index->usesBlueGreenIndices() && !$lock->acquire()) {
             $this->propagateChanges->handleIndex($element, $index, $index->getBlueGreenInactiveElasticaIndex());
         }
+
+        $lock->release();
 
         $this->propagateChanges->handleIndex($element, $index);
     }
