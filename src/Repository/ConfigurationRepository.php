@@ -15,9 +15,9 @@ class ConfigurationRepository
         private readonly ContainerBagInterface $containerBag,
     ) {}
 
-    public function shouldPopulateAsync(): bool
+    public function getInterval(): int
     {
-        return $this->containerBag->get('valantic_elastica_bridge')['indexing']['populate_async'];
+        return $this->containerBag->get('valantic_elastica_bridge')['indexing']['interval'] ?? 600;
     }
 
     public function getClientDsn(): string

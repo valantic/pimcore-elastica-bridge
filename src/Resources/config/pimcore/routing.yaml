@@ -1,0 +1,4 @@
+pimcore_admin_valanticelasticabridge:
+  resource: "../../../Controller"
+  type: annotation
+  prefix: /

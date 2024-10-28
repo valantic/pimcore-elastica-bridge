@@ -10,12 +10,11 @@ class ReleaseIndexLock
 {
     public function __construct(
         public readonly string $indexName,
-        public readonly Key $key,
-        public readonly bool $switchIndex = false,
+        public readonly ?Key $key = null,
     ) {}
 
     public function clone(): self
     {
-        return new self($this->indexName, $this->key, $this->switchIndex);
+        return new self($this->indexName, $this->key);
     }
 }

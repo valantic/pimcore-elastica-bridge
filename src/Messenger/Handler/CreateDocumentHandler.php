@@ -9,7 +9,6 @@ use Elastic\Elasticsearch\Exception\ServerResponseException;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
-use Symfony\Component\Messenger\Exception\UnrecoverableMessageHandlingException;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\CreateDocument;
 use Valantic\ElasticaBridgeBundle\Repository\ConfigurationRepository;
 use Valantic\ElasticaBridgeBundle\Repository\DocumentRepository;
@@ -30,7 +29,7 @@ class CreateDocumentHandler
         private readonly ConsoleOutputInterface $consoleOutput,
     ) {}
 
-    public function __invoke(CreateDocument $message): void
+    public function __invoke(CreateDocument $message, int $retryCount = 0): void
     {
         $this->handleMessage($message);
     }
@@ -40,8 +39,9 @@ class CreateDocumentHandler
      * @throws ServerResponseException
      * @throws MissingParameterException
      */
-    private function handleMessage(CreateDocument $message): void
-    {
+    private function handleMessage(
+        CreateDocument $message,
+    ): void {
         $messageDecreased = false;
 
         try {
@@ -64,7 +64,7 @@ class CreateDocumentHandler
                 );
             }
 
-            if ($message->callback->shouldCallEvent()) {
+            if ($message->callback?->shouldCallEvent() === true) {
                 $this->eventDispatcher->dispatch($message->callback->getEvent(), $message->callback->getEventName());
             }
 
@@ -91,26 +91,17 @@ class CreateDocumentHandler
                 $this->consoleOutput->writeln(sprintf('Error processing message %s: %s', $message->esIndex, $throwable->getMessage()), ConsoleOutputInterface::VERBOSITY_NORMAL);
 
                 if (!$this->configurationRepository->shouldSkipFailingDocuments()) {
-                    $this->lockService->lockExecution($message->esIndex);
-
-                    if ($this->configurationRepository->shouldPopulateAsync()) {
-                        throw new UnrecoverableMessageHandlingException($throwable->getMessage(), previous: $throwable);
-                    }
+                    throw $throwable;
                 }
 
             }
+
             $messageDecreased = true;
             $this->lockService->messageProcessed($message->esIndex);
         } finally {
             if (!$messageDecreased) {
                 $this->consoleOutput->writeln(sprintf('Message %s not processed. (ID: %s)', $message->esIndex, $message->objectId), ConsoleOutputInterface::VERBOSITY_VERBOSE);
             }
-
-            if ($message->lastItem && $message->cooldown > 0) {
-                $key = $this->lockService->getKey($message->esIndex, 'cooldown');
-                $this->lockService->createLockFromKey($key, ttl: $message->cooldown)->acquire();
-            }
-
 
             \Pimcore::collectGarbage();
         }

@@ -10,13 +10,16 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Lock\Key;
 use Symfony\Component\Lock\LockFactory;
 use Symfony\Component\Lock\LockInterface;
-use Valantic\ElasticaBridgeBundle\Command\Index;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 use Valantic\ElasticaBridgeBundle\Repository\ConfigurationRepository;
 
 class LockService
 {
     private const LOCK_PREFIX = 'pimcore-elastica-bridge';
+    /**
+     * @var Key[]
+     */
+    private array $indexingKey = [];
 
     public function __construct(
         private readonly LockFactory $lockFactory,
@@ -27,19 +30,24 @@ class LockService
         private readonly ConsoleOutputInterface $consoleOutput,
     ) {}
 
-    public function getIndexingLock(IndexInterface $indexConfig): LockInterface
+    public function getIndexingLock(IndexInterface $indexConfig, bool $autorelease = false): LockInterface
     {
         return $this->lockFactory
             ->createLockFromKey(
                 $this->getIndexingKey($indexConfig),
                 ttl: $this->configurationRepository->getIndexingLockTimeout(),
-                autoRelease: false
+                autoRelease: $autorelease
             );
+    }
+
+    public function isPopulating(IndexInterface $indexConfig): bool
+    {
+        return $this->getCurrentCount($indexConfig->getName()) > 0;
     }
 
     public function getIndexingKey(IndexInterface $indexConfig): Key
     {
-        return $this->getKey($indexConfig->getName(), 'indexing');
+        return $this->indexingKey[$indexConfig->getName()] ??= $this->getKey($indexConfig->getName(), 'indexing');
     }
 
     public function getKey(string $name, string $task): Key
@@ -65,6 +73,17 @@ class LockService
         return $key;
     }
 
+    public function unlockExecution(string $document): void
+    {
+        $key = $this->getKey($document, 'failure');
+
+        if ($this->redis->exists((string) $key) === 0) {
+            return;
+        }
+        $this->redis->del((string) $key);
+        $this->consoleOutput->writeln(sprintf('Unlocking execution for %s (%s)', $document, hash('sha256', (string) $key)), ConsoleOutputInterface::VERBOSITY_VERBOSE);
+    }
+
     public function isExecutionLocked(string $document): bool
     {
         $key = $this->getKey($document, 'failure');
@@ -81,13 +100,6 @@ class LockService
     {
         // the count is eventually consistent.
         $currentCount = $this->getCurrentCount($indexName);
-
-        if (
-            Index::$isAsync === false
-            || (Index::$isAsync === null && $this->configurationRepository->shouldPopulateAsync() === false)
-        ) {
-            return $currentCount === 0;
-        }
 
         if ($currentCount > 0 && $attempt < 3) {
             return false;
@@ -149,13 +161,20 @@ class LockService
         $query = "SELECT
         COUNT(mm.id) AS remaining_messages
         FROM messenger_messages mm
-        WHERE mm.queue_name = \"elastica_bridge_populate\"
+        WHERE mm.queue_name = 'elastica_bridge_populate'
           AND mm.body LIKE CONCAT('%\\\\\\\\\"', :indexName, '\\\\\\\\\"%')
           AND mm.delivered_at IS NULL
-          AND mm.body LIKE \"%CreateDocument%\"";
+          AND mm.body LIKE '%CreateDocument%'";
 
         $count = $this->connection->executeQuery($query, ['indexName' => $indexName, 'indexNameLength' => strlen($indexName)])->fetchOne();
 
         return (int) $count;
+    }
+
+    public function initiateCooldown(string $indexName): void
+    {
+        $cooldown = $this->configurationRepository->getCooldown();
+        $this->lockFactory->createLockFromKey($this->getKey($indexName, 'cooldown'), $cooldown, false)->acquire();
+        $this->consoleOutput->writeln(sprintf('Cooldown initiated for %s', $indexName), ConsoleOutputInterface::VERBOSITY_VERBOSE);
     }
 }
