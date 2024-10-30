@@ -4,17 +4,22 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Messenger\Handler;
 
-use Elastic\Elasticsearch\Exception\ClientResponseException;
-use Elastic\Elasticsearch\Exception\MissingParameterException;
-use Elastic\Elasticsearch\Exception\ServerResponseException;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Lock\Key;
 use Symfony\Component\Lock\LockFactory;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
+use Symfony\Component\Messenger\Exception\RecoverableMessageHandlingException;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Messenger\Stamp\DelayStamp;
+use Valantic\ElasticaBridgeBundle\Exception\Index\SwitchIndexException;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\ReleaseIndexLock;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\SwitchIndex;
+use Valantic\ElasticaBridgeBundle\Model\Event\ElasticaBridgeEvents;
+use Valantic\ElasticaBridgeBundle\Model\Event\PostSwitchIndexEvent;
+use Valantic\ElasticaBridgeBundle\Model\Event\PreSwitchIndexEvent;
+use Valantic\ElasticaBridgeBundle\Model\Event\WaitForCompletionEvent;
+use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 use Valantic\ElasticaBridgeBundle\Service\LockService;
 use Valantic\ElasticaBridgeBundle\Service\PopulateIndexService;
 
@@ -25,79 +30,100 @@ class SwitchIndexHandler
         private readonly LockFactory $lockFactory,
         private readonly LockService $lockService,
         private readonly ConsoleOutputInterface $consoleOutput,
-        private readonly MessageBusInterface $messengerBusElasticaBridge,
         private readonly PopulateIndexService $populateIndexService,
+        private readonly EventDispatcherInterface $eventDispatcher,
+        private readonly MessageBusInterface $messengerBusElasticaBridge,
+        private readonly IndexRepository $indexRepository,
     ) {}
 
-    /**
-     * @throws ServerResponseException
-     * @throws ClientResponseException
-     * @throws MissingParameterException
-     */
     public function __invoke(ReleaseIndexLock|SwitchIndex $message): void
     {
-        $releaseLock = true;
-        $maxAttempts = 5; // Set the maximum number of attempts
-        $attempt = 0;
+        try {
+            match ($message::class) {
+                SwitchIndex::class => $this->switchIndex($message),
+                ReleaseIndexLock::class => $this->releaseLock($message),
+                default => throw new \RuntimeException(sprintf('Unknown message type %s', $message::class)),
+            };
+        } finally {
+            \Pimcore::collectGarbage();
+        }
+    }
+
+    private function waitForCompletion(ReleaseIndexLock|SwitchIndex $message): void
+    {
+        $index = $this->indexRepository->flattenedGet($message->indexName);
+
+        $event = $this->eventDispatcher->dispatch(new WaitForCompletionEvent($index, 0, $message->retries), ElasticaBridgeEvents::WAIT_FOR_COMPLETION_EVENT);
+        $retries = 0;
+
+        if (!$event->isSuccess()) {
+            throw new SwitchIndexException($message::class . ' failed');
+        }
+
+        while ($retries < $event->maximumRetries && $event->getRemainingMessages() !== 0) {
+            sleep($event->getSleepDuration());
+            $retries++;
+            $event = $this->eventDispatcher->dispatch(new WaitForCompletionEvent($index, $retries, $message->retries), ElasticaBridgeEvents::WAIT_FOR_COMPLETION_EVENT);
+            $this->populateIndexService->log($message->indexName, sprintf('Attempt %d. %d messages remaining.', $retries, $event->getRemainingMessages()));
+        }
+
+        if ($event->getRemainingMessages() > 0) {
+            $delayStamp = new DelayStamp($event->rescheduleIntervalSeconds * 1000);
+            $this->consoleOutput->writeln(sprintf('Max attempts reached, rescheduling in %s seconds', $delayStamp->getDelay() / 1000), ConsoleOutputInterface::VERBOSITY_VERBOSE);
+
+            $this->messengerBusElasticaBridge->dispatch($message->retry(), [$delayStamp]);
+
+            throw new RecoverableMessageHandlingException('Max attempts reached, rescheduling');
+        }
+
+        if ($event->getRemainingMessages() < 0) {
+            $this->consoleOutput->writeln('Remaining messages is negative, skipping', ConsoleOutputInterface::VERBOSITY_QUIET);
+
+            throw new SwitchIndexException('Remaining messages is negative, skipping');
+        }
+    }
+
+    private function switchIndex(SwitchIndex $message): void
+    {
+        $index = $this->indexRepository->flattenedGet($message->indexName);
+        $event = $this->eventDispatcher->dispatch(new PreSwitchIndexEvent($index, $message->cooldown), ElasticaBridgeEvents::PRE_SWITCH_INDEX);
 
         try {
-            if (
-                (!$message instanceof SwitchIndex)
-                || $this->lockService->isExecutionLocked($message->indexName)
-            ) {
-                return;
-            }
+            $this->waitForCompletion($message);
+        } catch (RecoverableMessageHandlingException) {
+            return;
+        } catch (\Throwable $e) {
+            $this->populateIndexService->log($message->indexName, sprintf('Switch failed: %s', $e->getMessage()));
 
-            // try to switch index. If not all messages are processed this will be rescheduled. this should be among the last messages in the queue
-            // so it can be processed again after all other messages are processed
-            $count = $this->lockService->getCurrentCount($message->indexName);
+            throw new SwitchIndexException('Switch failed', previous: $e);
+        }
 
-            while (!$this->lockService->allMessagesProcessed($message->indexName, $attempt) && $attempt < $maxAttempts) {
-                $seconds = 3 * $attempt;
-                $this->consoleOutput->writeln(
-                    sprintf(
-                        '%s: not all messages processed (~%s remaining; ), attempt %d, trying again in %s seconds',
-                        $message->indexName,
-                        $count,
-                        $attempt + 1,
-                        $seconds,
-                    ),
-                    ConsoleOutputInterface::VERBOSITY_VERBOSE,
-                );
-                sleep($seconds);
-                $attempt++;
-            }
+        $this->populateIndexService->switchBlueGreenIndex($message->indexName);
 
-            if ($attempt >= $maxAttempts) {
-                $delayStamp = new DelayStamp(60 * 1000);
-                $this->consoleOutput->writeln(sprintf('Max attempts reached, rescheduling in %s seconds', $delayStamp->getDelay() / 1000), ConsoleOutputInterface::VERBOSITY_VERBOSE);
-                $this->messengerBusElasticaBridge->dispatch($message->clone(), [$delayStamp]);
-                $releaseLock = false;
-
-                return;
-            }
-
-            // @phpstan-ignore-next-line
-            if ($this->lockService->isExecutionLocked($message->indexName)) {
-                return;
-            }
-
-            $this->populateIndexService->switchBlueGreenIndex($message->indexName);
+        if ($event->initiateCooldown) {
             $this->lockService->initiateCooldown($message->indexName);
-        } finally {
-            if ($message->key instanceof Key && $releaseLock) {
-                $this->consoleOutput->writeln(sprintf('releasing lock %s (%s)', $message->key, hash('sha256', (string) $message->key)), ConsoleOutputInterface::VERBOSITY_VERBOSE);
-                $key = $message->key;
+        }
 
-                $lock = $this->lockFactory->createLockFromKey($key);
-                $lock->release();
+        $this->eventDispatcher->dispatch(new PostSwitchIndexEvent($index), ElasticaBridgeEvents::POST_SWITCH_INDEX);
+
+    }
+
+    private function releaseLock(ReleaseIndexLock $message): void
+    {
+        if ($message->key instanceof Key) {
+            try {
+                $this->waitForCompletion($message);
+            } catch (RecoverableMessageHandlingException) {
+                return;
+            } catch (\Throwable $e) {
+                $this->populateIndexService->log($message->indexName, sprintf('Release failed: %s', $e->getMessage()));
+
+                throw new SwitchIndexException('Release failed', previous: $e);
             }
 
-            if ($this->lockService->isExecutionLocked($message->indexName)) {
-                $this->consoleOutput->writeln(sprintf('Execution is locked for %s. Not switching index.', $message->indexName), ConsoleOutputInterface::VERBOSITY_VERBOSE);
-            }
+            $this->consoleOutput->writeln(sprintf('releasing lock %s (%s)', $message->key, hash('sha256', (string) $message->key)), ConsoleOutputInterface::VERBOSITY_VERBOSE);
 
-            \Pimcore::collectGarbage();
+            $this->lockFactory->createLockFromKey($message->key)->release();
         }
     }
 }

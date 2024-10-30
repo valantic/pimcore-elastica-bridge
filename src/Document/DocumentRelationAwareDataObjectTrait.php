@@ -12,7 +12,7 @@ use Pimcore\Model\Element\AbstractElement;
 use Symfony\Contracts\Service\Attribute\Required;
 use Valantic\ElasticaBridgeBundle\Enum\DocumentType;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
-use Valantic\ElasticaBridgeBundle\Service\LockService;
+use Valantic\ElasticaBridgeBundle\Service\PopulateIndexService;
 
 /**
  * Can be used on conjunction with DocumentNormalizerTrait::$relatedObjects.
@@ -23,13 +23,13 @@ use Valantic\ElasticaBridgeBundle\Service\LockService;
 trait DocumentRelationAwareDataObjectTrait
 {
     protected IndexInterface $index;
-    private LockService $privateLockService;
+    private PopulateIndexService $privatePopulateIndexService;
 
     public function shouldIndex(AbstractElement $element): bool
     {
         try {
             $result = (
-                $this->privateLockService->isPopulating($this->index) && $this->index->usesBlueGreenIndices()
+                $this->privatePopulateIndexService->isPopulating($this->index) && $this->index->usesBlueGreenIndices()
                 ? $this->index->getBlueGreenInactiveElasticaIndex()
                 : $this->index->getElasticaIndex()
             )
@@ -46,8 +46,8 @@ trait DocumentRelationAwareDataObjectTrait
     }
 
     #[Required]
-    public function setLockService(LockService $lockService): void
+    public function setIndexPopulationService(PopulateIndexService $populateIndexService): void
     {
-        $this->privateLockService = $lockService;
+        $this->privatePopulateIndexService = $populateIndexService;
     }
 }

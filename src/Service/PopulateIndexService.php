@@ -10,15 +10,25 @@ use Elastic\Elasticsearch\Exception\ServerResponseException;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\NullOutput;
+use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Enum\IndexBlueGreenSuffix;
-use Valantic\ElasticaBridgeBundle\Exception\Index\AlreadyInProgressException;
 use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
+use Valantic\ElasticaBridgeBundle\Exception\Index\PopulationNotStartedException;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
-use Valantic\ElasticaBridgeBundle\Messenger\Message\CreateDocument;
+use Valantic\ElasticaBridgeBundle\Messenger\Handler\CreateDocumentHandler;
+use Valantic\ElasticaBridgeBundle\Messenger\Message\CreateDocumentMessage;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\PopulateIndexMessage;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\ReleaseIndexLock;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\SwitchIndex;
+use Valantic\ElasticaBridgeBundle\Messenger\Message\TriggerSingleIndexMessage;
+use Valantic\ElasticaBridgeBundle\Model\Event\ElasticaBridgeEvents;
+use Valantic\ElasticaBridgeBundle\Model\Event\PostDocumentCreateEvent;
+use Valantic\ElasticaBridgeBundle\Model\Event\PreExecuteEvent;
+use Valantic\ElasticaBridgeBundle\Model\Event\PreProcessMessagesEvent;
+use Valantic\ElasticaBridgeBundle\Model\Event\PreSwitchIndexEvent;
 use Valantic\ElasticaBridgeBundle\Repository\DocumentRepository;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 use Valantic\ElasticaBridgeBundle\Util\ElasticsearchResponse;
@@ -26,6 +36,10 @@ use Valantic\ElasticaBridgeBundle\Util\ElasticsearchResponse;
 class PopulateIndexService
 {
     private bool $shouldDelete = false;
+    /**
+     * @var string[]
+     */
+    private array $messages = [];
 
     public function __construct(
         private readonly IndexRepository $indexRepository,
@@ -33,19 +47,26 @@ class PopulateIndexService
         private readonly LockService $lockService,
         private readonly DocumentRepository $documentRepository,
         private readonly DocumentHelper $documentHelper,
-        private ConsoleOutputInterface $consoleOutput,
+        private readonly EventDispatcherInterface $eventDispatcher,
+        private readonly MessageBusInterface $messengerBusElasticaBridge,
+        private readonly ConsoleOutputInterface $consoleOutput,
     ) {}
 
-    public function triggerAllIndices(): \Generator
+    /**
+     * @return \Generator<PopulateIndexMessage>
+     */
+    public function processScheduler(): \Generator
     {
+
         foreach ($this->indexRepository->flattenedAll() as $indexConfig) {
             try {
+                $this->eventDispatcher->dispatch(new PreExecuteEvent($indexConfig, PreExecuteEvent::SOURCE_SCHEDULER), ElasticaBridgeEvents::PRE_EXECUTE);
                 $this->checkIndex($indexConfig);
 
                 $this->setupIndex($indexConfig);
 
                 yield from $this->generateMessagesForIndex($indexConfig);
-            } catch (AlreadyInProgressException $e) {
+            } catch (PopulationNotStartedException $e) {
                 $this->log($indexConfig->getName(), '<fg=red>' . $e->getMessage() . '</>');
 
                 continue;
@@ -53,14 +74,38 @@ class PopulateIndexService
         }
     }
 
+    public function processApi(
+        IndexInterface|string $indexConfig,
+        bool $populate = false,
+        bool $ignoreLock = false,
+        bool $ignoreCooldown = false,
+    ): void {
+        if (is_string($indexConfig)) {
+            $indexConfig = $this->indexRepository->flattenedGet($indexConfig);
+        }
+        $this->eventDispatcher->dispatch(new PreExecuteEvent($indexConfig, PreExecuteEvent::SOURCE_API), ElasticaBridgeEvents::PRE_EXECUTE);
+
+        $this->checkIndex($indexConfig, $ignoreCooldown, $ignoreLock, false, ignoreQueueLock: false);
+
+        $key = $this->lockService->getKey($indexConfig->getName(), 'queue');
+        $this->messengerBusElasticaBridge->dispatch(new TriggerSingleIndexMessage($indexConfig->getName(), $populate, $ignoreCooldown, $ignoreLock, $key));
+    }
+
+    /**
+     * @return \Generator<PopulateIndexMessage>
+     */
     public function triggerSingleIndex(
-        IndexInterface $indexConfig,
+        IndexInterface|string $indexConfig,
         bool $populate = false,
         bool $ignoreLock = false,
         bool $ignoreCooldown = false,
     ): \Generator {
         try {
-            $this->checkIndex($indexConfig, $ignoreCooldown, $ignoreLock);
+            if (is_string($indexConfig)) {
+                $indexConfig = $this->indexRepository->flattenedGet($indexConfig);
+            }
+
+            $this->checkIndex($indexConfig, $ignoreCooldown, $ignoreLock, $populate);
 
             $this->setupIndex($indexConfig);
 
@@ -68,9 +113,15 @@ class PopulateIndexService
                 return;
             }
 
-            yield from $this->generateMessagesForIndex($indexConfig);
-        } catch (AlreadyInProgressException $e) {
-            $this->log($indexConfig->getName(), '<fg=red>' . $e->getMessage() . '</>');
+            yield from $this->generateMessagesForIndex($indexConfig, $ignoreCooldown);
+        } catch (PopulationNotStartedException $e) {
+            if (!is_string($indexConfig)) {
+                $indexConfig = $indexConfig->getName();
+            }
+
+            $this->log($indexConfig, '<fg=red>' . $e->getMessage() . '</>');
+
+            throw $e;
         }
     }
 
@@ -150,14 +201,16 @@ class PopulateIndexService
     /**
      * @return \Generator<PopulateIndexMessage>
      */
-    public function generateMessagesForIndex(IndexInterface $indexConfig): \Generator
+    public function generateMessagesForIndex(IndexInterface $indexConfig, bool $ignoreCooldown = false): \Generator
     {
-        $this->lockService->initializeProcessCount($indexConfig->getName());
         $allowedDocuments = $indexConfig->getAllowedDocuments();
         $batchSize = $indexConfig->getBatchSize(); // Define the batch size
         $yieldSize = 10;
+        $messageGenerated = false;
         $batch = [];
-        $this->lockService->initializeProcessCount($indexConfig->getName(), $this->getDocumentCount($indexConfig));
+        $documentCount = $this->getDocumentCount($indexConfig);
+        $this->eventDispatcher->dispatch(new PreProcessMessagesEvent($indexConfig, $documentCount), ElasticaBridgeEvents::PRE_PROCESS_MESSAGES_EVENT);
+        CreateDocumentHandler::$messageCount = $documentCount;
 
         foreach ($allowedDocuments as $document) {
             $documentInstance = $this->documentRepository->get($document);
@@ -185,18 +238,19 @@ class PopulateIndexService
                     $progressbar->advance();
 
                     if (!$documentInstance->shouldIndex($dataObject)) {
-                        $this->lockService->messageProcessed($indexConfig->getName());
+                        $this->eventDispatcher->dispatch(new PostDocumentCreateEvent($indexConfig, $dataObject->getType(), $dataObjectId, $dataObject, skipped: true), ElasticaBridgeEvents::POST_DOCUMENT_CREATE);
+                        CreateDocumentHandler::$messageCount--;
 
                         continue;
                     }
 
-                    $batch[] = new PopulateIndexMessage(new CreateDocument(
+                    $batch[] = new PopulateIndexMessage(new CreateDocumentMessage(
                         $dataObjectId,
                         $dataObject::class,
                         $document,
                         $indexConfig->getName(),
                     ));
-
+                    $messageGenerated = true;
                     $count++;
 
                     if (count($batch) >= $yieldSize) {
@@ -220,21 +274,52 @@ class PopulateIndexService
 
         if (count($batch) > 0) {
             yield from $batch;
+            $this->consoleOutput->writeln('Dispatched ' . count($batch) . 'remaining messages', ConsoleOutputInterface::VERBOSITY_VERBOSE);
         }
 
-        yield new PopulateIndexMessage(new SwitchIndex($indexConfig->getName()));
+        if ($messageGenerated) {
+            yield new PopulateIndexMessage(new SwitchIndex($indexConfig->getName(), !$ignoreCooldown));
+        }
 
         yield new PopulateIndexMessage(new ReleaseIndexLock($indexConfig->getName(), $this->lockService->getIndexingKey($indexConfig)));
     }
 
     /**
-     * @param ConsoleOutputInterface::VERBOSITY_* $level
-     *
-     * @return void
+     * @phpstan-param ConsoleOutputInterface::VERBOSITY_* $level
      */
-    public function setVerbosity(int $level): void
+    public function setVerbosity(int $level): self
     {
         $this->consoleOutput->setVerbosity($level);
+
+        return $this;
+    }
+
+    public function isPopulating(IndexInterface $indexConfig): bool
+    {
+        try {
+            $this->checkIndex($indexConfig, true, false, false);
+        } catch (PopulationNotStartedException) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @phpstan-param OutputInterface::VERBOSITY_* $verbosityLevel
+     */
+    public function log(string $indexName, string $message, int $verbosityLevel = OutputInterface::VERBOSITY_NORMAL): void
+    {
+        $this->messages[] = sprintf('%s: %s', $indexName, $message);
+        $this->consoleOutput->writeln(sprintf('<info>%s</info>-> %s', $indexName, $message), $verbosityLevel);
+    }
+
+    /**
+     * @return string[]
+     */
+    public function getLog(): array
+    {
+        return $this->messages;
     }
 
     private function ensureCorrectIndexSetup(IndexInterface $indexConfig): void
@@ -307,33 +392,36 @@ class PopulateIndexService
         IndexInterface $indexConfig,
         bool $ignoreCooldown = false,
         bool $ignoreLock = false,
+        bool $keepProcessingLock = true,
+        bool $ignoreQueueLock = true,
     ): void {
         $cooldownKey = $this->lockService->getKey($indexConfig->getName(), 'cooldown');
+        $queueKey = $this->lockService->getKey($indexConfig->getName(), 'queue');
+        $queueLock = $this->lockService->createLockFromKey($queueKey);
         $cooldownLock = $this->lockService->createLockFromKey($cooldownKey, ttl: 0);
-        $messagesProcessed = $this->lockService->getActualMessageCount($indexConfig->getName()) === 0;
-        $processingLock = $this->lockService->getIndexingLock($indexConfig);
+        $messagesProcessed = $this->eventDispatcher->dispatch(new PreSwitchIndexEvent($indexConfig))->getRemainingMessages() === 0;
+        $processingLock = $this->lockService->getIndexingLock($indexConfig, autorelease: !$keepProcessingLock);
 
         if ($this->getDocumentCount($indexConfig) === 0) {
-            throw new AlreadyInProgressException(AlreadyInProgressException::TYPE_NO_DOCUMENTS);
+            throw new PopulationNotStartedException(PopulationNotStartedException::TYPE_NO_DOCUMENTS);
         }
 
         if (!$messagesProcessed) {
-            throw new AlreadyInProgressException(AlreadyInProgressException::TYPE_PROCESSING_MESSAGES);
+            throw new PopulationNotStartedException(PopulationNotStartedException::TYPE_PROCESSING_MESSAGES);
+        }
+
+        if (!$ignoreQueueLock && !$queueLock->acquire()) {
+            throw new PopulationNotStartedException(PopulationNotStartedException::TYPE_PROCESSING);
         }
 
         if (!$ignoreCooldown && !$cooldownLock->acquire()) {
-            throw new AlreadyInProgressException(AlreadyInProgressException::TYPE_COOLDOWN);
-        }
-
-        if (!$ignoreLock && !$processingLock->acquire()) {
-            throw new AlreadyInProgressException(AlreadyInProgressException::TYPE_PROCESSING);
+            throw new PopulationNotStartedException(PopulationNotStartedException::TYPE_COOLDOWN);
         }
 
         $cooldownLock->release();
-    }
 
-    private function log(string $indexName, string $message, int $verbosityLevel = ConsoleOutputInterface::VERBOSITY_NORMAL): void
-    {
-        $this->consoleOutput->writeln(sprintf('<info>%s</info>-> %s', $indexName, $message), $verbosityLevel);
+        if (!$ignoreLock && !$processingLock->acquire()) {
+            throw new PopulationNotStartedException(PopulationNotStartedException::TYPE_PROCESSING);
+        }
     }
 }

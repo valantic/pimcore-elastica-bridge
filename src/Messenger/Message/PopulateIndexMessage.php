@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Messenger\Message;
 
-class PopulateIndexMessage
+use Valantic\ElasticaBridgeBundle\Messenger\Middleware\SyncTransportDetectionInterface;
+
+class PopulateIndexMessage implements SyncTransportDetectionInterface
 {
-    public function __construct(public readonly CreateDocument|SwitchIndex|ReleaseIndexLock $message) {}
+    public function __construct(public readonly CreateDocumentMessage|SwitchIndex|ReleaseIndexLock $message) {}
 }

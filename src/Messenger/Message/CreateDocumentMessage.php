@@ -5,26 +5,23 @@ declare(strict_types=1);
 namespace Valantic\ElasticaBridgeBundle\Messenger\Message;
 
 use Valantic\ElasticaBridgeBundle\Messenger\Middleware\RetryCountSupportInterface;
+use Valantic\ElasticaBridgeBundle\Messenger\Middleware\SyncTransportDetectionInterface;
 use Valantic\ElasticaBridgeBundle\Model\Event\CallbackEvent;
 
-class CreateDocument implements RetryCountSupportInterface
+class CreateDocumentMessage extends AbstractPopulateMessage implements RetryCountSupportInterface, SyncTransportDetectionInterface
 {
     /**
-     * @param int|null $objectId
-     * @param class-string|null $objectType
+     * @param int $objectId
+     * @param class-string $objectType
      * @param string $document
      * @param string $esIndex
-     * @param bool $lastItem
-     * @param int $cooldown
-     * @param CallbackEvent $callback
+     * @param CallbackEvent|null $callback
      */
     public function __construct(
-        public readonly ?int $objectId,
-        public readonly ?string $objectType,
+        public readonly int $objectId,
+        public readonly string $objectType,
         public readonly string $document,
         public readonly string $esIndex,
-        public readonly ?bool $lastItem = null,
-        public readonly ?int $cooldown = null,
         public readonly ?CallbackEvent $callback = null,
     ) {}
 }

@@ -1,4 +1,4 @@
-pimcore_admin_valanticelasticabridge:
+pimcore_admin_valantic_elastica_bridge:
   resource: "../../../Controller"
   type: annotation
   prefix: /

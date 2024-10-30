@@ -6,26 +6,41 @@ namespace Valantic\ElasticaBridgeBundle\Messenger\Handler;
 
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Messenger\MessageBusInterface;
-use Valantic\ElasticaBridgeBundle\Messenger\Message\CreateDocument;
+use Valantic\ElasticaBridgeBundle\Exception\Index\PopulationNotStartedException;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\PopulateIndexMessage;
+use Valantic\ElasticaBridgeBundle\Messenger\Message\TriggerSingleIndexMessage;
 use Valantic\ElasticaBridgeBundle\Service\LockService;
+use Valantic\ElasticaBridgeBundle\Service\PopulateIndexService;
 
-#[AsMessageHandler]
+#[AsMessageHandler(fromTransport: 'elastica_bridge_populate')]
 class PopulateHandler
 {
     public function __construct(
         private readonly MessageBusInterface $messengerBusElasticaBridge,
+        private readonly PopulateIndexService $populateIndexService,
         private readonly LockService $lockService,
     ) {}
 
-    public function __invoke(PopulateIndexMessage $message): void
+    public function __invoke(PopulateIndexMessage|TriggerSingleIndexMessage $message, bool $synchronous): void
     {
-        $deferredMessage = $message->message;
+        if ($message instanceof PopulateIndexMessage) {
+            $deferredMessage = $message->message;
+            $this->messengerBusElasticaBridge->dispatch($deferredMessage);
 
-        if ($deferredMessage instanceof CreateDocument) {
-            $this->lockService->messageDispatched($deferredMessage->esIndex);
+            return;
         }
 
-        $this->messengerBusElasticaBridge->dispatch($deferredMessage);
+        try {
+
+            if ($synchronous) {
+                throw new PopulationNotStartedException(PopulationNotStartedException::TYPE_NOT_AVAILABLE_IN_SYNC);
+            }
+
+            foreach ($this->populateIndexService->triggerSingleIndex($message->indexName, $message->populate, $message->ignoreLock, $message->ignoreCooldown) as $generator) {
+                $this->messengerBusElasticaBridge->dispatch($generator->message);
+            }
+        } finally {
+            $this->lockService->createLockFromKey($message->key)->release();
+        }
     }
 }

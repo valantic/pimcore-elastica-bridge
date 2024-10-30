@@ -29,7 +29,7 @@ class PopulateIndexProvider implements ScheduleProviderInterface
             ->with(
                 RecurringMessage::trigger(
                     new PeriodicalTrigger($this->configurationRepository->getInterval()),
-                    new CallbackMessageProvider($this->populateIndexService->triggerAllIndices(...))
+                    new CallbackMessageProvider($this->populateIndexService->processScheduler(...))
                 ),
             );
     }
