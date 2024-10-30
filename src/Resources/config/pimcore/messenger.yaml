@@ -1,6 +1,5 @@
 framework:
   messenger:
-#    failure_bridge: elastica_bridge_failed
     enabled: true
     buses:
       messenger.bus.elasticaBridge:
@@ -12,10 +11,8 @@ framework:
       elastica_bridge_sync: 'sync://'
       scheduler: 'doctrine://default?queue_name=scheduler'
       elastica_bridge_populate:
-#        dsn: 'doctrine://default?queue_name=elastica_bridge_populate'
         dsn: 'sync://'
         failure_transport: 'elastica_bridge_failed'
-#      elastica_bridge_populate: 'sync://'
       elastica_bridge_failed: 'doctrine://default?queue_name=elastica_bridge_failed'
     routing:
       Valantic\ElasticaBridgeBundle\Messenger\Message\RefreshElement: elastica_bridge_index
