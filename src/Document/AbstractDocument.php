@@ -26,7 +26,7 @@ abstract class AbstractDocument implements DocumentInterface
         return false;
     }
 
-    public function getListingInstance(IndexInterface $index): Listing|PimcoreDocument\Listing
+    public function getListingInstance(IndexInterface $index): Listing|PimcoreDocument\Listing|Asset\Listing
     {
         /** @var class-string<Listing> $listingClass */
         $listingClass = $this->getListingClass();

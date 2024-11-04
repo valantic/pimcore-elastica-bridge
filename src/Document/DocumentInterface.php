@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Document;
 
+use Pimcore\Model\Asset;
 use Pimcore\Model\DataObject\Listing;
 use Pimcore\Model\Document as PimcoreDocument;
 use Pimcore\Model\Element\AbstractElement;
@@ -93,7 +94,7 @@ interface DocumentInterface
     /**
      * @see ListingTrait
      */
-    public function getListingInstance(IndexInterface $index): Listing|PimcoreDocument\Listing;
+    public function getListingInstance(IndexInterface $index): Listing|PimcoreDocument\Listing|Asset\Listing;
 
     /**
      * Whether Elasticsearch documents should be created for object variants.

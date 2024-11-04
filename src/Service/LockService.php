@@ -27,13 +27,13 @@ class LockService
         private readonly ConsoleOutputInterface $consoleOutput,
     ) {}
 
-    public function getIndexingLock(IndexInterface $indexConfig): LockInterface
+    public function getIndexingLock(IndexInterface $indexConfig, bool $autorelease = false): LockInterface
     {
         return $this->lockFactory
             ->createLockFromKey(
                 $this->getIndexingKey($indexConfig),
                 ttl: $this->configurationRepository->getIndexingLockTimeout(),
-                autoRelease: false
+                autoRelease: $autorelease
             );
     }
 
