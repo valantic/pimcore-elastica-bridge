@@ -11,6 +11,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Valantic\ElasticaBridgeBundle\Constant\CommandConstants;
+use Valantic\ElasticaBridgeBundle\Exception\Index\PopulationNotStartedException;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\PopulateIndexMessage;
 use Valantic\ElasticaBridgeBundle\Model\Event\ElasticaBridgeEvents;
 use Valantic\ElasticaBridgeBundle\Model\Event\PreExecuteEvent;
@@ -90,10 +91,13 @@ class Index extends BaseCommand
 
             $this->eventDispatcher->dispatch(new PreExecuteEvent($indexConfig, PreExecuteEvent::SOURCE_CLI), ElasticaBridgeEvents::PRE_EXECUTE);
 
-            foreach ($this->populateIndexService->triggerSingleIndex($indexConfig, $populate, $lockRelease, $noCooldown) as $message) {
-                if ($message instanceof PopulateIndexMessage) {
-                    $this->messengerBusElasticaBridge->dispatch($message->message);
+            try {
+                foreach ($this->populateIndexService->triggerSingleIndex($indexConfig, $populate, $lockRelease, $noCooldown) as $message) {
+                    if ($message instanceof PopulateIndexMessage) {
+                        $this->messengerBusElasticaBridge->dispatch($message->message);
+                    }
                 }
+            } catch (PopulationNotStartedException) {
             }
         }
 
