@@ -4,6 +4,12 @@ services:
     autoconfigure: true
     public: false
 
+  Valantic\ElasticaBridgeBundle\Controller\:
+    resource: '../../Controller/*'
+    public: true
+    tags:
+      - { name: controller.service_arguments}
+
   Valantic\ElasticaBridgeBundle\Command\:
     resource: '../../Command/*'
     tags: [ 'console.command' ]
@@ -33,3 +39,13 @@ services:
     resource: '../../Messenger/Handler/*'
     tags:
       - { name: messenger.message_handler }
+
+  Valantic\ElasticaBridgeBundle\Messenger\Middleware\:
+    resource: '../../Messenger/Middleware/*'
+    tags:
+      - { name: messenger.middleware }
+  Valantic\ElasticaBridgeBundle\Factory\ConsoleOutputFactory: ~
+  Valantic\ElasticaBridgeBundle\Messenger\Scheduler\:
+    resource: '../../Messenger/Scheduler/*'
+  Symfony\Component\Console\Output\ConsoleOutputInterface:
+    factory: ['@Valantic\ElasticaBridgeBundle\Factory\ConsoleOutputFactory', 'create']

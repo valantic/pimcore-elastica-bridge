@@ -4,36 +4,33 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Command;
 
-use Elastica\Index as ElasticaIndex;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\HttpKernel\KernelInterface;
-use Symfony\Component\Process\Process;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Valantic\ElasticaBridgeBundle\Constant\CommandConstants;
-use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
-use Valantic\ElasticaBridgeBundle\Enum\IndexBlueGreenSuffix;
-use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
-use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
+use Valantic\ElasticaBridgeBundle\Exception\Index\PopulationNotStartedException;
+use Valantic\ElasticaBridgeBundle\Messenger\Message\PopulateIndexMessage;
+use Valantic\ElasticaBridgeBundle\Model\Event\ElasticaBridgeEvents;
+use Valantic\ElasticaBridgeBundle\Model\Event\PreExecuteEvent;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
-use Valantic\ElasticaBridgeBundle\Service\LockService;
-use Valantic\ElasticaBridgeBundle\Util\ElasticsearchResponse;
+use Valantic\ElasticaBridgeBundle\Service\PopulateIndexService;
 
 class Index extends BaseCommand
 {
     private const ARGUMENT_INDEX = 'index';
     private const OPTION_DELETE = 'delete';
     private const OPTION_POPULATE = 'populate';
-    private const OPTION_LOCK_RELEASE = 'lock-release';
-    public static bool $isPopulating = false;
+    private const OPTION_LOCK_RELEASE = 'ignore-locks';
+    private const OPTION_COOLDOWN = 'cooldown';
 
     public function __construct(
         private readonly IndexRepository $indexRepository,
-        private readonly ElasticsearchClient $esClient,
-        private readonly KernelInterface $kernel,
-        private readonly LockService $lockService,
+        private readonly MessageBusInterface $messengerBusElasticaBridge,
+        private readonly PopulateIndexService $populateIndexService,
+        private readonly EventDispatcherInterface $eventDispatcher,
     ) {
         parent::__construct();
     }
@@ -64,12 +61,22 @@ class Index extends BaseCommand
                 'l',
                 InputOption::VALUE_NONE,
                 'Force all indexing locks to be released'
+            )
+            ->addOption(
+                self::OPTION_COOLDOWN,
+                null,
+                InputOption::VALUE_NONE,
+                'enable cooldown after index population',
             );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $skippedIndices = [];
+        $this->populateIndexService->setVerbosity($this->output->getVerbosity())->setShouldDelete($this->input->getOption(self::OPTION_DELETE) === true);
+        $populate = $this->input->getOption(self::OPTION_POPULATE) === true;
+        $lockRelease = $this->input->getOption(self::OPTION_LOCK_RELEASE) === true;
+        $noCooldown = $this->input->getOption(self::OPTION_COOLDOWN) !== true;
 
         foreach ($this->indexRepository->flattenedAll() as $indexConfig) {
             if (
@@ -82,33 +89,15 @@ class Index extends BaseCommand
                 continue;
             }
 
-            $lock = $this->lockService->getIndexingLock($indexConfig);
-
-            if (!$lock->acquire()) {
-                if ($this->input->getOption(self::OPTION_LOCK_RELEASE) === true) {
-                    $lock->release();
-                    $this->output->writeln(sprintf(
-                        "\n<comment>Force-released lock for %s.</comment>\n",
-                        $indexConfig->getName()
-                    ));
-                }
-
-                if ($this->input->getOption(self::OPTION_LOCK_RELEASE) === false) {
-                    $this->output->writeln(
-                        sprintf(
-                            "\n<comment>Lock for %s is held by another process.</comment>\n",
-                            $indexConfig->getName(),
-                        )
-                    );
-
-                    continue;
-                }
-            }
+            $this->eventDispatcher->dispatch(new PreExecuteEvent($indexConfig, PreExecuteEvent::SOURCE_CLI), ElasticaBridgeEvents::PRE_EXECUTE);
 
             try {
-                $this->processIndex($indexConfig);
-            } finally {
-                $lock->release();
+                foreach ($this->populateIndexService->triggerSingleIndex($indexConfig, $populate, $lockRelease, $noCooldown) as $message) {
+                    if ($message instanceof PopulateIndexMessage) {
+                        $this->messengerBusElasticaBridge->dispatch($message->message);
+                    }
+                }
+            } catch (PopulationNotStartedException) {
             }
         }
 
@@ -120,141 +109,5 @@ class Index extends BaseCommand
         }
 
         return self::SUCCESS;
-    }
-
-    private function processIndex(IndexInterface $indexConfig): void
-    {
-        $this->output->writeln(sprintf('<info>Index: %s</info>', $indexConfig->getName()));
-
-        $index = $this->esClient->getIndex($indexConfig->getName());
-        $currentIndex = $index;
-        $this->ensureCorrectIndexSetup($indexConfig);
-
-        if ($indexConfig->usesBlueGreenIndices()) {
-            $currentIndex = $indexConfig->getBlueGreenInactiveElasticaIndex();
-        }
-
-        if ($this->input->getOption(self::OPTION_POPULATE) === true) {
-            if ($indexConfig->usesBlueGreenIndices()) {
-                $this->output->writeln('<comment>-> Re-created inactive blue/green index</comment>');
-                $currentIndex->delete();
-                $currentIndex->create($indexConfig->getCreateArguments());
-            }
-
-            $this->populateIndex($indexConfig, $currentIndex);
-
-            $currentIndex->refresh();
-            $indexCount = $currentIndex->count();
-            $this->output->writeln(sprintf('<comment>-> %d documents</comment>', $indexCount));
-
-            if ($indexConfig->usesBlueGreenIndices()) {
-                $oldIndex = $indexConfig->getBlueGreenActiveElasticaIndex();
-                $newIndex = $indexConfig->getBlueGreenInactiveElasticaIndex();
-
-                $newIndex->flush();
-                $oldIndex->removeAlias($indexConfig->getName());
-                $newIndex->addAlias($indexConfig->getName());
-                $oldIndex->flush();
-
-                $this->output->writeln(
-                    sprintf('<comment>-> %s is now active</comment>', $newIndex->getName())
-                );
-            }
-        }
-
-        $this->output->writeln('');
-    }
-
-    private function populateIndex(IndexInterface $indexConfig, ElasticaIndex $esIndex): void
-    {
-        self::$isPopulating = true;
-        $process = new Process(
-            [
-                'bin/console', CommandConstants::COMMAND_POPULATE_INDEX,
-                '--' . CommandConstants::OPTION_CONFIG, $indexConfig->getName(),
-                '--' . CommandConstants::OPTION_INDEX, $esIndex->getName(),
-                ...array_filter([$this->output->isVerbose() ? '-v' : null,
-                    $this->output->isVeryVerbose() ? '-vv' : null,
-                    $this->output->isDebug() ? '-vvv' : null,
-                ]),
-            ],
-            $this->kernel->getProjectDir(),
-            timeout: null
-        );
-
-        $process->run(function($type, $buffer): void {
-            if ($type === Process::ERR && $this->output instanceof ConsoleOutput) {
-                $this->output->getErrorOutput()->write($buffer);
-            } else {
-                $this->output->write($buffer);
-            }
-        });
-        self::$isPopulating = false;
-    }
-
-    private function ensureCorrectIndexSetup(IndexInterface $indexConfig): void
-    {
-        if ($indexConfig->usesBlueGreenIndices()) {
-            $this->ensureCorrectBlueGreenIndexSetup($indexConfig);
-
-            return;
-        }
-
-        $this->ensureCorrectSimpleIndexSetup($indexConfig);
-    }
-
-    private function ensureCorrectSimpleIndexSetup(IndexInterface $indexConfig): void
-    {
-        $index = $indexConfig->getElasticaIndex();
-
-        if ($this->input->getOption(self::OPTION_DELETE) === true && $index->exists()) {
-            $index->delete();
-            $this->output->writeln('<comment>-> Deleted index</comment>');
-        }
-
-        if (!$index->exists()) {
-            $index->create($indexConfig->getCreateArguments());
-            $this->output->writeln('<comment>-> Created index</comment>');
-        }
-    }
-
-    private function ensureCorrectBlueGreenIndexSetup(IndexInterface $indexConfig): void
-    {
-        $shouldDelete = $this->input->getOption(self::OPTION_DELETE) === true;
-
-        $nonAliasIndex = $this->esClient->getIndex($indexConfig->getName());
-
-        // In case an index with the same name as the blue/green alias exists, delete it
-        if (
-            $nonAliasIndex->exists()
-            && !ElasticsearchResponse::getResponse($this->esClient->indices()->existsAlias(['name' => $indexConfig->getName()]))->asBool()
-        ) {
-            $nonAliasIndex->delete();
-            $this->output->writeln('<comment>-> Deleted non-blue/green index to prepare for blue/green usage</comment>');
-        }
-
-        foreach (IndexBlueGreenSuffix::cases() as $suffix) {
-            $name = $indexConfig->getName() . $suffix->value;
-            $aliasIndex = $this->esClient->getIndex($name);
-
-            if ($shouldDelete && $aliasIndex->exists()) {
-                $aliasIndex->delete();
-                $this->output->writeln('<comment>-> Deleted blue/green index with alias</comment>');
-            }
-
-            if (!$aliasIndex->exists()) {
-                $aliasIndex->create($indexConfig->getCreateArguments());
-                $this->output->writeln('<comment>-> Created blue/green index with alias</comment>');
-            }
-        }
-
-        try {
-            $indexConfig->getBlueGreenActiveSuffix();
-        } catch (BlueGreenIndicesIncorrectlySetupException) {
-            $this->esClient->getIndex($indexConfig->getName() . IndexBlueGreenSuffix::BLUE->value)
-                ->addAlias($indexConfig->getName());
-        }
-
-        $this->output->writeln('<comment>-> Ensured indices are correctly set up with alias</comment>');
     }
 }

@@ -12,7 +12,7 @@ The only job of the bundle is to store Pimcore elements (assets, documents, data
 
 1. `composer require valantic/pimcore-elastica-bridge`
 1. Edit `config/bundles.php` and add `\Valantic\ElasticaBridgeBundle\ValanticElasticaBridgeBundle::class => ['all' => true],`
-1. Configure the connection to your Elasticsearch cluster as seen in [`example/app/config/config.yaml`](example/app/config/config.yaml)
+1. Configure the connection to your Elasticsearch cluster as seen in [`example/app/config/config.yaml`](/docs/example/config/config.yaml)
 1. Don't forget to register your newly created services (implementing `IndexInterface` etc.) in your `services.yaml`
    ```yml
    App\Elasticsearch\:
@@ -22,7 +22,7 @@ The only job of the bundle is to store Pimcore elements (assets, documents, data
 
 ## Usage
 
-Please see the [`docs/example/`](docs/example/) folder for a complete example. The following steps link to the corresponding section in the example and explain in a bit more detail what they are doing.
+Please see the [`docs/example/`](/docs/example) folder for a complete example. The following steps link to the corresponding section in the example and explain in a bit more detail what they are doing.
 
 ### Define an index
 
@@ -67,6 +67,10 @@ valantic_elastica_bridge:
         # If true, when a document fails to be indexed, it will be skipped and indexing continue with the next document. If false, indexing that index will be aborted.
         should_skip_failing_documents: false
 ```
+
+### Async Configuration
+This bundle supports utilizing the message queue for indexing. To enable this feature, you can find the necessary configuration in the [async](async.md) documentation.
+
 ## Events
 
 This project uses Symfony's event dispatcher. Here are the events that you can listen to:
