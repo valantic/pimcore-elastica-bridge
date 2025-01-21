@@ -1,8 +1,21 @@
 framework:
   messenger:
     enabled: true
+    buses:
+      messenger.bus.elasticaBridge:
+        middleware:
+          - 'Valantic\ElasticaBridgeBundle\Messenger\Middleware\RetryCountMiddleware'
+          - 'Valantic\ElasticaBridgeBundle\Messenger\Middleware\SyncTransportMiddleware'
     transports:
       elastica_bridge_index: 'doctrine://default?queue_name=elastica_bridge_index'
+      elastica_bridge_sync: 'sync://'
+      scheduler: 'doctrine://default?queue_name=scheduler'
+      elastica_bridge_populate:
+        dsn: 'sync://'
+        failure_transport: 'elastica_bridge_failed'
+      elastica_bridge_failed: 'doctrine://default?queue_name=elastica_bridge_failed'
     routing:
       Valantic\ElasticaBridgeBundle\Messenger\Message\RefreshElement: elastica_bridge_index
       Valantic\ElasticaBridgeBundle\Messenger\Message\RefreshElementInIndex: elastica_bridge_index
+      Valantic\ElasticaBridgeBundle\Messenger\Message\AbstractPopulateMessage: elastica_bridge_populate
+      Valantic\ElasticaBridgeBundle\Messenger\Message\PopulateIndexMessage: scheduler
