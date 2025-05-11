@@ -4,24 +4,22 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Command;
 
-use Elastic\Elasticsearch\Exception\ElasticsearchException;
 use Symfony\Component\Console\Helper\QuestionHelper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
 use Valantic\ElasticaBridgeBundle\Constant\CommandConstants;
-use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
-use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
+use Valantic\ElasticaBridgeBundle\Service\CleanupService;
 
 class Cleanup extends BaseCommand
 {
     use NonBundleIndexTrait;
     private const OPTION_ALL_IN_CLUSTER = 'all';
+    private const OPTION_DRY_RUN = 'dry-run';
 
     public function __construct(
-        private readonly ElasticsearchClient $esClient,
-        private readonly IndexRepository $indexRepository,
+        private readonly CleanupService $cleanupService,
     ) {
         parent::__construct();
     }
@@ -30,6 +28,7 @@ class Cleanup extends BaseCommand
     {
         $this->setName(CommandConstants::COMMAND_CLEANUP)
             ->setDescription('Deletes Elasticsearch indices and aliases known to (i.e. created by) the bundle')
+            ->addOption(self::OPTION_DRY_RUN, 'd', InputOption::VALUE_NONE, 'Only simulate the cleanup')
             ->addOption(
                 self::OPTION_ALL_IN_CLUSTER,
                 'a',
@@ -45,63 +44,26 @@ class Cleanup extends BaseCommand
                 ? 'Deleting ALL indices in the cluster'
                 : 'Only deleting KNOWN indices'
         );
+        $verb = $this->input->getOption(self::OPTION_DRY_RUN) === true
+            ? 'simulate'
+            : 'proceed';
         /** @var QuestionHelper $helper */
         $helper = $this->getHelper('question');
-        $question = new ConfirmationQuestion('Are you sure you want to proceed deleting indices and aliases? (y/N)', false);
+        $question = new ConfirmationQuestion(sprintf('Are you sure you want to %s deleting indices and aliases? (y/N)', $verb), false);
 
         if ($helper->ask($input, $output, $question) === false) {
             return self::FAILURE;
         }
 
-        $indices = $this->getIndices();
+        $messages = $this->cleanupService->cleanUp(
+            $this->input->getOption(self::OPTION_ALL_IN_CLUSTER) === true,
+            $this->input->getOption(self::OPTION_DRY_RUN) === true
+        );
 
-        foreach ($indices as $index) {
-            if (!$this->shouldProcessNonBundleIndex($index)) {
-                continue;
-            }
-
-            $client = $this->esClient->getIndex($index);
-
-            if ($client->getSettings()->getBool('hidden')) {
-                continue;
-            }
-
-            foreach ($client->getAliases() as $alias) {
-                $client->removeAlias($alias);
-            }
-
-            try {
-                $client->delete();
-            } catch (ElasticsearchException $e) {
-                $this->output->writeln(sprintf('<error>%s</error>', $e->getMessage()));
-            }
+        foreach ($messages as $message) {
+            $this->output->writeln($message);
         }
 
         return self::SUCCESS;
-    }
-
-    /**
-     * @return string[]
-     */
-    private function getIndices(): array
-    {
-        if ($this->input->getOption(self::OPTION_ALL_IN_CLUSTER) === true) {
-            return $this->esClient->getCluster()->getIndexNames();
-        }
-
-        $indices = [];
-
-        foreach ($this->indexRepository->flattenedAll() as $indexConfig) {
-            if ($indexConfig->usesBlueGreenIndices()) {
-                $indices[] = $indexConfig->getBlueGreenActiveElasticaIndex()->getName();
-                $indices[] = $indexConfig->getBlueGreenInactiveElasticaIndex()->getName();
-
-                continue;
-            }
-
-            $indices[] = $indexConfig->getName();
-        }
-
-        return $indices;
     }
 }
