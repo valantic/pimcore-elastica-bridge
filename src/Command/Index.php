@@ -72,6 +72,7 @@ class Index extends BaseCommand
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        $failedIndices = [];
         $skippedIndices = [];
         $this->populateIndexService->setVerbosity($this->output->getVerbosity())->setShouldDelete($this->input->getOption(self::OPTION_DELETE) === true);
         $populate = $this->input->getOption(self::OPTION_POPULATE) === true;
@@ -89,7 +90,13 @@ class Index extends BaseCommand
                 continue;
             }
 
-            $this->eventDispatcher->dispatch(new PreExecuteEvent($indexConfig, PreExecuteEvent::SOURCE_CLI), ElasticaBridgeEvents::PRE_EXECUTE);
+            try {
+                $this->eventDispatcher->dispatch(new PreExecuteEvent($indexConfig, PreExecuteEvent::SOURCE_CLI), ElasticaBridgeEvents::PRE_EXECUTE);
+            } catch (PopulationNotStartedException $e) {
+                $failedIndices[$e->getType()][] = $indexConfig->getName();
+
+                continue;
+            }
 
             try {
                 foreach ($this->populateIndexService->triggerSingleIndex($indexConfig, $populate, $lockRelease, $noCooldown) as $message) {
@@ -106,6 +113,15 @@ class Index extends BaseCommand
             $this->output->writeln(
                 sprintf('<info>Skipped the following indices: %s</info>', implode(', ', $skippedIndices))
             );
+        }
+
+        if (count($failedIndices) > 0) {
+            foreach ($failedIndices as $type => $indices) {
+                $this->output->writeln('');
+                $this->output->writeln(
+                    sprintf('<fg=red>Failed the following indices (%s): %s</fg>', $type, implode(', ', $indices))
+                );
+            }
         }
 
         return self::SUCCESS;

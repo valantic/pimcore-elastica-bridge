@@ -34,7 +34,7 @@ class CallbackEvent extends Event
 
     public function shouldCallEvent(): bool
     {
-        return isset($this->eventName, $this->eventClass);
+        return $this->eventName !== null && $this->eventClass !== null;
     }
 
     public function getEventName(): ?string

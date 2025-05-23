@@ -19,13 +19,21 @@ class PopulationNotStartedException extends BaseException
     /**
      * @param self::TYPE_* $type
      */
-    public function __construct(string $type, private readonly bool $silent = false)
+    public function __construct(private readonly string $type, private readonly bool $silent = false)
     {
-        parent::__construct(sprintf('Process not started (%s)', $type));
+        parent::__construct(sprintf('Process not started (%s)', $this->type));
     }
 
     public function isSilentModeEnabled(): bool
     {
         return $this->silent;
+    }
+
+    /**
+     * @return self::TYPE_*
+     */
+    public function getType(): string
+    {
+        return $this->type;
     }
 }
