@@ -55,7 +55,7 @@ class PopulateIndexService
     ) {}
 
     /**
-     * @return \Generator<PopulateIndexMessage>
+     * @return \Generator<PopulateIndexMessage|Envelope>
      */
     public function processScheduler(): \Generator
     {
@@ -73,7 +73,9 @@ class PopulateIndexService
                     ]));
                 }
             } catch (PopulationNotStartedException $e) {
-                $this->log($indexConfig->getName(), '<fg=red>' . $e->getMessage() . '</>');
+                if (!$e->isSilentModeEnabled()) {
+                    $this->log($indexConfig->getName(), '<fg=red>' . $e->getMessage() . '</>');
+                }
 
                 continue;
             }
@@ -121,6 +123,10 @@ class PopulateIndexService
 
             yield from $this->generateMessagesForIndex($indexConfig, $ignoreCooldown);
         } catch (PopulationNotStartedException $e) {
+            if ($e->isSilentModeEnabled()) {
+                throw $e;
+            }
+
             if (!is_string($indexConfig)) {
                 $indexConfig = $indexConfig->getName();
             }

@@ -15,11 +15,17 @@ class PopulationNotStartedException extends BaseException
     public const TYPE_PROCESSING = 'processing lock active';
     public const TYPE_NOT_AVAILABLE_IN_SYNC = 'not available in sync mode';
     public const TYPE_DISABLED = 'disabled';
+
     /**
      * @param self::TYPE_* $type
      */
-    public function __construct(string $type)
+    public function __construct(string $type, private readonly bool $silent = false)
     {
         parent::__construct(sprintf('Process not started (%s)', $type));
+    }
+
+    public function isSilentModeEnabled(): bool
+    {
+        return $this->silent;
     }
 }

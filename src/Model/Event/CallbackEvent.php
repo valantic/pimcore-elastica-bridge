@@ -8,8 +8,8 @@ use Symfony\Contracts\EventDispatcher\Event;
 
 class CallbackEvent extends Event
 {
-    private ?string $eventName;
-    private ?string $eventClass;
+    private ?string $eventName = null;
+    private ?string $eventClass = null;
     /**
      * @var array<int|string|object>
      */
