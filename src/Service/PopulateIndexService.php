@@ -12,7 +12,9 @@ use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\MessageBusInterface;
+use Symfony\Component\Messenger\Stamp\HandlerArgumentsStamp;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Enum\IndexBlueGreenSuffix;
 use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
@@ -65,7 +67,11 @@ class PopulateIndexService
 
                 $this->setupIndex($indexConfig);
 
-                yield from $this->generateMessagesForIndex($indexConfig);
+                foreach ($this->generateMessagesForIndex($indexConfig) as $message) {
+                    yield (new Envelope($message))->with(new HandlerArgumentsStamp([
+                        'synchronous' => false,
+                    ]));
+                }
             } catch (PopulationNotStartedException $e) {
                 $this->log($indexConfig->getName(), '<fg=red>' . $e->getMessage() . '</>');
 
@@ -279,6 +285,8 @@ class PopulateIndexService
 
         if ($messageGenerated) {
             yield new PopulateIndexMessage(new SwitchIndex($indexConfig->getName(), !$ignoreCooldown));
+        } elseif (!$ignoreCooldown) {
+            $this->lockService->initiateCooldown($indexConfig->getName());
         }
 
         yield new PopulateIndexMessage(new ReleaseIndexLock($indexConfig->getName(), $this->lockService->getIndexingKey($indexConfig)));
@@ -406,16 +414,16 @@ class PopulateIndexService
             throw new PopulationNotStartedException(PopulationNotStartedException::TYPE_NO_DOCUMENTS);
         }
 
-        if (!$messagesProcessed) {
-            throw new PopulationNotStartedException(PopulationNotStartedException::TYPE_PROCESSING_MESSAGES);
-        }
-
         if (!$ignoreQueueLock && !$queueLock->acquire()) {
             throw new PopulationNotStartedException(PopulationNotStartedException::TYPE_PROCESSING);
         }
 
         if (!$ignoreCooldown && !$cooldownLock->acquire()) {
             throw new PopulationNotStartedException(PopulationNotStartedException::TYPE_COOLDOWN);
+        }
+
+        if (!$messagesProcessed) {
+            throw new PopulationNotStartedException(PopulationNotStartedException::TYPE_PROCESSING_MESSAGES);
         }
 
         $cooldownLock->release();
