@@ -100,7 +100,18 @@ class CreateDocumentHandler
                 throw $throwable;
             }
         } finally {
-            $this->eventDispatcher->dispatch(new PostDocumentCreateEvent($index, $message->objectType, $message->objectId, $dataObject, success: $messageDecreased, willRetry: true), ElasticaBridgeEvents::POST_DOCUMENT_CREATE);
+            $this->eventDispatcher->dispatch(
+                new PostDocumentCreateEvent(
+                    $index,
+                    $message->objectType,
+                    $message->objectId,
+                    $dataObject,
+                    success: $messageDecreased,
+                    willRetry: true,
+                    throwable: $throwable ?? null,
+                ),
+                ElasticaBridgeEvents::POST_DOCUMENT_CREATE
+            );
 
             if (!$messageDecreased) {
                 $this->consoleOutput->writeln(sprintf('Message %s not processed. (ID: %s)', $message->esIndex, $message->objectId), ConsoleOutputInterface::VERBOSITY_VERBOSE);

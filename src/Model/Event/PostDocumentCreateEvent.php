@@ -21,6 +21,7 @@ class PostDocumentCreateEvent extends AbstractPopulateEvent
         public readonly bool $skipped = false,
         /** this is true if a retry occurs */
         public readonly bool $willRetry = false,
+        public readonly ?\Throwable $throwable = null,
     ) {
         parent::__construct($index);
     }
