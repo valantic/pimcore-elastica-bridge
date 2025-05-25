@@ -28,6 +28,7 @@ use Valantic\ElasticaBridgeBundle\Messenger\Message\SwitchIndex;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\TriggerSingleIndexMessage;
 use Valantic\ElasticaBridgeBundle\Model\Event\ElasticaBridgeEvents;
 use Valantic\ElasticaBridgeBundle\Model\Event\PostDocumentCreateEvent;
+use Valantic\ElasticaBridgeBundle\Model\Event\PreAddDocumentToQueueEvent;
 use Valantic\ElasticaBridgeBundle\Model\Event\PreExecuteEvent;
 use Valantic\ElasticaBridgeBundle\Model\Event\PreProcessMessagesEvent;
 use Valantic\ElasticaBridgeBundle\Model\Event\PreSwitchIndexEvent;
@@ -266,6 +267,8 @@ class PopulateIndexService
                     $count++;
 
                     if (count($batch) >= $yieldSize) {
+                        $this->eventDispatcher->dispatch(new PreAddDocumentToQueueEvent($indexConfig, count($batch)), ElasticaBridgeEvents::PRE_ADD_DOCUMENT_TO_QUEUE);
+
                         yield from $batch;
                         $batch = []; // Reset the batch
                     }
@@ -285,6 +288,8 @@ class PopulateIndexService
         }
 
         if (count($batch) > 0) {
+            $this->eventDispatcher->dispatch(new PreAddDocumentToQueueEvent($indexConfig, count($batch)), ElasticaBridgeEvents::PRE_ADD_DOCUMENT_TO_QUEUE);
+
             yield from $batch;
             $this->consoleOutput->writeln('Dispatched ' . count($batch) . 'remaining messages', ConsoleOutputInterface::VERBOSITY_VERBOSE);
         }

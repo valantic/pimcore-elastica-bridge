@@ -13,6 +13,7 @@ interface ElasticaBridgeEvents
     public const CALLBACK_EVENT = 'valantic.elastica_bridge.populate.callback_event';
     public const PRE_EXECUTE = 'valantic.elastica_bridge.pre_execute';
     public const PRE_PROCESS_MESSAGES_EVENT = 'valantic.elastica_bridge.pre_process_messages_event';
+    public const PRE_ADD_DOCUMENT_TO_QUEUE = 'valantic.elastica_bridge.pre_add_document_to_queue';
     public const PRE_DOCUMENT_CREATE = 'valantic.elastica_bridge.pre_document_create';
     public const POST_DOCUMENT_CREATE = 'valantic.elastica_bridge.post_document_create';
     public const PRE_SWITCH_INDEX = 'valantic.elastica_bridge.pre_switch_index';
