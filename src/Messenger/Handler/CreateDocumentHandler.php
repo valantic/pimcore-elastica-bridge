@@ -68,11 +68,12 @@ class CreateDocumentHandler
 
                 $this->consoleOutput->writeln(
                     sprintf(
-                        'Processing message of %s %s. ~%s left. (PID: %s)',
+                        'Processing message of %s %s. ~%s left. (PID: %s) (%s)',
                         $message->esIndex,
                         $message->objectId,
                         $currentCount,
                         getmypid(),
+                        $this->synchronous ? 'sync' : 'async'
                     ),
                     ConsoleOutputInterface::VERBOSITY_VERBOSE
                 );
