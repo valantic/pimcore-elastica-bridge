@@ -225,6 +225,10 @@ class PopulateIndexService
         $this->eventDispatcher->dispatch(new PreProcessMessagesEvent($indexConfig, $documentCount), ElasticaBridgeEvents::PRE_PROCESS_MESSAGES_EVENT);
         CreateDocumentHandler::$messageCount = $documentCount;
 
+        if ($documentCount === 0) {
+            $allowedDocuments = [];
+        }
+
         foreach ($allowedDocuments as $document) {
             $documentInstance = $this->documentRepository->get($document);
             $this->documentHelper->setTenantIfNeeded($documentInstance, $indexConfig);
@@ -236,6 +240,11 @@ class PopulateIndexService
             $listing = $documentInstance->getListingInstance($indexConfig);
             $totalCount = $listing->getTotalCount();
 
+            if ($totalCount === 0) {
+                $this->consoleOutput->writeln(sprintf('No documents found for %s', $document), ConsoleOutputInterface::VERBOSITY_VERBOSE);
+
+                continue;
+            }
 
             $offset = 0;
             $progressbar->setMaxSteps($totalCount);

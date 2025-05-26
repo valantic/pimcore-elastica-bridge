@@ -33,17 +33,21 @@ abstract class AbstractDocument implements DocumentInterface
 
         $listingInstance = new $listingClass();
 
+        if ($this->getPathCondition() !== null) {
+            $listingInstance->addConditionParam('path LIKE ?', $this->getPathCondition() . '%');
+        }
+
         if ($this->getIndexListingCondition() !== null) {
             $listingInstance->setCondition($this->getIndexListingCondition());
         }
 
         if (in_array($this->getType(), DocumentType::casesPublishedState(), true)) {
-            /** @var PimcoreDocument\Listing|Listing $listingInstance */
+            /* @var PimcoreDocument\Listing|Listing $listingInstance */
             $listingInstance->setUnpublished($this->includeUnpublishedElementsInListing());
         }
 
         if ($this->getType() === DocumentType::DATA_OBJECT) {
-            /** @var Listing $listingInstance */
+            /* @var Listing $listingInstance */
             if ($this->treatObjectVariantsAsDocuments()) {
                 $listingInstance->setObjectTypes([
                     DataObject\AbstractObject::OBJECT_TYPE_OBJECT,
@@ -140,6 +144,11 @@ abstract class AbstractDocument implements DocumentInterface
         } catch (\UnhandledMatchError) {
             throw new UnknownPimcoreElementType($this->getType()->value);
         }
+    }
+
+    protected function getPathCondition(): ?string
+    {
+        return null;
     }
 
     protected function getIndexListingCondition(): ?string

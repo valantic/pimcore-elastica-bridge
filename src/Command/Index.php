@@ -119,7 +119,7 @@ class Index extends BaseCommand
             foreach ($failedIndices as $type => $indices) {
                 $this->output->writeln('');
                 $this->output->writeln(
-                    sprintf('<fg=red>Failed the following indices (%s): %s</fg>', $type, implode(', ', $indices))
+                    sprintf('<fg=red>Failed %s: %s</>', implode(', ', $indices), $type)
                 );
             }
         }
