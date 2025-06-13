@@ -93,13 +93,24 @@ class CreateDocumentHandler
             if (count($esDocuments) > 0) {
                 $esIndex->addDocuments($esDocuments);
             }
+
             $messageDecreased = true;
+
+            return;
         } catch (\Throwable $throwable) {
-            $this->consoleOutput->writeln(sprintf('Error processing message %s: %s', $message->esIndex, $throwable->getMessage()), ConsoleOutputInterface::VERBOSITY_NORMAL);
+            $this->consoleOutput->writeln(sprintf(
+                'Error processing message %s (objectId %s): %s (%s)',
+                $message->esIndex,
+                $message->objectId,
+                $throwable->getMessage(),
+                $throwable::class,
+            ), ConsoleOutputInterface::VERBOSITY_NORMAL);
 
             if (!$this->configurationRepository->shouldSkipFailingDocuments()) {
                 throw $throwable;
             }
+
+            return;
         } finally {
             $this->eventDispatcher->dispatch(
                 new PostDocumentCreateEvent(
@@ -108,7 +119,7 @@ class CreateDocumentHandler
                     $message->objectId,
                     $dataObject,
                     success: $messageDecreased,
-                    willRetry: true,
+                    willRetry: !$this->configurationRepository->shouldSkipFailingDocuments(),
                     throwable: $throwable ?? null,
                 ),
                 ElasticaBridgeEvents::POST_DOCUMENT_CREATE
