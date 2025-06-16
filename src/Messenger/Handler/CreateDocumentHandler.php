@@ -87,6 +87,12 @@ class CreateDocumentHandler
 
 
             $this->documentHelper->setTenantIfNeeded($documentInstance, $index);
+
+            if (!$documentInstance->shouldIndex($dataObject)) {
+                $messageDecreased = true;
+                return;
+            }
+
             $esIndex = $index->getBlueGreenInactiveElasticaIndex();
             $esDocuments = [$this->documentHelper->elementToDocument($documentInstance, $dataObject)];
 

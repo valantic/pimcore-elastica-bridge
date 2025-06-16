@@ -7,6 +7,12 @@ namespace Valantic\ElasticaBridgeBundle\Service;
 use Elastic\Elasticsearch\Exception\ClientResponseException;
 use Elastic\Elasticsearch\Exception\MissingParameterException;
 use Elastic\Elasticsearch\Exception\ServerResponseException;
+use Pimcore\Db;
+use Pimcore\Model\Asset;
+use Pimcore\Model\Asset\Listing as AssetListing;
+use Pimcore\Model\DataObject\Listing as DataObjectListing;
+use Pimcore\Model\Document;
+use Pimcore\Model\Document\Listing as DocumentListing;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\NullOutput;
@@ -27,7 +33,6 @@ use Valantic\ElasticaBridgeBundle\Messenger\Message\ReleaseIndexLock;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\SwitchIndex;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\TriggerSingleIndexMessage;
 use Valantic\ElasticaBridgeBundle\Model\Event\ElasticaBridgeEvents;
-use Valantic\ElasticaBridgeBundle\Model\Event\PostDocumentCreateEvent;
 use Valantic\ElasticaBridgeBundle\Model\Event\PreAddDocumentToQueueEvent;
 use Valantic\ElasticaBridgeBundle\Model\Event\PreExecuteEvent;
 use Valantic\ElasticaBridgeBundle\Model\Event\PreProcessMessagesEvent;
@@ -254,21 +259,15 @@ class PopulateIndexService
             while ($offset < $totalCount) {
                 $listing->setOffset($offset);
                 $listing->setLimit($batchSize);
-
-                foreach ($listing->getData() ?? [] as $dataObject) {
-                    $dataObjectId = $dataObject->getId();
+                $ids = $listing->loadIdList();
+                foreach ($ids ?? [] as $dataObjectId) {
                     $progressbar->advance();
 
-                    if (!$documentInstance->shouldIndex($dataObject)) {
-                        $this->eventDispatcher->dispatch(new PostDocumentCreateEvent($indexConfig, $dataObject->getType(), $dataObjectId, $dataObject, skipped: true), ElasticaBridgeEvents::POST_DOCUMENT_CREATE);
-                        CreateDocumentHandler::$messageCount--;
-
-                        continue;
-                    }
+                    $elementType = $this->getElementType($listing, $dataObjectId);
 
                     $batch[] = new PopulateIndexMessage(new CreateDocumentMessage(
                         $dataObjectId,
-                        $dataObject::class,
+                        $elementType,
                         $document,
                         $indexConfig->getName(),
                     ));
@@ -451,5 +450,25 @@ class PopulateIndexService
         if (!$ignoreLock && !$processingLock->acquire()) {
             throw new PopulationNotStartedException(PopulationNotStartedException::TYPE_PROCESSING);
         }
+    }
+
+    private function getElementType(AssetListing|DataObjectListing|DocumentListing $listing, mixed $dataObjectId)
+    {
+        if ($listing instanceof AssetListing) {
+            return Asset::getById($dataObjectId)::class;
+        }
+
+        if ($listing instanceof DocumentListing) {
+            return Document::getById($dataObjectId)::class;
+        }
+        $tableName = $listing->getDao()->getTableName();
+        $query = sprintf('SELECT %s FROM %s WHERE id = ?', 'className', $tableName);
+        $result = Db::getConnection()->fetchOne($query, [$dataObjectId]);
+
+        if ($result === false) {
+            throw new \RuntimeException(sprintf('DataObject with ID %s not found in table %s', $dataObjectId, $tableName));
+        }
+
+        return '\\Pimcore\\Model\\DataObject\\' . ucfirst($result);
     }
 }
