@@ -15,12 +15,12 @@
   "require-dev": {
     "bamarni/composer-bin-plugin": "^1.8.2",
     "phpstan/extension-installer": "^1.4.3",
-    "phpstan/phpstan": "^1.12.25",
+    "phpstan/phpstan": "^1.12.27",
     "phpstan/phpstan-deprecation-rules": "^1.2.1",
     "phpstan/phpstan-strict-rules": "^1.6.2",
     "rector/rector": "^1.2.10",
     "roave/security-advisories": "dev-latest",
-    "sentry/sentry": "^4.11.0",
+    "sentry/sentry": "^4.14.1",
     "symfony/http-client": "^6.4.19"
   },
   "license": "MIT",

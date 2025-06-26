@@ -1,6 +1,2 @@
 parameters:
 	ignoreErrors:
-		-
-			message: "#^Call to function is_subclass_of\\(\\) with Pimcore\\\\Model\\\\Element\\\\AbstractElement and mixed will always evaluate to true\\.$#"
-			count: 1
-			path: src/Index/AbstractIndex.php
