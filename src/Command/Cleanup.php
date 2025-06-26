@@ -18,6 +18,7 @@ class Cleanup extends BaseCommand
 {
     use NonBundleIndexTrait;
     private const OPTION_ALL_IN_CLUSTER = 'all';
+    private const OPTION_FORCE = 'force';
 
     public function __construct(
         private readonly ElasticsearchClient $esClient,
@@ -35,6 +36,12 @@ class Cleanup extends BaseCommand
                 'a',
                 InputOption::VALUE_NONE,
                 'Delete all indices in cluster including indices not created by this bundle but e.g. by Pimcore Enterprise features'
+            )
+            ->addOption(
+                self::OPTION_FORCE,
+                'f',
+                InputOption::VALUE_NONE,
+                'Do not ask for confirmation and instead proceed with deleting indices and aliases'
             );
     }
 
@@ -45,12 +52,16 @@ class Cleanup extends BaseCommand
                 ? 'Deleting ALL indices in the cluster'
                 : 'Only deleting KNOWN indices'
         );
-        /** @var QuestionHelper $helper */
-        $helper = $this->getHelper('question');
-        $question = new ConfirmationQuestion('Are you sure you want to proceed deleting indices and aliases? (y/N)', false);
 
-        if ($helper->ask($input, $output, $question) === false) {
-            return self::FAILURE;
+        // Skip confirmation if force option is set
+        if ($this->input->getOption(self::OPTION_FORCE) !== true) {
+            /** @var QuestionHelper $helper */
+            $helper = $this->getHelper('question');
+            $question = new ConfirmationQuestion('Are you sure you want to proceed deleting indices and aliases? (y/N)', false);
+
+            if ($helper->ask($input, $output, $question) === false) {
+                return self::FAILURE;
+            }
         }
 
         $indices = $this->getIndices();
