@@ -23,7 +23,8 @@ class SearchController extends AbstractController
 
         $results = $productIndex->getElasticaIndex()
             ->search(new Query($productIndex->filterByLocaleAndQuery($localeService->getLocale() ?? 'en', $query)))
-            ->getDocuments();
+            ->getDocuments()
+        ;
 
         return new JsonResponse($results);
     }

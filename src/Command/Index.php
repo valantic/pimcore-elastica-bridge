@@ -46,26 +46,27 @@ class Index extends BaseCommand
             ->addArgument(
                 self::ARGUMENT_INDEX,
                 InputArgument::IS_ARRAY | InputArgument::OPTIONAL,
-                'Optional: indices to process. Defaults to all if empty'
+                'Optional: indices to process. Defaults to all if empty',
             )
             ->addOption(
                 self::OPTION_DELETE,
                 'd',
                 InputOption::VALUE_NONE,
-                'Delete i.e. re-create existing indices'
+                'Delete i.e. re-create existing indices',
             )
             ->addOption(
                 self::OPTION_POPULATE,
                 'p',
                 InputOption::VALUE_NONE,
-                'Populate indices'
+                'Populate indices',
             )
             ->addOption(
                 self::OPTION_LOCK_RELEASE,
                 'l',
                 InputOption::VALUE_NONE,
-                'Force all indexing locks to be released'
-            );
+                'Force all indexing locks to be released',
+            )
+        ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -90,7 +91,7 @@ class Index extends BaseCommand
                     $lock->release();
                     $this->output->writeln(sprintf(
                         "\n<comment>Force-released lock for %s.</comment>\n",
-                        $indexConfig->getName()
+                        $indexConfig->getName(),
                     ));
                 }
 
@@ -99,7 +100,7 @@ class Index extends BaseCommand
                         sprintf(
                             "\n<comment>Lock for %s is held by another process.</comment>\n",
                             $indexConfig->getName(),
-                        )
+                        ),
                     );
 
                     continue;
@@ -116,7 +117,7 @@ class Index extends BaseCommand
         if (count($skippedIndices) > 0) {
             $this->output->writeln('');
             $this->output->writeln(
-                sprintf('<info>Skipped the following indices: %s</info>', implode(', ', $skippedIndices))
+                sprintf('<info>Skipped the following indices: %s</info>', implode(', ', $skippedIndices)),
             );
         }
 
@@ -162,7 +163,7 @@ class Index extends BaseCommand
                 $oldIndex->flush();
 
                 $this->output->writeln(
-                    sprintf('<comment>-> %s is now active</comment>', $newIndex->getName())
+                    sprintf('<comment>-> %s is now active</comment>', $newIndex->getName()),
                 );
             }
         }
@@ -185,10 +186,10 @@ class Index extends BaseCommand
                 ]),
             ],
             $this->kernel->getProjectDir(),
-            timeout: null
+            timeout: null,
         );
 
-        $exitCode = $process->run(function($type, $buffer): void {
+        $exitCode = $process->run(function ($type, $buffer): void {
             if ($type === Process::ERR && $this->output instanceof ConsoleOutput) {
                 $this->output->getErrorOutput()->write($buffer);
             } else {
@@ -261,7 +262,8 @@ class Index extends BaseCommand
             $indexConfig->getBlueGreenActiveSuffix();
         } catch (BlueGreenIndicesIncorrectlySetupException) {
             $this->esClient->getIndex($indexConfig->getName() . IndexBlueGreenSuffix::BLUE->value)
-                ->addAlias($indexConfig->getName());
+                ->addAlias($indexConfig->getName())
+            ;
         }
 
         $this->output->writeln('<comment>-> Ensured indices are correctly set up with alias</comment>');

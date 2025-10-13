@@ -1,97 +1,18 @@
 <?php
 
-$finder = PhpCsFixer\Finder::create()
-    ->in('src')
-    ->in('docs/example');
+require_once __DIR__ . '/vendor/autoload.php';
 
-return (new PhpCsFixer\Config())
-    ->setRules([
-        '@Symfony' => true,
-        '@Symfony:risky' => true,
-        '@PHP81Migration' => true,
-        '@PHP80Migration:risky' => true,
-        '@PER' => true,
-        '@PER:risky' => true,
-        'align_multiline_comment' => true,
-        'array_indentation' => true,
-        'blank_line_before_statement' => [
-            'statements' => [
-                'break',
-                'case',
-                'continue',
-                'declare',
-                'default',
-                'do',
-                'exit',
-                'for',
-                'foreach',
-                'goto',
-                'if',
-                'include',
-                'include_once',
-                // 'phpdoc',
-                'require',
-                'require_once',
-                'return',
-                'switch',
-                'throw',
-                'try',
-                'while',
-                'yield',
-                'yield_from',
-            ],
-        ],
-        'concat_space' => ['spacing' => 'one'],
-        'function_declaration' => ['closure_function_spacing' => 'none'],
-        'increment_style' => ['style' => 'post'],
-        'method_chaining_indentation' => true,
-        'multiline_comment_opening_closing' => true,
-        'native_function_invocation' => false,
-        'no_null_property_initialization' => true,
-        'no_superfluous_phpdoc_tags' => false,
-        'no_unset_on_property' => true,
-        'no_useless_else' => true,
-        'no_useless_return' => true,
-        'nullable_type_declaration_for_default_null_value' => true,
-        'operator_linebreak' => ['only_booleans' => true],
-        'ordered_class_elements' => [
-            'order' => [
-                'use_trait',
-                'constant_public',
-                'constant_protected',
-                'constant_private',
-                'case',
-                'property_public',
-                'property_public_static',
-                'property_protected',
-                'property_protected_static',
-                'property_private',
-                'property_private_static',
-                'construct',
-                'destruct',
-                'magic',
-                'phpunit',
-                'method_public',
-                'method_public_abstract',
-                'method_public_static',
-                'method_protected',
-                'method_protected_abstract',
-                'method_protected_static',
-                'method_private',
-            ],
-        ],
-        'ordered_imports' => ['imports_order' => ['class', 'function', 'const'], 'sort_algorithm' => 'alpha'],
-        'phpdoc_align' => ['align' => 'left'],
-        'phpdoc_order' => true,
-        'phpdoc_tag_casing' => true,
-        'phpdoc_to_comment' => false,
-        'regular_callable_call' => true,
-        'return_assignment' => true,
-        'strict_comparison' => true,
-        'strict_param' => true,
-        'trailing_comma_in_multiline' => ['elements' => ['arrays', 'parameters', 'match']],
-        'yoda_style' => false,
-    ])
-    ->setFinder($finder)
-    ->setRiskyAllowed(true)
-    ->setUsingCache(true);
+return Valantic\PhpCsFixerConfig\ConfigFactory::createValanticConfig([
+    'declare_strict_types' => false,
+    'phpdoc_to_comment' => false,
+])
+    ->setFinder(
+        PhpCsFixer\Finder::create()
+            ->in([
+                __DIR__ . '/src',
+                __DIR__ . '/docs/example',
+            ])
+            ->name(['*.php'])
+    )
+    ->setParallelConfig(PhpCsFixer\Runner\Parallel\ParallelConfigFactory::detect())
+    ->setRiskyAllowed(true);

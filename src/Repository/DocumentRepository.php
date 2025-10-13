@@ -11,4 +11,6 @@ use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
  *
  * @internal
  */
-class DocumentRepository extends AbstractRepository {}
+class DocumentRepository extends AbstractRepository
+{
+}

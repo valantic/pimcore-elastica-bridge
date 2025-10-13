@@ -22,8 +22,6 @@ class ValanticElasticaBridgeExtension extends Extension
     private const TAG_DOCUMENT_INDEX = 'valantic.elastica_bridge.document';
 
     /**
-     * {@inheritDoc}
-     *
      * @param array<mixed> $configs
      *
      * @throws \Exception

@@ -40,9 +40,9 @@ trait DocumentNormalizerTrait
             $document->getContentMainDocument() instanceof Document\PageSnippet
                 ? array_map(
                     fn (Document\Editable $editable): string => $editable->getName(),
-                    $document->getContentMainDocument()->getEditables()
+                    $document->getContentMainDocument()->getEditables(),
                 )
-                : []
+                : [],
         );
 
         foreach ($editableNames as $editableName) {
@@ -86,8 +86,8 @@ trait DocumentNormalizerTrait
                     fn (Concrete $obj): int => $obj->getId(),
                     $contents
                         ->getChildren([AbstractObject::OBJECT_TYPE_OBJECT])
-                        ->getData() ?? []
-                )
+                        ->getData() ?? [],
+                ),
             );
 
             return null;

@@ -16,18 +16,6 @@ enum DocumentType: string
 
     case VARIANT = 'variant';
 
-    /**
-     * @return class-string
-     */
-    public function baseClass(): string
-    {
-        return match ($this) {
-            self::ASSET => Model\Asset::class,
-            self::DOCUMENT => Model\Document::class,
-            self::DATA_OBJECT, self::VARIANT => Model\DataObject::class,
-        };
-    }
-
     /** @return self[] */
     public static function casesDataObjects(): array
     {
@@ -44,5 +32,17 @@ enum DocumentType: string
     public static function casesSubTypeListing(): array
     {
         return [self::ASSET, self::DOCUMENT];
+    }
+
+    /**
+     * @return class-string
+     */
+    public function baseClass(): string
+    {
+        return match ($this) {
+            self::ASSET => Model\Asset::class,
+            self::DOCUMENT => Model\Document::class,
+            self::DATA_OBJECT, self::VARIANT => Model\DataObject::class,
+        };
     }
 }

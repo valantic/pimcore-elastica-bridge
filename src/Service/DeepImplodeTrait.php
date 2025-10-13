@@ -27,7 +27,7 @@ trait DeepImplodeTrait
             fn ($carry, $item) => is_array($item)
                 ? [...$carry, ...$this->deepFlatten($item)]
                 : [...$carry, $item],
-            []
+            [],
         );
     }
 }

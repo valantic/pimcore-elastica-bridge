@@ -16,14 +16,16 @@ class LockService
     public function __construct(
         private readonly LockFactory $lockFactory,
         private readonly ConfigurationRepository $configurationRepository,
-    ) {}
+    ) {
+    }
 
     public function getIndexingLock(IndexInterface $indexConfig): LockInterface
     {
         return $this->lockFactory
             ->createLock(
                 sprintf('%s:indexing:%s', self::LOCK_PREFIX, $indexConfig->getName()),
-                ttl: $this->configurationRepository->getIndexingLockTimeout()
-            );
+                ttl: $this->configurationRepository->getIndexingLockTimeout(),
+            )
+        ;
     }
 }

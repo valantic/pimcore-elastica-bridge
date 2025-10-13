@@ -54,6 +54,15 @@ interface DocumentInterface
     public const ATTRIBUTE_RELATED_OBJECTS = 'relatedObjects';
 
     /**
+     * Returns the Elasticsearch ID for a Pimcore element.
+     *
+     * @param TElement $element
+     *
+     * @internal
+     */
+    public static function getElasticsearchId(AbstractElement $element): string;
+
+    /**
      * Defines the Pimcore type of this document.
      */
     public function getType(): DocumentType;
@@ -98,15 +107,4 @@ interface DocumentInterface
      * Whether Elasticsearch documents should be created for object variants.
      */
     public function treatObjectVariantsAsDocuments(): bool;
-
-    /**
-     * Returns the Elasticsearch ID for a Pimcore element.
-     *
-     * @param TElement $element
-     *
-     * @return string
-     *
-     * @internal
-     */
-    public static function getElasticsearchId(AbstractElement $element): string;
 }

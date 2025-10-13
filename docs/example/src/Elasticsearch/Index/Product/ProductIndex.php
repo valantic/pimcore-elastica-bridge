@@ -37,10 +37,11 @@ class ProductIndex extends AbstractTenantAwareIndex
                     ->setFields([
                         sprintf('%s.%s.*', DocumentInterface::ATTRIBUTE_LOCALIZED, $locale),
                     ])
-                    ->setQuery($query)
+                    ->setQuery($query),
             )
             ->addFilter(new MatchQuery(DocumentInterface::META_TYPE, DocumentType::DATA_OBJECT->value))
-            ->addFilter(new MatchQuery(DocumentInterface::META_SUB_TYPE, Product::class));
+            ->addFilter(new MatchQuery(DocumentInterface::META_SUB_TYPE, Product::class))
+        ;
     }
 
     public function getTenants(): array

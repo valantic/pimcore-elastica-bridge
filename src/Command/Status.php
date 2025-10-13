@@ -39,7 +39,8 @@ class Status extends BaseCommand
     protected function configure(): void
     {
         $this->setName(CommandConstants::COMMAND_STATUS)
-            ->setDescription('Displays the status of the configured Elasticsearch indices');
+            ->setDescription('Displays the status of the configured Elasticsearch indices')
+        ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -52,7 +53,8 @@ class Status extends BaseCommand
                 $this->esClient->getTransport()->getNodePool()->nextNode()->getUri()->getPort(),
                 $this->esClient->getVersion(),
             ]])
-            ->setHeaderTitle('Cluster');
+            ->setHeaderTitle('Cluster')
+        ;
         $table->render();
 
         $this->output->writeln('');
@@ -65,7 +67,8 @@ class Status extends BaseCommand
         $table
             ->setHeaders(['Name', 'Exists', '# Docs', 'Size', 'Blue/Green: use / present / active'])
             ->setRows($this->bundleIndices)
-            ->setHeaderTitle('Indices (managed by this bundle)');
+            ->setHeaderTitle('Indices (managed by this bundle)')
+        ;
         $table->render();
 
         $otherIndexNames = [];
@@ -89,7 +92,8 @@ class Status extends BaseCommand
         $table
             ->setHeaders(['Name', '# Docs', 'Size'])
             ->setRows($this->otherIndices)
-            ->setHeaderTitle('Other indices in this cluster');
+            ->setHeaderTitle('Other indices in this cluster')
+        ;
         $table->render();
 
         return self::SUCCESS;
@@ -149,7 +153,7 @@ class Status extends BaseCommand
                 '%s / %s / %s',
                 $this->formatBoolean($useBlueGreen),
                 $this->formatBoolean($hasBlueGreen),
-                $activeBlueGreen
+                $activeBlueGreen,
             ),
         ];
     }

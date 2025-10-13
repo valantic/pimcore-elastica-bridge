@@ -34,22 +34,23 @@ class Refresh extends BaseCommand
                 'a',
                 InputOption::VALUE_IS_ARRAY | InputOption::VALUE_OPTIONAL,
                 'IDs of assets to refresh',
-                []
+                [],
             )
             ->addOption(
                 self::OPTION_DOCUMENTS,
                 'd',
                 InputOption::VALUE_IS_ARRAY | InputOption::VALUE_OPTIONAL,
                 'IDs of documents to refresh',
-                []
+                [],
             )
             ->addOption(
                 self::OPTION_OBJECTS,
                 'o',
                 InputOption::VALUE_IS_ARRAY | InputOption::VALUE_OPTIONAL,
                 'IDs of objects to refresh',
-                []
-            );
+                [],
+            )
+        ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -84,7 +85,7 @@ class Refresh extends BaseCommand
 
             if ($element === null) {
                 $this->output->writeln(
-                    sprintf('-> ID %d of type %s not found, skipped', $id, $this->getShortName($objClass))
+                    sprintf('-> ID %d of type %s not found, skipped', $id, $this->getShortName($objClass)),
                 );
 
                 continue;

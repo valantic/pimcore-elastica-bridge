@@ -21,7 +21,8 @@
     "rector/rector": "^1.2.10",
     "roave/security-advisories": "dev-latest",
     "sentry/sentry": "^4.16.0",
-    "symfony/http-client": "^6.4.26"
+    "symfony/http-client": "^6.4.26",
+    "valantic/php-cs-fixer-config": "^2.1"
   },
   "license": "MIT",
   "authors": [

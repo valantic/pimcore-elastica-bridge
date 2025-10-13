@@ -30,7 +30,7 @@ class DocumentHelper
                 DocumentInterface::META_TYPE => $document->getType(),
                 DocumentInterface::META_SUB_TYPE => $document->getSubType(),
                 DocumentInterface::META_ID => $dataObject->getId(),
-            ])
+            ]),
         );
     }
 

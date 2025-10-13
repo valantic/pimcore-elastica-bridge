@@ -38,8 +38,8 @@ class SentryBreadcrumbLogger implements LoggerInterface
                 },
                 'elastica',
                 $message,
-                $context
-            )
+                $context,
+            ),
         );
     }
 }

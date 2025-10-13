@@ -32,28 +32,7 @@ class ChangeListener implements EventSubscriberInterface
     public function __construct(
         private readonly MessageBusInterface $messageBus,
         private readonly ConfigurationRepository $configurationRepository,
-    ) {}
-
-    public function handle(AssetEvent|DataObjectEvent|DocumentEvent $event): void
-    {
-        $element = $this->prepareHandle($event);
-
-        if ($element === null) {
-            return;
-        }
-
-        $this->messageBus->dispatch(new RefreshElement($this->getFreshElement($element)));
-    }
-
-    public function handleDeleted(AssetEvent|DataObjectEvent|DocumentEvent $event): void
-    {
-        $element = $this->prepareHandle($event);
-
-        if ($element === null) {
-            return;
-        }
-
-        $this->messageBus->dispatch(new RefreshElement($element));
+    ) {
     }
 
     public static function enableListener(): void
@@ -79,6 +58,28 @@ class ChangeListener implements EventSubscriberInterface
             DocumentEvents::POST_UPDATE => 'handle',
             DocumentEvents::POST_DELETE => 'handleDeleted',
         ];
+    }
+
+    public function handle(AssetEvent|DataObjectEvent|DocumentEvent $event): void
+    {
+        $element = $this->prepareHandle($event);
+
+        if ($element === null) {
+            return;
+        }
+
+        $this->messageBus->dispatch(new RefreshElement($this->getFreshElement($element)));
+    }
+
+    public function handleDeleted(AssetEvent|DataObjectEvent|DocumentEvent $event): void
+    {
+        $element = $this->prepareHandle($event);
+
+        if ($element === null) {
+            return;
+        }
+
+        $this->messageBus->dispatch(new RefreshElement($element));
     }
 
     private function prepareHandle(AssetEvent|DataObjectEvent|DocumentEvent $event): Asset|Document|AbstractObject|null
@@ -118,7 +119,6 @@ class ChangeListener implements EventSubscriberInterface
             throw $e;
         }
 
-        /** @var TElement */
         return $elementClass::getById($element->getId(), ['force' => true]) ?? throw $e;
     }
 

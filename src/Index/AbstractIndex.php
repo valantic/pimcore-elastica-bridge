@@ -19,7 +19,8 @@ abstract class AbstractIndex implements IndexInterface
     public function __construct(
         private readonly ElasticsearchClient $client,
         private readonly DocumentRepository $documentRepository,
-    ) {}
+    ) {
+    }
 
     public function getMapping(): array
     {
@@ -118,10 +119,10 @@ abstract class AbstractIndex implements IndexInterface
         return array_reduce(
             array_map(
                 fn (IndexBlueGreenSuffix $suffix): bool => $this->client->getIndex($this->getName() . $suffix->value)->exists(),
-                IndexBlueGreenSuffix::cases()
+                IndexBlueGreenSuffix::cases(),
             ),
             fn (bool $carry, bool $item): bool => $item && $carry,
-            true
+            true,
         );
     }
 
@@ -134,7 +135,7 @@ abstract class AbstractIndex implements IndexInterface
         try {
             $aliases = array_filter(
                 ElasticsearchResponse::getResponse($this->client->indices()->getAlias(['name' => $this->getName()]))->asArray(),
-                fn (array $datum): bool => array_key_exists($this->getName(), $datum['aliases'])
+                fn (array $datum): bool => array_key_exists($this->getName(), $datum['aliases']),
             );
         } catch (ClientResponseException) {
             throw new BlueGreenIndicesIncorrectlySetupException();

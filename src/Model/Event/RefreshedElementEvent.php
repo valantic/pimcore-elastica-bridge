@@ -16,7 +16,8 @@ class RefreshedElementEvent extends Event
     public function __construct(
         private readonly AbstractElement $element,
         private readonly array $indices,
-    ) {}
+    ) {
+    }
 
     public function getElement(): AbstractElement
     {

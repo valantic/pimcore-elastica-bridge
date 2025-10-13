@@ -11,7 +11,8 @@ class ElasticsearchClientFactory
 {
     public function __construct(
         private readonly ConfigurationRepository $configurationRepository,
-    ) {}
+    ) {
+    }
 
     public function __invoke(
     ): ElasticsearchClient {
@@ -23,7 +24,7 @@ class ElasticsearchClientFactory
 
         return new ElasticsearchClient(
             $this->configurationRepository->getClientDsn(),
-            logger: $logger
+            logger: $logger,
         );
     }
 }

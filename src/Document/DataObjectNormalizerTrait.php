@@ -37,11 +37,10 @@ trait DataObjectNormalizerTrait
      *
      * @param TElement $element
      * @param string[]|callable[] $fields
-     * @param bool $useFallbackValues
-     *
-     * @throws \Exception
      *
      * @return array{localized: array<string, array<string, mixed>>}
+     *
+     * @throws \Exception
      */
     protected function localizedAttributes(
         Concrete $element,
@@ -89,9 +88,9 @@ trait DataObjectNormalizerTrait
      * @param TElement $element
      * @param string[]|callable[] $fields
      *
-     * @throws \Exception
-     *
      * @return array<string, mixed>
+     *
+     * @throws \Exception
      */
     protected function plainAttributes(Concrete $element, array $fields): array
     {
@@ -115,9 +114,9 @@ trait DataObjectNormalizerTrait
      * @param TElement $element
      * @param string[]|callable[] $fields
      *
-     * @throws \Exception
-     *
      * @return array<string, mixed>
+     *
+     * @throws \Exception
      */
     protected function relationAttributes(Concrete $element, array $fields): array
     {
@@ -139,8 +138,8 @@ trait DataObjectNormalizerTrait
                 continue;
             }
 
+            /** @var Concrete $relation */
             foreach ($data as $relation) {
-                /** @var Concrete $relation */
                 $ids[] = $relation->getId();
             }
 
@@ -165,8 +164,8 @@ trait DataObjectNormalizerTrait
     ): array {
         $ids = [];
 
+        /** @var Concrete $child */
         foreach ($element->getChildren($objectTypes) as $child) {
-            /** @var Concrete $child */
             $ids[] = $child->getId();
         }
 
@@ -190,8 +189,8 @@ trait DataObjectNormalizerTrait
         array $objectTypes = [AbstractObject::OBJECT_TYPE_OBJECT, AbstractObject::OBJECT_TYPE_FOLDER],
         array $carry = [],
     ): array {
+        /** @var Concrete $child */
         foreach ($element->getChildren($objectTypes) as $child) {
-            /** @var Concrete $child */
             $carry[] = $child->getId();
             $carry = array_values(array_filter($carry));
             $carry = $this->childrenRecursive($child, $objectTypes, $carry)[DocumentInterface::ATTRIBUTE_CHILDREN_RECURSIVE];
@@ -222,9 +221,9 @@ trait DataObjectNormalizerTrait
     {
         $expanded = [];
 
+        /** @var string $source */
         foreach ($fields as $target => $source) {
             if (is_int($target)) {
-                /** @var string $source */
                 $expanded[$source] = $source;
             } else {
                 $expanded[$target] = $source;

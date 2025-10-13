@@ -16,16 +16,12 @@ interface IndexInterface
 {
     /**
      * The name of the Elasticsearch index.
-     *
-     * @return string
      */
     public function getName(): string;
 
     /**
      * The number of Pimcore elements to be stored in the index in one batch.
      * This is used e.g. when populating the index.
-     *
-     * @return int
      *
      * @see IndexCommand
      */
@@ -34,8 +30,6 @@ interface IndexInterface
     /**
      * Defines if the the index should be populated in subprocesses.
      * This is useful for large indexes to avoid memory issues.
-     *
-     * @return bool
      */
     public function shouldPopulateInSubprocesses(): bool;
 
@@ -83,25 +77,17 @@ interface IndexInterface
     /**
      * Checks whether a given Pimcore element is allowed in this index.
      *
-     * @param AbstractElement $element
-     *
-     * @return bool
-     *
      * @internal
      */
     public function isElementAllowedInIndex(AbstractElement $element): bool;
 
     /**
      * Exposes a pre-configured Elastica client for this index.
-     *
-     * @return Index
      */
     public function getElasticaIndex(): Index;
 
     /**
      * Given a Pimcore element, returns the corresponding DocumentInterface.
-     *
-     * @param AbstractElement $element
      *
      * @return DocumentInterface<AbstractElement>|null
      */
@@ -112,8 +98,6 @@ interface IndexInterface
      * In these instances, the index needs to be refreshed in order for newly-added data to be available immediately.
      *
      * While populating is happening (as indicated by IndexCommand::$isPopulating), use the inactive index.
-     *
-     * @return bool
      *
      * @see DocumentNormalizerTrait::$relatedObjects
      * @see IndexCommand
@@ -126,16 +110,12 @@ interface IndexInterface
      * Indicates whether this index uses a blue-green setup to ensure re-populating the index doesn't result
      * in a loss of functionality.
      *
-     * @return bool
-     *
      * @see IndexCommand
      */
     public function usesBlueGreenIndices(): bool;
 
     /**
      * Checks whether the blue and green indices are correctly set up.
-     *
-     * @return bool
      *
      * @internal
      */
@@ -164,8 +144,6 @@ interface IndexInterface
      *
      * @throws BlueGreenIndicesIncorrectlySetupException
      *
-     * @return Index
-     *
      * @see IndexInterface::getElasticaIndex()
      *
      * @internal
@@ -176,8 +154,6 @@ interface IndexInterface
      * Returns the currently inactive blue/green Elastica index.
      *
      * @throws BlueGreenIndicesIncorrectlySetupException
-     *
-     * @return Index
      *
      * @see IndexInterface::getElasticaIndex()
      *

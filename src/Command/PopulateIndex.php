@@ -91,7 +91,7 @@ class PopulateIndex extends BaseCommand
                         '<info>Populating index %s with %d documents in %d subprocesses.',
                         $indexConfig::class,
                         $listingCount,
-                        $numberOfBatches
+                        $numberOfBatches,
                     ));
                 }
 
@@ -113,10 +113,10 @@ class PopulateIndex extends BaseCommand
                             ]),
                         ],
                         $this->kernel->getProjectDir(),
-                        timeout: null
+                        timeout: null,
                     );
 
-                    $exitCode = $process->run(function($type, $buffer): void {
+                    $exitCode = $process->run(function ($type, $buffer): void {
                         if ($type === Process::ERR && $this->output instanceof ConsoleOutput) {
                             $this->output->getErrorOutput()->write($buffer);
                         } else {

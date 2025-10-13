@@ -13,7 +13,8 @@ class ConfigurationRepository
 {
     public function __construct(
         private readonly ContainerBagInterface $containerBag,
-    ) {}
+    ) {
+    }
 
     public function getClientDsn(): string
     {

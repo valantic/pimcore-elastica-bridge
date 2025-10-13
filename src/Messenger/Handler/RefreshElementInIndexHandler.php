@@ -21,7 +21,8 @@ class RefreshElementInIndexHandler extends AbstractRefreshHandler
         private readonly PropagateChanges $propagateChanges,
         private readonly LockService $lockService,
         private readonly IndexRepository $indexRepository,
-    ) {}
+    ) {
+    }
 
     public function __invoke(RefreshElementInIndex $message): void
     {

@@ -17,7 +17,8 @@ class RefreshedElementInIndexEvent extends Event
         public readonly IndexInterface $index,
         public readonly Index $elasticaIndex,
         public readonly ElementInIndexOperation $operation,
-    ) {}
+    ) {
+    }
 
     public function getElement(): AbstractElement
     {

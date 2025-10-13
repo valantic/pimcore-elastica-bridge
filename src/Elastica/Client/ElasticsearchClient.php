@@ -11,4 +11,6 @@ use Elastica\Client;
  *
  * @see ElasticsearchClientFactory
  */
-class ElasticsearchClient extends Client {}
+class ElasticsearchClient extends Client
+{
+}

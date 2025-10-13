@@ -28,7 +28,13 @@ class PropagateChanges
         private readonly DocumentHelper $documentHelper,
         private readonly MessageBusInterface $messageBus,
         private readonly EventDispatcherInterface $eventDispatcher,
-    ) {}
+    ) {
+    }
+
+    public static function stopPropagation(): void
+    {
+        self::$isPropagationStopped = true;
+    }
 
     /**
      * Whenever an event occurs, a decision needs to be made:
@@ -51,8 +57,8 @@ class PropagateChanges
                 new RefreshElementInIndex(
                     $element,
                     $index->getName(),
-                    self::$isPropagationStopped || $event->isPropagationStopped()
-                )
+                    self::$isPropagationStopped || $event->isPropagationStopped(),
+                ),
             );
         }
 
@@ -67,11 +73,6 @@ class PropagateChanges
         ?Index $elasticaIndex = null,
     ): void {
         $this->doHandleIndex($element, $index, $elasticaIndex ?? $index->getElasticaIndex());
-    }
-
-    public static function stopPropagation(): void
-    {
-        self::$isPropagationStopped = true;
     }
 
     private function doHandleIndex(

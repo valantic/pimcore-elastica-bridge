@@ -17,7 +17,8 @@ class RefreshElementHandler extends AbstractRefreshHandler
 {
     public function __construct(
         private readonly PropagateChanges $propagateChanges,
-    ) {}
+    ) {
+    }
 
     public function __invoke(RefreshElement $message): void
     {

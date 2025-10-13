@@ -159,7 +159,7 @@ class DoPopulateIndex extends BaseCommand
             '<fg=red;options=bold>Error while populating index %s, processing documents of type %s, last processed element ID %s.</>',
             $indexConfig::class,
             $document,
-            $dataObject->getId()
+            $dataObject->getId(),
         ));
         $this->displayThrowable($throwable);
     }

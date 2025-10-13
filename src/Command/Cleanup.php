@@ -35,14 +35,15 @@ class Cleanup extends BaseCommand
                 self::OPTION_ALL_IN_CLUSTER,
                 'a',
                 InputOption::VALUE_NONE,
-                'Delete all indices in cluster including indices not created by this bundle but e.g. by Pimcore Enterprise features'
+                'Delete all indices in cluster including indices not created by this bundle but e.g. by Pimcore Enterprise features',
             )
             ->addOption(
                 self::OPTION_FORCE,
                 'f',
                 InputOption::VALUE_NONE,
-                'Do not ask for confirmation and instead proceed with deleting indices and aliases'
-            );
+                'Do not ask for confirmation and instead proceed with deleting indices and aliases',
+            )
+        ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -50,7 +51,7 @@ class Cleanup extends BaseCommand
         $this->output->writeln(
             $this->input->getOption(self::OPTION_ALL_IN_CLUSTER) === true
                 ? 'Deleting ALL indices in the cluster'
-                : 'Only deleting KNOWN indices'
+                : 'Only deleting KNOWN indices',
         );
 
         // Skip confirmation if force option is set

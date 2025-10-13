@@ -21,6 +21,28 @@ use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
  */
 abstract class AbstractDocument implements DocumentInterface
 {
+    final public static function getElasticsearchId(AbstractElement $element): string
+    {
+        $documentType = DocumentType::tryFrom($element->getType());
+
+        if ($element instanceof Asset) {
+            return DocumentType::ASSET->value . $element->getId();
+        }
+
+        if ($element instanceof PimcoreDocument) {
+            return DocumentType::DOCUMENT->value . $element->getId();
+        }
+
+        if (
+            $element instanceof DataObject\Folder
+            || in_array($documentType, DocumentType::casesDataObjects(), true)
+        ) {
+            return DocumentType::DATA_OBJECT->value . $element->getId();
+        }
+
+        throw new UnknownPimcoreElementType($documentType?->value);
+    }
+
     public function treatObjectVariantsAsDocuments(): bool
     {
         return false;
@@ -64,7 +86,7 @@ abstract class AbstractDocument implements DocumentInterface
 
             if ($this->getIndexListingCondition() !== null) {
                 $listingInstance->setCondition(
-                    sprintf('%s AND (%s)', $typeCondition, $this->getIndexListingCondition())
+                    sprintf('%s AND (%s)', $typeCondition, $this->getIndexListingCondition()),
                 );
             } else {
                 $listingInstance->setCondition($typeCondition);
@@ -72,28 +94,6 @@ abstract class AbstractDocument implements DocumentInterface
         }
 
         return $listingInstance;
-    }
-
-    final public static function getElasticsearchId(AbstractElement $element): string
-    {
-        $documentType = DocumentType::tryFrom($element->getType());
-
-        if ($element instanceof Asset) {
-            return DocumentType::ASSET->value . $element->getId();
-        }
-
-        if ($element instanceof PimcoreDocument) {
-            return DocumentType::DOCUMENT->value . $element->getId();
-        }
-
-        if (
-            $element instanceof DataObject\Folder
-            || in_array($documentType, DocumentType::casesDataObjects(), true)
-        ) {
-            return DocumentType::DATA_OBJECT->value . $element->getId();
-        }
-
-        throw new UnknownPimcoreElementType($documentType?->value);
     }
 
     protected function getDocumentType(): ?string
