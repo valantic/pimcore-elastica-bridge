@@ -15,6 +15,7 @@ use Symfony\Component\Process\Process;
 use Valantic\ElasticaBridgeBundle\Constant\CommandConstants;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Enum\IndexBlueGreenSuffix;
+use Valantic\ElasticaBridgeBundle\Exception\Command\IndexingFailedException;
 use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
@@ -141,7 +142,11 @@ class Index extends BaseCommand
                 $currentIndex->create($indexConfig->getCreateArguments());
             }
 
-            $this->populateIndex($indexConfig, $currentIndex);
+            $populateSuccess = $this->populateIndex($indexConfig, $currentIndex);
+
+            if (!$populateSuccess) {
+                throw new IndexingFailedException(new \RuntimeException('Failed to populate index in subcommand.'));
+            }
 
             $currentIndex->refresh();
             $indexCount = $currentIndex->count();
@@ -165,9 +170,10 @@ class Index extends BaseCommand
         $this->output->writeln('');
     }
 
-    private function populateIndex(IndexInterface $indexConfig, ElasticaIndex $esIndex): void
+    private function populateIndex(IndexInterface $indexConfig, ElasticaIndex $esIndex): bool
     {
         self::$isPopulating = true;
+
         $process = new Process(
             [
                 'bin/console', CommandConstants::COMMAND_POPULATE_INDEX,
@@ -182,14 +188,17 @@ class Index extends BaseCommand
             timeout: null
         );
 
-        $process->run(function($type, $buffer): void {
+        $exitCode = $process->run(function($type, $buffer): void {
             if ($type === Process::ERR && $this->output instanceof ConsoleOutput) {
                 $this->output->getErrorOutput()->write($buffer);
             } else {
                 $this->output->write($buffer);
             }
         });
+
         self::$isPopulating = false;
+
+        return $exitCode === self::SUCCESS;
     }
 
     private function ensureCorrectIndexSetup(IndexInterface $indexConfig): void
