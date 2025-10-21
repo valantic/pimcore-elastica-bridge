@@ -72,7 +72,7 @@ valantic_elastica_bridge:
 This project uses Symfony's event dispatcher. Here are the events that you can listen to:
 
 | Description                                         | Example Usage                                                        | Event Constant (`ElasticaBridgeEvents::`) | Event Object (`Model\Event\`)  |
-|-----------------------------------------------------|----------------------------------------------------------------------|-------------------------------------------|--------------------------------|
+| --------------------------------------------------- | -------------------------------------------------------------------- | ----------------------------------------- | ------------------------------ |
 | After an element has been refreshed in an index.    | Log Event, send notification                                         | `POST_REFRESH_ELEMENT_IN_INDEX`           | `RefreshedElementInIndexEvent` |
 | Before an element is refreshed in an index.         | Stop propagation of element in specific index                        | `PRE_REFRESH_ELEMENT_IN_INDEX`            | `RefreshedElementInIndexEvent` |
 | After an element has been refreshed in all indices. | Clear caches, refresh related Objects,  Log Event, send notification | `POST_REFRESH_ELEMENT`                    | `RefreshedElementEvent`        |
