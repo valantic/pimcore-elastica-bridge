@@ -20,9 +20,9 @@
     "phpstan/phpstan-strict-rules": "^1.6.2",
     "rector/rector": "^1.2.10",
     "roave/security-advisories": "dev-latest",
-    "sentry/sentry": "^4.16.0",
+    "sentry/sentry": "^4.17.0",
     "symfony/http-client": "^6.4.26",
-    "valantic/php-cs-fixer-config": "^2.1"
+    "valantic/php-cs-fixer-config": "^2.2.1"
   },
   "license": "GPL-3.0-only",
   "authors": [
