@@ -24,7 +24,7 @@
     "symfony/http-client": "^6.4.26",
     "valantic/php-cs-fixer-config": "^2.1"
   },
-  "license": "GPL",
+  "license": "GPL-3.0-only",
   "authors": [
     {
       "name": "Linus Metzler",
