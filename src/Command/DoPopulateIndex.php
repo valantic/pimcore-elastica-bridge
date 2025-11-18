@@ -126,7 +126,17 @@ class DoPopulateIndex extends BaseCommand
                 }
                 $progressBar->advance();
 
-                $esDocuments[] = $this->documentHelper->elementToDocument($documentInstance, $dataObject);
+                $esDocument = $this->documentHelper->elementToDocument($documentInstance, $dataObject);
+
+                $params = $dataObject->getParams() ?? [];
+
+                if ($params !== []) {
+                    foreach ($params as $key => $value) {
+                        $esDocument->setParam($key, $value);
+                    }
+                }
+
+                $esDocuments[] = $esDocument;
             } catch (\Throwable $throwable) {
                 $this->displayDocumentError($indexConfig, $document, $dataObject, $throwable);
 
