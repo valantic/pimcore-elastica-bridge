@@ -14,6 +14,8 @@ use Pimcore\Model\Asset;
 use Pimcore\Model\DataObject\AbstractObject;
 use Pimcore\Model\Document;
 use Pimcore\Model\Element\AbstractElement;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Valantic\ElasticaBridgeBundle\Exception\EventListener\PimcoreElementNotFoundException;
@@ -27,6 +29,8 @@ use Valantic\ElasticaBridgeBundle\Repository\ConfigurationRepository;
  */
 class ChangeListener implements EventSubscriberInterface
 {
+    public const ARGUMENT_IS_AUTO_SAVE = 'isAutoSave';
+    public const ARGUMENT_SAVE_VERSION_ONLY = 'saveVersionOnly';
     private static bool $isEnabled = true;
 
     public function __construct(
@@ -124,24 +128,34 @@ class ChangeListener implements EventSubscriberInterface
 
     private function shouldHandle(AssetEvent|DataObjectEvent|DocumentEvent $event): bool
     {
-        if (!self::$isEnabled) {
-            return false;
-        }
-
-        $isAutoSave = $event->hasArgument('isAutoSave') && $event->getArgument('isAutoSave') === true;
-
-        if (!$isAutoSave) {
+        try {
+            return self::$isEnabled
+                && $this->checkEvent($event, self::ARGUMENT_IS_AUTO_SAVE)
+                && $this->checkEvent($event, self::ARGUMENT_SAVE_VERSION_ONLY);
+        } catch (NotFoundExceptionInterface|ContainerExceptionInterface) {
+            // this should not happen, as we set a default value
             return true;
         }
+    }
 
-        if ($event instanceof AssetEvent && $this->configurationRepository->shouldHandleAssetAutoSave()) {
-            return true;
-        }
+    /**
+     * @param AssetEvent|DataObjectEvent|DocumentEvent $event
+     * @param self::ARGUMENT_* $argument
+     *
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     *
+     * @return bool
+     */
+    private function checkEvent(AssetEvent|DataObjectEvent|DocumentEvent $event, string $argument): bool
+    {
+        $isArgument = $event->hasArgument($argument) && $event->getArgument($argument) === true;
 
-        if ($event instanceof DataObjectEvent && $this->configurationRepository->shouldHandleDataObjectAutoSave()) {
-            return true;
-        }
+        $argumentName = match ($argument) {
+            self::ARGUMENT_IS_AUTO_SAVE => ConfigurationRepository::SHOULD_HANDLE_AUTO_SAVE,
+            self::ARGUMENT_SAVE_VERSION_ONLY => ConfigurationRepository::SHOULD_HANDLE_VERSION_ONLY,
+        };
 
-        return $event instanceof DocumentEvent && $this->configurationRepository->shouldHandleDocumentAutoSave();
+        return !$isArgument || $this->configurationRepository->shouldHandleVersion($event, $argumentName);
     }
 }
