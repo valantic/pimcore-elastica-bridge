@@ -5,6 +5,6 @@
   },
   "devDependencies": {
     "@release-it/bumper": "^7.0.5",
-    "release-it": "^19.2.3"
+    "release-it": "^19.2.4"
   }
 }
