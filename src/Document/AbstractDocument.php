@@ -5,7 +5,16 @@ declare(strict_types=1);
 namespace Valantic\ElasticaBridgeBundle\Document;
 
 use Pimcore\Model\Asset;
+use Pimcore\Model\Asset\Archive;
+use Pimcore\Model\Asset\Audio;
+use Pimcore\Model\Asset\Image;
+use Pimcore\Model\Asset\Listing;
+use Pimcore\Model\Asset\Text;
+use Pimcore\Model\Asset\Unknown;
+use Pimcore\Model\Asset\Video;
 use Pimcore\Model\DataObject;
+use Pimcore\Model\DataObject\AbstractObject;
+use Pimcore\Model\DataObject\Folder;
 use Pimcore\Model\Document as PimcoreDocument;
 use Pimcore\Model\Element\AbstractElement;
 use Pimcore\Model\Listing\AbstractListing;
@@ -34,7 +43,7 @@ abstract class AbstractDocument implements DocumentInterface
         }
 
         if (
-            $element instanceof DataObject\Folder
+            $element instanceof Folder
             || in_array($documentType, DocumentType::casesDataObjects(), true)
         ) {
             return DocumentType::DATA_OBJECT->value . $element->getId();
@@ -69,14 +78,14 @@ abstract class AbstractDocument implements DocumentInterface
             /** @var DataObject\Listing $listingInstance */
             if ($this->treatObjectVariantsAsDocuments()) {
                 $listingInstance->setObjectTypes([
-                    DataObject\AbstractObject::OBJECT_TYPE_OBJECT,
-                    DataObject\AbstractObject::OBJECT_TYPE_VARIANT,
+                    AbstractObject::OBJECT_TYPE_OBJECT,
+                    AbstractObject::OBJECT_TYPE_VARIANT,
                 ]);
             }
 
             if (!$this->treatObjectVariantsAsDocuments()) {
                 $listingInstance->setObjectTypes([
-                    DataObject\AbstractObject::OBJECT_TYPE_OBJECT,
+                    AbstractObject::OBJECT_TYPE_OBJECT,
                 ]);
             }
         }
@@ -134,7 +143,7 @@ abstract class AbstractDocument implements DocumentInterface
     {
         try {
             return match ($this->getType()) {
-                DocumentType::ASSET => Asset\Listing::class,
+                DocumentType::ASSET => Listing::class,
                 DocumentType::DOCUMENT => PimcoreDocument\Listing::class,
                 DocumentType::DATA_OBJECT, DocumentType::VARIANT => $this->getDataObjectListingClass(),
             };
@@ -159,14 +168,14 @@ abstract class AbstractDocument implements DocumentInterface
     protected function getTypeMappingForAssets(): array
     {
         return [
-            Asset\Archive::class => 'archive',
-            Asset\Audio::class => 'audio',
+            Archive::class => 'archive',
+            Audio::class => 'audio',
             Asset\Document::class => 'document',
             Asset\Folder::class => 'folder',
-            Asset\Image::class => 'image',
-            Asset\Text::class => 'text',
-            Asset\Unknown::class => 'unknown',
-            Asset\Video::class => 'video',
+            Image::class => 'image',
+            Text::class => 'text',
+            Unknown::class => 'unknown',
+            Video::class => 'video',
         ];
     }
 

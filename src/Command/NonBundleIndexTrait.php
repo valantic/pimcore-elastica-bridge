@@ -8,6 +8,6 @@ trait NonBundleIndexTrait
 {
     protected function shouldProcessNonBundleIndex(string $name): bool
     {
-        return !in_array($name, ['.geoip_databases'], true);
+        return $name !== '.geoip_databases';
     }
 }

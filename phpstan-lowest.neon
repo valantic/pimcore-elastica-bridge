@@ -1,0 +1,16 @@
+includes:
+	- phpstan-baseline-lowest.neon
+
+parameters:
+
+    paths:
+        - docs/example
+        - src
+
+    level: 8
+
+    treatPhpDocTypesAsCertain: false
+
+    ignoreErrors:
+        -
+            identifier: arrayFilter.strict

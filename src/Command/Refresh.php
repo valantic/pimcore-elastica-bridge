@@ -15,9 +15,11 @@ use Valantic\ElasticaBridgeBundle\Service\PropagateChanges;
 
 class Refresh extends BaseCommand
 {
-    private const OPTION_ASSETS = 'assets';
-    private const OPTION_DOCUMENTS = 'documents';
-    private const OPTION_OBJECTS = 'objects';
+    private const string OPTION_ASSETS = 'assets';
+
+    private const string OPTION_DOCUMENTS = 'documents';
+
+    private const string OPTION_OBJECTS = 'objects';
 
     public function __construct(
         private readonly PropagateChanges $propagateChanges,
@@ -93,6 +95,7 @@ class Refresh extends BaseCommand
 
             $this->propagateChanges->handle($element);
         }
+
         $this->output->writeln('');
     }
 

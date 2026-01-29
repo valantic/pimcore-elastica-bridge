@@ -17,8 +17,10 @@ use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 class Cleanup extends BaseCommand
 {
     use NonBundleIndexTrait;
-    private const OPTION_ALL_IN_CLUSTER = 'all';
-    private const OPTION_FORCE = 'force';
+
+    private const string OPTION_ALL_IN_CLUSTER = 'all';
+
+    private const string OPTION_FORCE = 'force';
 
     public function __construct(
         private readonly ElasticsearchClient $esClient,

@@ -14,14 +14,9 @@ jobs:
       fail-fast: false
       matrix:
         operating-system: [ ubuntu-latest ]
-        php: [ '8.2', '8.3', '8.4' ]
-        pimcore: [ '^11.0', '^12.0' ]
+        php: [ '8.3', '8.4' ]
+        pimcore: [ '^12.0' ]
         stability: [ prefer-lowest, prefer-stable ]
-        exclude:
-          - php: '8.2'
-            pimcore: '^12.0'
-          - php: '8.4'
-            pimcore: '^11.0'
 
     steps:
       - name: Checkout code
@@ -44,8 +39,12 @@ jobs:
       - name: List installed dependencies
         run: composer show -D
 
+      - name: Set PHPStan baseline for prefer-lowest
+        if: matrix.stability == 'prefer-lowest'
+        run: echo "PHPSTAN_BASELINE=--configuration=phpstan-lowest.neon" >> $GITHUB_ENV
+
       - name: Static analysis using phpstan
-        run: composer run phpstan -- --error-format=github
+        run: composer run phpstan -- --error-format=github $PHPSTAN_BASELINE
 
   php-cs-fixer:
 
@@ -63,7 +62,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.2
+          php-version: 8.3
           extensions: curl
           coverage: xdebug
 

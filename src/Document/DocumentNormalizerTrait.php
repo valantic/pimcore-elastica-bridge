@@ -8,6 +8,32 @@ use Pimcore\Model\DataObject\AbstractObject;
 use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Model\DataObject\Folder;
 use Pimcore\Model\Document;
+use Pimcore\Model\Document\Editable;
+use Pimcore\Model\Document\Editable\Area;
+use Pimcore\Model\Document\Editable\Areablock;
+use Pimcore\Model\Document\Editable\Block;
+use Pimcore\Model\Document\Editable\Checkbox;
+use Pimcore\Model\Document\Editable\Dao;
+use Pimcore\Model\Document\Editable\Date;
+use Pimcore\Model\Document\Editable\Embed;
+use Pimcore\Model\Document\Editable\Image;
+use Pimcore\Model\Document\Editable\Input;
+use Pimcore\Model\Document\Editable\Link;
+use Pimcore\Model\Document\Editable\Multiselect;
+use Pimcore\Model\Document\Editable\Numeric;
+use Pimcore\Model\Document\Editable\Pdf;
+use Pimcore\Model\Document\Editable\Relation;
+use Pimcore\Model\Document\Editable\Relations;
+use Pimcore\Model\Document\Editable\Renderlet;
+use Pimcore\Model\Document\Editable\Scheduledblock;
+use Pimcore\Model\Document\Editable\Select;
+use Pimcore\Model\Document\Editable\Snippet;
+use Pimcore\Model\Document\Editable\Table;
+use Pimcore\Model\Document\Editable\Textarea;
+use Pimcore\Model\Document\Editable\Video;
+use Pimcore\Model\Document\Editable\Wysiwyg;
+use Pimcore\Model\Document\Page;
+use Pimcore\Model\Document\PageSnippet;
 use Valantic\ElasticaBridgeBundle\Exception\DocumentType\Index\EditablePartiallyImplementedException;
 use Valantic\ElasticaBridgeBundle\Exception\DocumentType\Index\UnknownEditableException;
 
@@ -32,14 +58,14 @@ trait DocumentNormalizerTrait
      *
      * @return string[]
      */
-    protected function editables(Document\Page $document): array
+    protected function editables(Page $document): array
     {
         $data = [];
         $editableNames = array_merge(
-            array_map(static fn (Document\Editable $editable): string => $editable->getName(), $document->getEditables()),
-            $document->getContentMainDocument() instanceof Document\PageSnippet
+            array_map(static fn (Editable $editable): string => $editable->getName(), $document->getEditables()),
+            $document->getContentMainDocument() instanceof PageSnippet
                 ? array_map(
-                    static fn (Document\Editable $editable): string => $editable->getName(),
+                    static fn (Editable $editable): string => $editable->getName(),
                     $document->getContentMainDocument()->getEditables(),
                 )
                 : [],
@@ -48,7 +74,7 @@ trait DocumentNormalizerTrait
         foreach ($editableNames as $editableName) {
             $editable = $document->getEditable($editableName);
 
-            if (!$editable instanceof Document\Editable) {
+            if (!$editable instanceof Editable) {
                 continue;
             }
 
@@ -65,8 +91,8 @@ trait DocumentNormalizerTrait
     }
 
     protected function editableRelation(
-        Document\Page $document,
-        Document\Editable\Relation $editable,
+        Page $document,
+        Relation $editable,
     ): ?string {
         if ($editable->type === null && $editable->subtype === null) {
             return null;
@@ -97,155 +123,155 @@ trait DocumentNormalizerTrait
     }
 
     protected function editableRelations(
-        Document\Page $document,
-        Document\Editable\Relations $editable,
+        Page $document,
+        Relations $editable,
     ): ?string {
         return null;
     }
 
     protected function editableNumeric(
-        Document\Page $document,
-        Document\Editable\Numeric $editable,
+        Page $document,
+        Numeric $editable,
     ): ?string {
         return $editable->getData();
     }
 
     protected function editableInput(
-        Document\Page $document,
-        Document\Editable\Input $editable,
+        Page $document,
+        Input $editable,
     ): ?string {
         return $editable->getData();
     }
 
     protected function editableTextarea(
-        Document\Page $document,
-        Document\Editable\Textarea $editable,
+        Page $document,
+        Textarea $editable,
     ): ?string {
         return $editable->getData();
     }
 
     protected function editableWysiwyg(
-        Document\Page $document,
-        Document\Editable\Wysiwyg $editable,
+        Page $document,
+        Wysiwyg $editable,
     ): ?string {
         return $editable->getData();
     }
 
     protected function editableArea(
-        Document\Page $document,
-        Document\Editable\Area $editable,
+        Page $document,
+        Area $editable,
     ): ?string {
         return null;
     }
 
     protected function editableAreablock(
-        Document\Page $document,
-        Document\Editable\Areablock $editable,
+        Page $document,
+        Areablock $editable,
     ): ?string {
         return null;
     }
 
     protected function editableBlock(
-        Document\Page $document,
-        Document\Editable\Block $editable,
+        Page $document,
+        Block $editable,
     ): ?string {
         return null;
     }
 
     protected function editableCheckbox(
-        Document\Page $document,
-        Document\Editable\Checkbox $editable,
+        Page $document,
+        Checkbox $editable,
     ): ?string {
         return null;
     }
 
     protected function editableDao(
-        Document\Page $document,
-        Document\Editable\Dao $editable,
+        Page $document,
+        Dao $editable,
     ): ?string {
         return null;
     }
 
     protected function editableDate(
-        Document\Page $document,
-        Document\Editable\Date $editable,
+        Page $document,
+        Date $editable,
     ): ?string {
         return null;
     }
 
     protected function editableEmbed(
-        Document\Page $document,
-        Document\Editable\Embed $editable,
+        Page $document,
+        Embed $editable,
     ): ?string {
         return null;
     }
 
     protected function editableImage(
-        Document\Page $document,
-        Document\Editable\Image $editable,
+        Page $document,
+        Image $editable,
     ): ?string {
         return null;
     }
 
     protected function editableLink(
-        Document\Page $document,
-        Document\Editable\Link $editable,
+        Page $document,
+        Link $editable,
     ): ?string {
         return null;
     }
 
     protected function editableMultiselect(
-        Document\Page $document,
-        Document\Editable\Multiselect $editable,
+        Page $document,
+        Multiselect $editable,
     ): ?string {
         return null;
     }
 
     protected function editablePdf(
-        Document\Page $document,
-        Document\Editable\Pdf $editable,
+        Page $document,
+        Pdf $editable,
     ): ?string {
         return null;
     }
 
     protected function editableScheduledblock(
-        Document\Page $document,
-        Document\Editable\Scheduledblock $editable,
+        Page $document,
+        Scheduledblock $editable,
     ): ?string {
         return null;
     }
 
     protected function editableSelect(
-        Document\Page $document,
-        Document\Editable\Select $editable,
+        Page $document,
+        Select $editable,
     ): ?string {
         return null;
     }
 
     protected function editableVideo(
-        Document\Page $document,
-        Document\Editable\Video $editable,
+        Page $document,
+        Video $editable,
     ): ?string {
         return null;
     }
 
     protected function editableRenderlet(
-        Document\Page $document,
-        Document\Editable\Renderlet $editable,
+        Page $document,
+        Renderlet $editable,
     ): ?string {
         return null;
     }
 
     protected function editableSnippet(
-        Document\Page $document,
-        Document\Editable\Snippet $editable,
+        Page $document,
+        Snippet $editable,
     ): ?string {
         return null;
     }
 
     protected function editableTable(
-        Document\Page $document,
-        Document\Editable\Table $editable,
+        Page $document,
+        Table $editable,
     ): ?string {
         return null;
     }
