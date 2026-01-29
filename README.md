@@ -3,6 +3,7 @@
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/valantic/pimcore-elastica-bridge.svg?style=flat-square)](https://packagist.org/packages/valantic/pimcore-elastica-bridge)
 [![Software License](https://img.shields.io/badge/license-GPL-brightgreen.svg?style=flat-square)](LICENSE.md)
 [![PHP Checks](https://github.com/valantic/pimcore-elastica-bridge/actions/workflows/php.yml/badge.svg)](https://github.com/valantic/pimcore-elastica-bridge/actions/workflows/php.yml)
+[![codecov](https://codecov.io/gh/valantic/pimcore-elastica-bridge/branch/main/graph/badge.svg)](https://codecov.io/gh/valantic/pimcore-elastica-bridge)
 
 This package is developed by [valantic CEC Schweiz](https://www.valantic.com/en/services/digital-business/) and is under active development.
 
@@ -133,6 +134,39 @@ $ console valantic:elastica-bridge:status --help
 Description:
   Displays the status of the configured Elasticsearch indices
 ```
+
+## Testing
+
+This bundle includes a comprehensive test suite with unit, integration, and functional tests.
+
+### Running Tests
+
+```bash
+# Run all tests
+composer test
+
+# Run specific test suite
+./vendor/bin/phpunit --testsuite Unit
+./vendor/bin/phpunit --testsuite Integration
+
+# Run with coverage
+composer test-coverage
+```
+
+### Requirements for Testing
+
+- PHP 8.2 or higher
+- PHPUnit 11.0 or higher
+- Elasticsearch 8.x (for integration tests)
+
+For detailed information about writing and running tests, see the [Testing Guide](tests/README.md).
+
+### Continuous Integration
+
+All tests run automatically on GitHub Actions for every push and pull request, testing against:
+- PHP 8.2, 8.3, 8.4
+- Pimcore 11.x, 12.x
+- Both minimum and stable dependency versions
 
 ## License
 

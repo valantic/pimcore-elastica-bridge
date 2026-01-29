@@ -11,7 +11,7 @@ use Valantic\ElasticaBridgeBundle\Repository\ConfigurationRepository;
 
 class LockService
 {
-    private const LOCK_PREFIX = 'pimcore-elastica-bridge';
+    private const string LOCK_PREFIX = 'pimcore-elastica-bridge';
 
     public function __construct(
         private readonly LockFactory $lockFactory,

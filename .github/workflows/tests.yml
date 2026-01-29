@@ -1,0 +1,83 @@
+name: Tests
+
+on: [ push, pull_request ]
+
+jobs:
+
+  tests:
+
+    name: Tests (PHP ${{ matrix.php }} with Pimcore ${{ matrix.pimcore }} (${{ matrix.stability }}) on ${{ matrix.operating-system }})
+    runs-on: ${{ matrix.operating-system }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        operating-system: [ ubuntu-latest ]
+        php: [ '8.3', '8.4' ]
+        pimcore: [ '^12.0' ]
+        stability: [ prefer-lowest, prefer-stable ]
+
+    services:
+      elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.16.1
+        env:
+          discovery.type: single-node
+          xpack.security.enabled: false
+          ES_JAVA_OPTS: -Xms512m -Xmx512m
+        ports:
+          - 9200:9200
+        options: >-
+          --health-cmd "curl -f http://localhost:9200/_cluster/health || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: curl, json
+          coverage: xdebug
+          ini-values: memory_limit=1G
+
+      - name: Install dependencies
+        run: |
+          composer require "pimcore/pimcore:${{ matrix.pimcore }}" --no-interaction --no-update
+          composer update --${{ matrix.stability }} --prefer-dist --no-interaction
+
+      - name: List installed dependencies
+        run: composer show -D
+
+      - name: Wait for Elasticsearch
+        run: |
+          until curl -s http://localhost:9200/_cluster/health | grep -q '"status":"green\|yellow"'; do
+            echo "Waiting for Elasticsearch..."
+            sleep 2
+          done
+          echo "Elasticsearch is ready!"
+
+      - name: Run PHPUnit tests
+        env:
+          ELASTICSEARCH_HOST: localhost:9200
+        run: composer run test
+
+      - name: Generate coverage report
+        if: matrix.php == '8.3' && matrix.pimcore == '^12.0' && matrix.stability == 'prefer-stable'
+        env:
+          ELASTICSEARCH_HOST: localhost:9200
+        run: composer run test-coverage
+
+      - name: Upload coverage to Codecov
+        if: matrix.php == '8.3' && matrix.pimcore == '^12.0' && matrix.stability == 'prefer-stable'
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage/clover.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false

@@ -124,6 +124,7 @@ class DoPopulateIndex extends BaseCommand
                 if (!$documentInstance->shouldIndex($dataObject)) {
                     continue;
                 }
+
                 $progressBar->advance();
 
                 $esDocuments[] = $this->documentHelper->elementToDocument($documentInstance, $dataObject);
@@ -136,7 +137,7 @@ class DoPopulateIndex extends BaseCommand
             }
         }
 
-        if (count($esDocuments) > 0) {
+        if ($esDocuments !== []) {
             $esIndex->addDocuments($esDocuments);
             $esDocuments = [];
         }

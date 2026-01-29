@@ -24,7 +24,7 @@ trait DeepImplodeTrait
     {
         return array_reduce(
             $arr,
-            fn ($carry, $item) => is_array($item)
+            fn ($carry, $item): array => is_array($item)
                 ? [...$carry, ...$this->deepFlatten($item)]
                 : [...$carry, $item],
             [],
