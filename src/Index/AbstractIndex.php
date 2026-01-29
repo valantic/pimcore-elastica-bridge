@@ -121,7 +121,7 @@ abstract class AbstractIndex implements IndexInterface
                 fn (IndexBlueGreenSuffix $suffix): bool => $this->client->getIndex($this->getName() . $suffix->value)->exists(),
                 IndexBlueGreenSuffix::cases(),
             ),
-            fn (bool $carry, bool $item): bool => $item && $carry,
+            static fn (bool $carry, bool $item): bool => $item && $carry,
             true,
         );
     }

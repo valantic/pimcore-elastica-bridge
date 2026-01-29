@@ -36,7 +36,7 @@ class ProductIndexDocument extends AbstractTenantAwareDocument
                 $element,
                 [
                     'sku',
-                    'created_at' => fn (Product $product) => date('r', $product->getCreationDate()),
+                    'created_at' => static fn (Product $product) => date('r', $product->getCreationDate()),
                 ],
             ),
             ...$this->localizedAttributes(
@@ -44,14 +44,14 @@ class ProductIndexDocument extends AbstractTenantAwareDocument
                 [
                     'name',
                     'url',
-                    'slug' => fn (Product $product, string $locale): string => str_replace(' ', '-', $product->getName()),
+                    'slug' => static fn (Product $product, string $locale): string => str_replace(' ', '-', $product->getName()),
                 ],
             ),
             ...$this->relationAttributes(
                 $element,
                 [
                     ProductIndex::ATTRIBUTE_CATEGORIES => 'categories',
-                    'relatedProducts' => fn (Product $product) => $product->getRelatedProducts(),
+                    'relatedProducts' => static fn (Product $product) => $product->getRelatedProducts(),
                 ],
             ),
             ...$this->children($element),

@@ -36,10 +36,10 @@ trait DocumentNormalizerTrait
     {
         $data = [];
         $editableNames = array_merge(
-            array_map(fn (Document\Editable $editable): string => $editable->getName(), $document->getEditables()),
+            array_map(static fn (Document\Editable $editable): string => $editable->getName(), $document->getEditables()),
             $document->getContentMainDocument() instanceof Document\PageSnippet
                 ? array_map(
-                    fn (Document\Editable $editable): string => $editable->getName(),
+                    static fn (Document\Editable $editable): string => $editable->getName(),
                     $document->getContentMainDocument()->getEditables(),
                 )
                 : [],
@@ -83,7 +83,7 @@ trait DocumentNormalizerTrait
                 $this->relatedObjects,
                 [$contents->getId()],
                 array_map(
-                    fn (Concrete $obj): int => $obj->getId(),
+                    static fn (Concrete $obj): int => $obj->getId(),
                     $contents
                         ->getChildren([AbstractObject::OBJECT_TYPE_OBJECT])
                         ->getData() ?? [],
