@@ -14,16 +14,16 @@
     "symfony/scheduler": "^6.4|^7.1"
   },
   "require-dev": {
-    "symfony/routing": "^6.4",
-    "symfony/http-kernel": "^6.4",
-    "bamarni/composer-bin-plugin": "^1.8.2",
+    "symfony/routing": "^6.4.32",
+    "symfony/http-kernel": "^6.4.33",
+    "bamarni/composer-bin-plugin": "^1.9.1",
     "phpstan/extension-installer": "^1.4.3",
-    "phpstan/phpstan": "^1.12.7",
+    "phpstan/phpstan": "^1.12.32",
     "phpstan/phpstan-deprecation-rules": "^1.2.1",
-    "phpstan/phpstan-strict-rules": "^1.6.1",
-    "rector/rector": "^1.2.8",
-    "sentry/sentry": "^4.9.0",
-    "symfony/http-client": "^6.4.12|^7.1"
+    "phpstan/phpstan-strict-rules": "^1.6.2",
+    "rector/rector": "^1.2.10",
+    "sentry/sentry": "^4.19.1",
+    "symfony/http-client": "^6.4.12|^7.4.5"
   },
   "license": "MIT",
   "authors": [

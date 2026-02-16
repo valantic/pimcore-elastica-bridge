@@ -77,7 +77,7 @@ abstract class AbstractDocument implements DocumentInterface
         return $listingInstance;
     }
 
-    final public static function getElasticsearchId(AbstractElement $element): string
+    public static function getElasticsearchId(AbstractElement $element): string
     {
         $documentType = DocumentType::tryFrom($element->getType());
 

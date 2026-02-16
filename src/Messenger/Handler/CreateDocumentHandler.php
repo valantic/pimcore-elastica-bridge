@@ -94,7 +94,7 @@ class CreateDocumentHandler
             }
 
             $esIndex = $index->getBlueGreenInactiveElasticaIndex();
-            $esDocuments = [$this->documentHelper->elementToDocument($documentInstance, $dataObject)];
+            $esDocuments = $this->documentHelper->elementToDocuments($documentInstance, $dataObject);
 
             if (count($esDocuments) > 0) {
                 $esIndex->addDocuments($esDocuments);

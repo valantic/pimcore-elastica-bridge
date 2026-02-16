@@ -11,6 +11,7 @@ use Pimcore\Model\Element\AbstractElement;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
+use Valantic\ElasticaBridgeBundle\Document\MultiDocumentInterface;
 use Valantic\ElasticaBridgeBundle\Enum\ElementInIndexOperation;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\RefreshElementInIndex;
@@ -137,8 +138,13 @@ class PropagateChanges
         Index $index,
         DocumentInterface $document,
     ): void {
-        $elasticaDocument = $this->documentHelper->elementToDocument($document, $element);
-        $index->addDocument($elasticaDocument);
+        $elasticaDocuments = $document instanceof MultiDocumentInterface
+            ? $this->documentHelper->elementToDocuments($document, $element)
+            : [$this->documentHelper->elementToDocument($document, $element)];
+
+        foreach ($elasticaDocuments as $elasticaDocument) {
+            $index->addDocument($elasticaDocument);
+        }
     }
 
     /**
@@ -149,9 +155,8 @@ class PropagateChanges
         Index $index,
         DocumentInterface $document,
     ): void {
-        $elasticaDocument = $this->documentHelper->elementToDocument($document, $element);
         // updateDocument() allows partial updates, hence the full replace here
-        $index->addDocument($elasticaDocument);
+        $this->addElementToIndex($element, $index, $document);
     }
 
     /**
