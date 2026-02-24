@@ -1,2 +1,25 @@
 parameters:
 	ignoreErrors:
+		-
+			message: '#^Trait Valantic\\ElasticaBridgeBundle\\Document\\DocumentNormalizerTrait is used zero times and is not analysed\.$#'
+			identifier: trait.unused
+			count: 1
+			path: src/Document/DocumentNormalizerTrait.php
+
+		-
+			message: '#^Trait Valantic\\ElasticaBridgeBundle\\Document\\DocumentRelationAwareDataObjectTrait is used zero times and is not analysed\.$#'
+			identifier: trait.unused
+			count: 1
+			path: src/Document/DocumentRelationAwareDataObjectTrait.php
+
+		-
+			message: '#^PHPDoc tag @var with type class\-string\<TElement of Pimcore\\Model\\Asset\|Pimcore\\Model\\DataObject\\AbstractObject\|Pimcore\\Model\\Document\> is not subtype of native type class\-string\<Pimcore\\Model\\Element\\AbstractElement\>&literal\-string\.$#'
+			identifier: varTag.nativeType
+			count: 1
+			path: src/EventListener/Pimcore/ChangeListener.php
+
+		-
+			message: '#^Trait Valantic\\ElasticaBridgeBundle\\Service\\DeepImplodeTrait is used zero times and is not analysed\.$#'
+			identifier: trait.unused
+			count: 1
+			path: src/Service/DeepImplodeTrait.php

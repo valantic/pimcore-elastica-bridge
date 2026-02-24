@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Enum;
 
-use Pimcore\Model;
+use Pimcore\Model\Asset;
+use Pimcore\Model\DataObject;
+use Pimcore\Model\Document;
 
 enum DocumentType: string
 {
@@ -40,9 +42,9 @@ enum DocumentType: string
     public function baseClass(): string
     {
         return match ($this) {
-            self::ASSET => Model\Asset::class,
-            self::DOCUMENT => Model\Document::class,
-            self::DATA_OBJECT, self::VARIANT => Model\DataObject::class,
+            self::ASSET => Asset::class,
+            self::DOCUMENT => Document::class,
+            self::DATA_OBJECT, self::VARIANT => DataObject::class,
         };
     }
 }
