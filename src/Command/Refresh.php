@@ -83,7 +83,16 @@ class Refresh extends BaseCommand
 
         foreach ($this->input->getOption($optionName) as $id) {
             $this->output->writeln($id);
-            $element = $objClass::getById($id);
+
+            if (!is_numeric($id)) {
+                $this->output->writeln(
+                    sprintf('-> ID %d of type %s must be numeric', $id, $this->getShortName($objClass)),
+                );
+
+                continue;
+            }
+
+            $element = $objClass::getById((int) $id);
 
             if ($element === null) {
                 $this->output->writeln(
