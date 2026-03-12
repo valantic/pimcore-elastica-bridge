@@ -10,7 +10,9 @@ abstract class AbstractRefresh
 {
     /** @var class-string<ElementInterface> */
     public string $className;
+
     public int $id;
+
     private bool $shouldStopEventPropagation = false;
 
     public function isEventPropagationStopped(): bool
