@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Elastica\Client;
 
+use Sentry\Breadcrumb;
 use Valantic\ElasticaBridgeBundle\Logger\SentryBreadcrumbLogger;
 use Valantic\ElasticaBridgeBundle\Repository\ConfigurationRepository;
 
@@ -18,7 +19,7 @@ class ElasticsearchClientFactory
     ): ElasticsearchClient {
         $logger = null;
 
-        if ($this->configurationRepository->shouldAddSentryBreadcrumbs() && class_exists('\Sentry\Breadcrumb')) {
+        if ($this->configurationRepository->shouldAddSentryBreadcrumbs() && class_exists(Breadcrumb::class)) {
             $logger = (new SentryBreadcrumbLogger());
         }
 
