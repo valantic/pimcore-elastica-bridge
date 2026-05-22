@@ -44,6 +44,28 @@ abstract class AbstractIndex implements IndexInterface
         return [];
     }
 
+    public function getNameForContext(IndexContext $context): string
+    {
+        $parts = array_filter([$this->getName(), $context->tenant, $context->language]);
+
+        return implode('_', $parts);
+    }
+
+    public function getContexts(): array
+    {
+        return [];
+    }
+
+    public function getDefaultContext(): IndexContext
+    {
+        return new IndexContext();
+    }
+
+    public function shouldSkipFailingDocuments(): bool
+    {
+        return false;
+    }
+
     final public function hasMapping(): bool
     {
         return count($this->getMapping()) > 0;

@@ -12,6 +12,8 @@ use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\Enum\DocumentType;
 use Valantic\ElasticaBridgeBundle\Exception\DocumentType\PimcoreListingClassNotFoundException;
 use Valantic\ElasticaBridgeBundle\Exception\DocumentType\UnknownPimcoreElementType;
+use Valantic\ElasticaBridgeBundle\Index\DocumentContext;
+use Valantic\ElasticaBridgeBundle\Index\IndexContext;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 
 /**
@@ -41,6 +43,27 @@ abstract class AbstractDocument implements DocumentInterface
         }
 
         throw new UnknownPimcoreElementType($documentType?->value);
+    }
+
+    public static function getIdForContext(AbstractElement $element, DocumentContext $documentContext): string
+    {
+        $parts = array_filter([
+            static::getElasticsearchId($element),
+            $documentContext->language,
+            $documentContext->country,
+        ]);
+
+        return implode('_', $parts);
+    }
+
+    public function getNormalizedForContext(AbstractElement $element, IndexContext $indexContext, DocumentContext $documentContext): array
+    {
+        return $this->getNormalized($element);
+    }
+
+    public function getDocumentContexts(AbstractElement $element, IndexContext $indexContext): array
+    {
+        return $this->shouldIndex($element) ? [new DocumentContext()] : [];
     }
 
     public function treatObjectVariantsAsDocuments(): bool
