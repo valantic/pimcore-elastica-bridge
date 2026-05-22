@@ -82,7 +82,6 @@ class PropagateChanges
         IndexInterface $index,
         Index $elasticaIndex,
     ): void {
-        // TODO: actually use $elasticaIndex
         $document = $index->findDocumentInstanceByPimcore($element);
 
         if (!$document instanceof DocumentInterface) {
@@ -95,6 +94,13 @@ class PropagateChanges
             !in_array($document::class, $index->subscribedDocuments(), true)
             || ($element->getType() === AbstractObject::OBJECT_TYPE_VARIANT && !$document->treatObjectVariantsAsDocuments())
         ) {
+            $this->documentHelper->resetTenantIfNeeded($document, $index);
+
+            return;
+        }
+
+        if (count($index->getContexts()) > 0) {
+            $this->doHandleContextIndex($element, $elasticaIndex, $document, $index);
             $this->documentHelper->resetTenantIfNeeded($document, $index);
 
             return;
@@ -128,6 +134,27 @@ class PropagateChanges
         }
 
         $this->documentHelper->resetTenantIfNeeded($document, $index);
+    }
+
+    /**
+     * @param DocumentInterface<AbstractElement> $document
+     */
+    private function doHandleContextIndex(
+        AbstractElement $element,
+        Index $elasticaIndex,
+        DocumentInterface $document,
+        IndexInterface $index,
+    ): void {
+        $esDocuments = $this->documentHelper->elementToDocumentsForContexts($document, $element, $index);
+
+        if (count($esDocuments) === 0) {
+            // No contexts produced documents — delete all existing documents for this element.
+            $elasticaIndex->deleteByQuery(['term' => [DocumentInterface::META_ID => $element->getId()]]);
+
+            return;
+        }
+
+        $elasticaIndex->addDocuments($esDocuments);
     }
 
     /**

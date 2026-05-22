@@ -14,7 +14,7 @@ use Valantic\ElasticaBridgeBundle\Index\TenantAwareInterface as IndexTenantAware
 class DocumentHelper
 {
     /**
-     * Creates an Elastica document based on an DocumentInterface.
+     * Creates a single Elastica document for a Pimcore element (legacy single-context path).
      *
      * @internal
      *
@@ -32,6 +32,53 @@ class DocumentHelper
                 DocumentInterface::META_ID => $dataObject->getId(),
             ]),
         );
+    }
+
+    /**
+     * Creates one Elastica document per DocumentContext across all IndexContexts.
+     *
+     * When the index returns an empty getContexts() array, falls back to elementToDocument()
+     * to preserve backward compatibility.
+     *
+     * @internal
+     *
+     * @param DocumentInterface<AbstractElement> $document
+     *
+     * @return Document[]
+     */
+    public function elementToDocumentsForContexts(
+        DocumentInterface $document,
+        AbstractElement $dataObject,
+        IndexInterface $index,
+    ): array {
+        if (count($index->getContexts()) === 0) {
+            return [$this->elementToDocument($document, $dataObject)];
+        }
+
+        $meta = [
+            DocumentInterface::META_TYPE => $document->getType(),
+            DocumentInterface::META_SUB_TYPE => $document->getSubType(),
+            DocumentInterface::META_ID => $dataObject->getId(),
+        ];
+
+        $result = [];
+
+        foreach ($index->getContexts() as $indexContext) {
+            foreach ($document->getDocumentContexts($dataObject, $indexContext) as $documentContext) {
+                $id = $document::getIdForContext($dataObject, $documentContext);
+                $normalized = $document->getNormalizedForContext($dataObject, $indexContext, $documentContext);
+
+                $contextMeta = array_filter([
+                    DocumentInterface::META_TENANT => $documentContext->tenant,
+                    DocumentInterface::META_LANGUAGE => $documentContext->language,
+                    DocumentInterface::META_COUNTRY => $documentContext->country,
+                ], static fn ($v) => $v !== null);
+
+                $result[] = new Document($id, array_merge($normalized, $meta, $contextMeta));
+            }
+        }
+
+        return $result;
     }
 
     /**

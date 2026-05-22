@@ -16,12 +16,38 @@ interface IndexInterface
 {
     /**
      * The name of the Elasticsearch index.
+     * Used for single-context indices. For multi-context indices, getNameForContext() is used.
      */
     public function getName(): string;
 
     /**
+     * Returns the index name for a specific IndexContext.
+     * Default: getName() + '_' + non-null context fields.
+     * Override when the index naming convention differs.
+     */
+    public function getNameForContext(IndexContext $context): string;
+
+    /**
+     * Returns all IndexContexts this index operates in.
+     * An empty array (default) signals single-document legacy behaviour.
+     *
+     * @return IndexContext[]
+     */
+    public function getContexts(): array;
+
+    /**
+     * Returns the default IndexContext, used when no explicit context is provided.
+     */
+    public function getDefaultContext(): IndexContext;
+
+    /**
+     * Whether to skip documents that throw exceptions during indexing.
+     * Replaces the global bundle configuration option.
+     */
+    public function shouldSkipFailingDocuments(): bool;
+
+    /**
      * The number of Pimcore elements to be stored in the index in one batch.
-     * This is used e.g. when populating the index.
      *
      * @see IndexCommand
      */
