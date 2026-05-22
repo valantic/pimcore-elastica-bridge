@@ -10,6 +10,7 @@ use Symfony\Component\DependencyInjection\Loader;
 use Symfony\Component\HttpKernel\DependencyInjection\Extension;
 use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
+use Valantic\ElasticaBridgeBundle\Messenger\Scheduler\PopulateIndexProvider;
 
 /**
  * This is the class that loads and manages your bundle configuration.
@@ -38,5 +39,9 @@ class ValanticElasticaBridgeExtension extends Extension
         $loader->load('services.yaml');
 
         $container->setParameter('valantic_elastica_bridge', $config);
+
+        if (!($config['indexing']['scheduler_enabled'] ?? false)) {
+            $container->removeDefinition(PopulateIndexProvider::class);
+        }
     }
 }

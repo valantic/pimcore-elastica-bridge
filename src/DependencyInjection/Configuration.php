@@ -27,6 +27,7 @@ class Configuration implements ConfigurationInterface
             ->integerNode('cooldown')->info('Cooldown time in seconds between populating jobs. Only considered in async operation. Starts at end of last indexing job.')->defaultValue(0)->end()
             ->booleanNode('should_skip_failing_documents')->defaultFalse()->info('If true, when a document fails to be indexed, it will be skipped and indexing continue with the next document. If false, indexing that index will be aborted.')->end()
             ->integerNode('interval')->defaultValue(600)->info('Interval in seconds at which the scheduler should be executed')->end()
+            ->booleanNode('scheduler_enabled')->defaultFalse()->info('If true, the built-in Symfony Scheduler provider is registered and triggers indexing automatically.')->end()
             ->end()
             ->end()
             ->arrayNode('events')
