@@ -40,7 +40,7 @@ class RefreshElementInIndexHandler extends AbstractRefreshHandler
         $lock = $this->lockService->getIndexingLock($index, true);
 
         if ($index->usesBlueGreenIndices() && $lock->acquire()) {
-            // Population is in progress — keep inactive index in sync too
+            // Population is in progress — keep inactive index in sync
             $this->propagateChanges->handleIndex($element, $index, $index->getBlueGreenInactiveElasticaIndex());
             $lock->release();
         }

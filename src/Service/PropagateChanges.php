@@ -147,10 +147,10 @@ class PropagateChanges
     ): void {
         $esDocuments = $this->documentHelper->elementToDocumentsForContexts($document, $element, $index);
 
-        if (count($esDocuments) === 0) {
-            // No contexts produced documents — delete all existing documents for this element.
-            $elasticaIndex->deleteByQuery(['term' => [DocumentInterface::META_ID => $element->getId()]]);
+        // Always remove all existing variants first to prevent orphaned documents when contexts shrink.
+        $elasticaIndex->deleteByQuery(['term' => [DocumentInterface::META_ID => $element->getId()]]);
 
+        if (count($esDocuments) === 0) {
             return;
         }
 
