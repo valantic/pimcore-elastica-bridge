@@ -160,14 +160,29 @@ class PopulateIndexService
             $inactiveElasticaIndex->create($indexConfig->getCreateArguments());
             $this->log($indexConfig->getName(), '<comment>Re-created inactive blue/green index</comment>');
         }
+
+        $bulkSettings = $indexConfig->getBulkIndexingSettings();
+
+        if ($bulkSettings !== []) {
+            $targetIndex = $indexConfig->usesBlueGreenIndices()
+                ? $indexConfig->getBlueGreenInactiveElasticaIndex()
+                : $this->esClient->getIndex($indexConfig->getName());
+            $targetIndex->setSettings($bulkSettings);
+            $this->log($indexConfig->getName(), '<comment>Applied bulk indexing settings (refresh_interval=-1, replicas=0)</comment>');
+        }
     }
 
     public function postPopulateIndex(IndexInterface $indexConfig): void
     {
-        $currentIndex = $this->esClient->getIndex($indexConfig->getName());
+        $currentIndex = $indexConfig->usesBlueGreenIndices()
+            ? $indexConfig->getBlueGreenInactiveElasticaIndex()
+            : $this->esClient->getIndex($indexConfig->getName());
 
-        if ($indexConfig->usesBlueGreenIndices()) {
-            $currentIndex = $indexConfig->getBlueGreenInactiveElasticaIndex();
+        $postSettings = $indexConfig->getPostBulkIndexingSettings();
+
+        if ($postSettings !== []) {
+            $currentIndex->setSettings($postSettings);
+            $this->log($indexConfig->getName(), '<comment>Restored production index settings</comment>');
         }
 
         $currentIndex->refresh();
@@ -222,7 +237,9 @@ class PopulateIndexService
     public function generateMessagesForIndex(IndexInterface $indexConfig, bool $ignoreCooldown = false): \Generator
     {
         $allowedDocuments = $indexConfig->getAllowedDocuments();
-        $batchSize = $indexConfig->getBatchSize(); // Define the batch size
+        $batchSize = $indexConfig->getBatchSize();
+        $messageBatchSize = $indexConfig->getMessageBatchSize();
+        // Number of PopulateIndexMessages to accumulate before yielding to the transport.
         $yieldSize = 10;
         $messageGenerated = false;
         $batch = [];
@@ -255,34 +272,55 @@ class PopulateIndexService
             $progressbar->setMaxSteps($totalCount);
             $progressbar->setProgress(0);
             $count = 0;
+            // IDs accumulated for the current CreateDocumentMessage batch.
+            $idBatch = [];
+            $batchType = null;
 
             while ($offset < $totalCount) {
                 $listing->setOffset($offset);
                 $listing->setLimit($batchSize);
                 $ids = $listing->loadIdList();
+                $typeMap = $this->getElementTypes($listing, $ids ?? []);
+
                 foreach ($ids ?? [] as $dataObjectId) {
                     $progressbar->advance();
-
-                    $elementType = $this->getElementType($listing, $dataObjectId);
-
-                    $batch[] = new PopulateIndexMessage(new CreateDocumentMessage(
-                        $dataObjectId,
-                        $elementType,
-                        $document,
-                        $indexConfig->getName(),
-                    ));
-                    $messageGenerated = true;
+                    $elementType = $typeMap[$dataObjectId];
+                    $batchType ??= $elementType;
+                    $idBatch[] = $dataObjectId;
                     $count++;
 
-                    if (count($batch) >= $yieldSize) {
-                        $this->eventDispatcher->dispatch(new PreAddDocumentToQueueEvent($indexConfig, count($batch)), ElasticaBridgeEvents::PRE_ADD_DOCUMENT_TO_QUEUE);
+                    if (count($idBatch) >= $messageBatchSize) {
+                        $batch[] = new PopulateIndexMessage(new CreateDocumentMessage(
+                            $idBatch,
+                            $batchType,
+                            $document,
+                            $indexConfig->getName(),
+                        ));
+                        $messageGenerated = true;
+                        $idBatch = [];
+                        $batchType = null;
 
-                        yield from $batch;
-                        $batch = []; // Reset the batch
+                        if (count($batch) >= $yieldSize) {
+                            $this->eventDispatcher->dispatch(new PreAddDocumentToQueueEvent($indexConfig, count($batch)), ElasticaBridgeEvents::PRE_ADD_DOCUMENT_TO_QUEUE);
+
+                            yield from $batch;
+                            $batch = [];
+                        }
                     }
                 }
 
                 $offset += $batchSize;
+            }
+
+            // Flush remaining IDs for this document class.
+            if ($idBatch !== []) {
+                $batch[] = new PopulateIndexMessage(new CreateDocumentMessage(
+                    $idBatch,
+                    $batchType ?? $this->getElementTypes($listing, $idBatch)[$idBatch[0]],
+                    $document,
+                    $indexConfig->getName(),
+                ));
+                $messageGenerated = true;
             }
 
             \Pimcore::collectGarbage();
@@ -292,7 +330,7 @@ class PopulateIndexService
                 $this->consoleOutput->writeln('');
             }
 
-            $this->consoleOutput->writeln('Dispatched ' . $count . ' messages', ConsoleOutputInterface::VERBOSITY_VERBOSE);
+            $this->consoleOutput->writeln('Dispatched ' . $count . ' elements in messages', ConsoleOutputInterface::VERBOSITY_VERBOSE);
         }
 
         if (count($batch) > 0) {
@@ -452,23 +490,58 @@ class PopulateIndexService
         }
     }
 
-    private function getElementType(AssetListing|DataObjectListing|DocumentListing $listing, mixed $dataObjectId)
+    /**
+     * Resolve element types for a batch of IDs in a single query (DataObject listings)
+     * or via getById for Asset/Document listings.
+     *
+     * @param int[] $ids
+     *
+     * @return array<int, class-string>
+     */
+    private function getElementTypes(AssetListing|DataObjectListing|DocumentListing $listing, array $ids): array
     {
+        if ($ids === []) {
+            return [];
+        }
+
         if ($listing instanceof AssetListing) {
-            return Asset::getById($dataObjectId)::class;
+            $types = [];
+
+            foreach ($ids as $id) {
+                $types[$id] = Asset::getById($id)::class;
+            }
+
+            return $types;
         }
 
         if ($listing instanceof DocumentListing) {
-            return Document::getById($dataObjectId)::class;
+            $types = [];
+
+            foreach ($ids as $id) {
+                $types[$id] = Document::getById($id)::class;
+            }
+
+            return $types;
         }
+
         $tableName = $listing->getDao()->getTableName();
-        $query = sprintf('SELECT %s FROM %s WHERE id = ?', 'className', $tableName);
-        $result = Db::getConnection()->fetchOne($query, [$dataObjectId]);
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $rows = Db::getConnection()->fetchAllAssociative(
+            sprintf('SELECT id, className FROM %s WHERE id IN (%s)', $tableName, $placeholders),
+            $ids,
+        );
+        $map = [];
 
-        if ($result === false) {
-            throw new \RuntimeException(sprintf('DataObject with ID %s not found in table %s', $dataObjectId, $tableName));
+        foreach ($rows as $row) {
+            $map[(int) $row['id']] = '\\Pimcore\\Model\\DataObject\\' . ucfirst($row['className']);
         }
 
-        return '\\Pimcore\\Model\\DataObject\\' . ucfirst($result);
+        foreach ($ids as $id) {
+            if (!isset($map[$id])) {
+                throw new \RuntimeException(sprintf('DataObject with ID %s not found in table %s', $id, $tableName));
+            }
+        }
+
+        return $map;
     }
 }

@@ -84,6 +84,29 @@ abstract class AbstractIndex implements IndexInterface
         return 500;
     }
 
+    public function getMessageBatchSize(): int
+    {
+        return 50;
+    }
+
+    public function getBulkIndexingSettings(): array
+    {
+        return [
+            'refresh_interval' => '-1',
+            'number_of_replicas' => 0,
+        ];
+    }
+
+    public function getPostBulkIndexingSettings(): array
+    {
+        $settings = $this->getSettings();
+
+        return [
+            'refresh_interval' => $settings['index']['refresh_interval'] ?? '1s',
+            'number_of_replicas' => $settings['index']['number_of_replicas'] ?? 1,
+        ];
+    }
+
     public function shouldPopulateInSubprocesses(): bool
     {
         return false;
