@@ -86,20 +86,17 @@ class CreateDocumentHandler
 
             $documentInstance = $this->documentRepository->get($message->document);
 
-
             $this->documentHelper->setTenantIfNeeded($documentInstance, $index);
 
-            if (!$documentInstance->shouldIndex($dataObject)) {
+            $esIndex = $index->getBlueGreenInactiveElasticaIndex();
+            $esDocuments = $this->documentHelper->elementToDocumentsForContexts($documentInstance, $dataObject, $index);
+
+            if (count($esDocuments) === 0) {
                 $messageDecreased = true;
                 return;
             }
 
-            $esIndex = $index->getBlueGreenInactiveElasticaIndex();
-            $esDocuments = [$this->documentHelper->elementToDocument($documentInstance, $dataObject)];
-
-            if (count($esDocuments) > 0) {
-                $esIndex->addDocuments($esDocuments);
-            }
+            $esIndex->addDocuments($esDocuments);
 
             $messageDecreased = true;
 
