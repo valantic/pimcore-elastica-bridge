@@ -26,16 +26,19 @@ class CreateDocumentFailedEvent implements EventSubscriberInterface
         }
 
         $index = $this->indexRepository->flattenedGet($message->esIndex);
-        $this->eventDispatcher->dispatch(
-            new PostDocumentCreateEvent(
-                $index,
-                $message->objectType,
-                $message->objectId,
-                null,
-                false,
-                willRetry: false
-            )
-        );
+
+        foreach ($message->objectIds as $objectId) {
+            $this->eventDispatcher->dispatch(
+                new PostDocumentCreateEvent(
+                    $index,
+                    $message->objectType,
+                    $objectId,
+                    null,
+                    false,
+                    willRetry: false,
+                ),
+            );
+        }
     }
 
     public static function getSubscribedEvents()

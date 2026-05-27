@@ -54,6 +54,27 @@ interface IndexInterface
     public function getBatchSize(): int;
 
     /**
+     * Number of element IDs packed into a single CreateDocumentMessage.
+     * Higher values reduce message-queue and HTTP overhead during populate.
+     */
+    public function getMessageBatchSize(): int;
+
+    /**
+     * Elasticsearch index settings applied while the inactive index is being populated.
+     * Disabling refresh and replicas during bulk indexing significantly speeds up ingestion.
+     *
+     * @return array<string, mixed>
+     */
+    public function getBulkIndexingSettings(): array;
+
+    /**
+     * Elasticsearch index settings restored after population completes (before alias switch).
+     *
+     * @return array<string, mixed>
+     */
+    public function getPostBulkIndexingSettings(): array;
+
+    /**
      * Defines if the the index should be populated in subprocesses.
      * This is useful for large indexes to avoid memory issues.
      */
