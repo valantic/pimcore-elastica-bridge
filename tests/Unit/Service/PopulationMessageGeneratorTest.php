@@ -171,6 +171,7 @@ class PopulationMessageGeneratorTest extends TestCase
         $index->shouldReceive('getName')->andReturn('products');
         $index->shouldReceive('getAllowedDocuments')->andReturn($allowedDocuments);
         $index->shouldReceive('getBatchSize')->andReturn(500);
+        $index->shouldReceive('getMessageBatchSize')->andReturn(50);
 
         return $index;
     }

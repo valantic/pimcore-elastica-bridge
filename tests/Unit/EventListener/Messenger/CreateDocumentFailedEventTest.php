@@ -45,7 +45,7 @@ class CreateDocumentFailedEventTest extends TestCase
 
     public function testFinalFailureIsDispatchedAsPostDocumentCreateEvent(): void
     {
-        $this->eventDispatcher->dispatch($this->failedEvent(new CreateDocumentMessage(42, \stdClass::class, 'product_document', 'products')));
+        $this->eventDispatcher->dispatch($this->failedEvent(new CreateDocumentMessage([42], \stdClass::class, 'product_document', 'products')));
 
         $this->assertCount(1, $this->postEvents);
         $this->assertSame($this->index, $this->postEvents[0]->index);
@@ -54,9 +54,16 @@ class CreateDocumentFailedEventTest extends TestCase
         $this->assertFalse($this->postEvents[0]->willRetry);
     }
 
+    public function testFinalFailureIsDispatchedForEveryElementInTheBatch(): void
+    {
+        $this->eventDispatcher->dispatch($this->failedEvent(new CreateDocumentMessage([1, 2, 3], \stdClass::class, 'product_document', 'products')));
+
+        $this->assertSame([1, 2, 3], array_map(static fn (PostDocumentCreateEvent $event): ?int => $event->elementId, $this->postEvents));
+    }
+
     public function testFailureThatWillBeRetriedIsIgnored(): void
     {
-        $event = $this->failedEvent(new CreateDocumentMessage(42, \stdClass::class, 'product_document', 'products'));
+        $event = $this->failedEvent(new CreateDocumentMessage([42], \stdClass::class, 'product_document', 'products'));
         $event->setForRetry();
 
         $this->eventDispatcher->dispatch($event);

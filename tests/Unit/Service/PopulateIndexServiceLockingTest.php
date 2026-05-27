@@ -257,6 +257,7 @@ class PopulateIndexServiceLockingTest extends TestCase
         $index->shouldReceive('getName')->andReturn($name);
         $index->shouldReceive('getAllowedDocuments')->andReturn(['product_document']);
         $index->shouldReceive('getBatchSize')->andReturn(500);
+        $index->shouldReceive('getMessageBatchSize')->andReturn(50);
         $index->shouldReceive('usesBlueGreenIndices')->andReturnFalse();
         $index->shouldReceive('getElasticaIndex')->andReturn($elasticaIndex);
 

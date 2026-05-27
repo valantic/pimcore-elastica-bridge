@@ -255,7 +255,7 @@ class CreateDocumentHandlerTest extends TestCase
 
     private function createMessage(int $objectId = 42, ?CallbackEvent $callback = null): CreateDocumentMessage
     {
-        return new CreateDocumentMessage($objectId, StubDataObject::class, 'ProductDocument', 'products', $callback);
+        return new CreateDocumentMessage([$objectId], StubDataObject::class, 'ProductDocument', 'products', $callback);
     }
 
     private function getPostEvent(): PostDocumentCreateEvent

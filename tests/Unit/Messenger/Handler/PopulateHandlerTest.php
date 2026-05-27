@@ -101,7 +101,7 @@ class PopulateHandlerTest extends TestCase
     {
         [$key, $queueLock] = $this->acquireQueueLock();
         $messages = [
-            new CreateDocumentMessage(1, \stdClass::class, 'product_document', 'products'),
+            new CreateDocumentMessage([1], \stdClass::class, 'product_document', 'products'),
             new SwitchIndex('products'),
             new ReleaseIndexLock('products'),
         ];

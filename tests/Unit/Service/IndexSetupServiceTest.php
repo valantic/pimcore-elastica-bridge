@@ -37,6 +37,8 @@ class IndexSetupServiceTest extends TestCase
         $this->indexConfig = \Mockery::mock(IndexInterface::class);
         $this->indexConfig->shouldReceive('getName')->andReturn('products');
         $this->indexConfig->shouldReceive('getCreateArguments')->andReturn(self::CREATE_ARGUMENTS);
+        $this->indexConfig->shouldReceive('getBulkIndexingSettings')->andReturn([])->byDefault();
+        $this->indexConfig->shouldReceive('getPostBulkIndexingSettings')->andReturn([])->byDefault();
         $this->logger = new PopulateLogger(\Mockery::spy(ConsoleOutputInterface::class));
         $this->service = new IndexSetupService($this->esClient, $this->logger);
     }
