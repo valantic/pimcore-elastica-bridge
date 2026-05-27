@@ -52,6 +52,8 @@ class PropagateChanges
             $this->eventDispatcher->dispatch($event, ElasticaBridgeEvents::PRE_REFRESH_ELEMENT);
         }
 
+        $indices = $event->getIndices();
+
         foreach ($indices as $index) {
             $this->messageBus->dispatch(
                 new RefreshElementInIndex(
