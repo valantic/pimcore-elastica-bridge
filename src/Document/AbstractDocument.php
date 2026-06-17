@@ -6,9 +6,9 @@ namespace Valantic\ElasticaBridgeBundle\Document;
 
 use Pimcore\Model\Asset;
 use Pimcore\Model\DataObject;
+use Pimcore\Model\DataObject\Listing;
 use Pimcore\Model\Document as PimcoreDocument;
 use Pimcore\Model\Element\AbstractElement;
-use Pimcore\Model\Listing\AbstractListing;
 use Valantic\ElasticaBridgeBundle\Enum\DocumentType;
 use Valantic\ElasticaBridgeBundle\Exception\DocumentType\PimcoreListingClassNotFoundException;
 use Valantic\ElasticaBridgeBundle\Exception\DocumentType\UnknownPimcoreElementType;
@@ -48,25 +48,28 @@ abstract class AbstractDocument implements DocumentInterface
         return false;
     }
 
-    public function getListingInstance(IndexInterface $index): AbstractListing
+    public function getListingInstance(IndexInterface $index): Listing|PimcoreDocument\Listing|Asset\Listing
     {
-        /** @var class-string<AbstractListing> $listingClass */
+        /** @var class-string<Listing> $listingClass */
         $listingClass = $this->getListingClass();
 
-        /** @var AbstractListing $listingInstance */
         $listingInstance = new $listingClass();
+
+        if ($this->getPathCondition() !== null) {
+            $listingInstance->addConditionParam('path LIKE ?', $this->getPathCondition() . '%');
+        }
 
         if ($this->getIndexListingCondition() !== null) {
             $listingInstance->setCondition($this->getIndexListingCondition());
         }
 
         if (in_array($this->getType(), DocumentType::casesPublishedState(), true)) {
-            /** @var PimcoreDocument\Listing|DataObject\Listing $listingInstance */
+            /* @var PimcoreDocument\Listing|Listing $listingInstance */
             $listingInstance->setUnpublished($this->includeUnpublishedElementsInListing());
         }
 
         if ($this->getType() === DocumentType::DATA_OBJECT) {
-            /** @var DataObject\Listing $listingInstance */
+            /* @var Listing $listingInstance */
             if ($this->treatObjectVariantsAsDocuments()) {
                 $listingInstance->setObjectTypes([
                     DataObject\AbstractObject::OBJECT_TYPE_OBJECT,
@@ -143,6 +146,11 @@ abstract class AbstractDocument implements DocumentInterface
         }
     }
 
+    protected function getPathCondition(): ?string
+    {
+        return null;
+    }
+
     protected function getIndexListingCondition(): ?string
     {
         return null;
@@ -211,7 +219,7 @@ abstract class AbstractDocument implements DocumentInterface
         $subType = $this->getSubType();
 
         if ($subType === null) {
-            return DataObject\Listing::class;
+            return Listing::class;
         }
 
         $className = $subType . '\Listing';

@@ -101,7 +101,6 @@ interface IndexInterface
      *
      * @see DocumentNormalizerTrait::$relatedObjects
      * @see IndexCommand
-     * @see IndexCommand::$isPopulating
      * @see IndexInterface::getBlueGreenInactiveElasticaIndex()
      */
     public function refreshIndexAfterEveryDocumentWhenPopulating(): bool;
