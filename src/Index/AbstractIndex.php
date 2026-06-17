@@ -46,7 +46,7 @@ abstract class AbstractIndex implements IndexInterface
 
     final public function hasMapping(): bool
     {
-        return count($this->getMapping()) > 0;
+        return $this->getMapping() !== [];
     }
 
     final public function getCreateArguments(): array
@@ -145,7 +145,7 @@ abstract class AbstractIndex implements IndexInterface
             throw new BlueGreenIndicesIncorrectlySetupException();
         }
 
-        $suffix = substr(array_keys($aliases)[0], strlen($this->getName()));
+        $suffix = substr((string) array_keys($aliases)[0], strlen($this->getName()));
 
         return IndexBlueGreenSuffix::tryFrom($suffix) ?? throw new BlueGreenIndicesIncorrectlySetupException();
     }

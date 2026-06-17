@@ -9,6 +9,8 @@ use Psr\Log\LoggerTrait;
 use Psr\Log\LogLevel;
 use Sentry\Breadcrumb;
 
+use function Sentry\addBreadcrumb;
+
 class SentryBreadcrumbLogger implements LoggerInterface
 {
     use LoggerTrait;
@@ -22,7 +24,7 @@ class SentryBreadcrumbLogger implements LoggerInterface
             $message = $message->__toString();
         }
 
-        \Sentry\addBreadcrumb(
+        addBreadcrumb(
             new Breadcrumb(
                 match ($level) {
                     LogLevel::EMERGENCY, LogLevel::CRITICAL => Breadcrumb::LEVEL_FATAL,

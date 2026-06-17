@@ -16,14 +16,17 @@ use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 class Status extends BaseCommand
 {
     use NonBundleIndexTrait;
+
     /**
      * @var array<int,array<int,mixed>>
      */
     private array $bundleIndices = [];
+
     /**
      * @var array<int,array<int,mixed>>
      */
     private array $otherIndices = [];
+
     /**
      * @var string[]
      */
@@ -74,9 +77,14 @@ class Status extends BaseCommand
         $otherIndexNames = [];
 
         foreach ($this->esClient->getCluster()->getIndexNames() as $indexName) {
-            if (in_array($indexName, $this->skipOtherIndices, true) || !$this->shouldProcessNonBundleIndex($indexName)) {
+            if (in_array($indexName, $this->skipOtherIndices, true)) {
                 continue;
             }
+
+            if (!$this->shouldProcessNonBundleIndex($indexName)) {
+                continue;
+            }
+
             $otherIndexNames[] = $indexName;
         }
 
@@ -112,7 +120,7 @@ class Status extends BaseCommand
         $base = log($bytes, 1024);
         $suffixes = ['', 'K', 'M', 'G', 'T'];
 
-        return round(1024 ** ($base - floor($base)), 2) . ' ' . $suffixes[floor($base)] . 'B';
+        return round(1024 ** ($base - floor($base)), 2) . ' ' . $suffixes[(int) floor($base)] . 'B';
     }
 
     private function processBundleIndex(IndexInterface $indexConfig): void
@@ -164,6 +172,7 @@ class Status extends BaseCommand
 
         $stats = $index->getStats()->get()['indices'];
         $stats = array_values($stats)[0]['primaries'];
+
         $numDocs = $stats['docs']['count'];
         $size = $stats['store']['size_in_bytes'];
 

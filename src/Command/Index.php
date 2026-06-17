@@ -24,10 +24,14 @@ use Valantic\ElasticaBridgeBundle\Util\ElasticsearchResponse;
 
 class Index extends BaseCommand
 {
-    private const ARGUMENT_INDEX = 'index';
-    private const OPTION_DELETE = 'delete';
-    private const OPTION_POPULATE = 'populate';
-    private const OPTION_LOCK_RELEASE = 'lock-release';
+    private const string ARGUMENT_INDEX = 'index';
+
+    private const string OPTION_DELETE = 'delete';
+
+    private const string OPTION_POPULATE = 'populate';
+
+    private const string OPTION_LOCK_RELEASE = 'lock-release';
+
     public static bool $isPopulating = false;
 
     public function __construct(
@@ -76,7 +80,7 @@ class Index extends BaseCommand
         foreach ($this->indexRepository->flattenedAll() as $indexConfig) {
             if (
                 is_array($this->input->getArgument(self::ARGUMENT_INDEX))
-                && count($this->input->getArgument(self::ARGUMENT_INDEX)) > 0
+                && $this->input->getArgument(self::ARGUMENT_INDEX) !== []
                 && !in_array($indexConfig->getName(), $this->input->getArgument(self::ARGUMENT_INDEX), true)
             ) {
                 $skippedIndices[] = $indexConfig->getName();
@@ -114,7 +118,7 @@ class Index extends BaseCommand
             }
         }
 
-        if (count($skippedIndices) > 0) {
+        if ($skippedIndices !== []) {
             $this->output->writeln('');
             $this->output->writeln(
                 sprintf('<info>Skipped the following indices: %s</info>', implode(', ', $skippedIndices)),
@@ -189,7 +193,7 @@ class Index extends BaseCommand
             timeout: null,
         );
 
-        $exitCode = $process->run(function ($type, $buffer): void {
+        $exitCode = $process->run(function ($type, string|iterable $buffer): void {
             if ($type === Process::ERR && $this->output instanceof ConsoleOutput) {
                 $this->output->getErrorOutput()->write($buffer);
             } else {

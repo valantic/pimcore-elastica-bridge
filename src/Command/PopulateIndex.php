@@ -116,7 +116,7 @@ class PopulateIndex extends BaseCommand
                         timeout: null,
                     );
 
-                    $exitCode = $process->run(function ($type, $buffer): void {
+                    $exitCode = $process->run(function ($type, string|iterable $buffer): void {
                         if ($type === Process::ERR && $this->output instanceof ConsoleOutput) {
                             $this->output->getErrorOutput()->write($buffer);
                         } else {

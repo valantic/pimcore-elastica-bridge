@@ -10,6 +10,7 @@ return Valantic\PhpCsFixerConfig\ConfigFactory::createValanticConfig([
         PhpCsFixer\Finder::create()
             ->in([
                 __DIR__ . '/src',
+                __DIR__ . '/tests',
                 __DIR__ . '/docs/example',
             ])
             ->name(['*.php'])
