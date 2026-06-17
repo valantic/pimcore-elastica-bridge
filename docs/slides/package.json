@@ -7,7 +7,7 @@
     "export": "slidev export"
   },
   "dependencies": {
-    "@slidev/cli": "^52.15.2",
+    "@slidev/cli": "^52.16.0",
     "@slidev/theme-default": "^0.25.0",
     "@slidev/theme-seriph": "^0.25.0",
     "prism-theme-vars": "^0.2.5",
