@@ -32,6 +32,10 @@
     {
       "name": "Patrick Ryser",
       "email": "patrick.ryser@cec.valantic.com"
+    },
+    {
+      "name": "Remo Liebi",
+      "email": "remo.liebi@cec.valantic.com"
     }
   ],
   "autoload": {
