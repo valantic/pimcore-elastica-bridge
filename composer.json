@@ -13,15 +13,14 @@
     "symfony/lock": "^6.2"
   },
   "require-dev": {
-    "bamarni/composer-bin-plugin": "^1.8.3",
+    "friendsofphp/php-cs-fixer": "^3.95.10",
     "phpstan/extension-installer": "^1.4.3",
-    "phpstan/phpstan": "^1.12.32",
+    "phpstan/phpstan": "^1.12.33",
     "phpstan/phpstan-deprecation-rules": "^1.2.1",
     "phpstan/phpstan-strict-rules": "^1.6.2",
     "rector/rector": "^1.2.10",
-    "roave/security-advisories": "dev-latest",
-    "sentry/sentry": "^4.19.1",
-    "symfony/http-client": "^6.4.33",
+    "sentry/sentry": "^4.28.0",
+    "symfony/http-client": "^6.4.41",
     "valantic/php-cs-fixer-config": "^2.2.1"
   },
   "license": "GPL-3.0-only",
@@ -46,29 +45,18 @@
       "Pimcore\\Model\\DataObject\\": "docs/example/var/classes/DataObject/"
     }
   },
-  "extra": {
-    "bamarni-bin": {
-      "bin-links": false,
-      "forward-command": true
-    }
-  },
   "scripts": {
-    "post-install-cmd": [
-      "@composer bin all install --ansi"
-    ],
     "post-update-cmd": [
-      "@composer bin all update --ansi",
-      "@composer bin all bump",
       "@composer bump --dev-only"
     ],
     "phpstan": [
       "./vendor/bin/phpstan analyse --memory-limit=1G"
     ],
     "php-cs-fixer": [
-      "./vendor-bin/phpcs/vendor/bin/php-cs-fixer fix --diff"
+      "./vendor/bin/php-cs-fixer fix --diff"
     ],
     "php-cs-fixer-check": [
-      "./vendor-bin/phpcs/vendor/bin/php-cs-fixer fix --diff --dry-run"
+      "./vendor/bin/php-cs-fixer fix --diff --dry-run"
     ],
     "rector": [
       "./vendor/bin/rector process src"
@@ -77,10 +65,16 @@
   "config": {
     "sort-packages": true,
     "allow-plugins": {
-      "bamarni/composer-bin-plugin": true,
       "ocramius/package-versions": true,
       "phpstan/extension-installer": true,
       "php-http/discovery": true
+    },
+    "policy": {
+      "advisories": {
+        "ignore": [
+          "pimcore/pimcore"
+        ]
+      }
     }
   }
 }
