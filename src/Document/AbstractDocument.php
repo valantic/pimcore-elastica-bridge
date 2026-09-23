@@ -111,10 +111,16 @@ abstract class AbstractDocument implements DocumentInterface
             return null;
         }
 
+        $subType = $this->getSubType();
+
+        if ($subType === null) {
+            return null;
+        }
+
         $candidate = null;
 
         if ($this->getType() === DocumentType::DOCUMENT) {
-            $candidate = $this->getTypeMappingForDocuments()[$this->getSubType()] ?? null;
+            $candidate = $this->getTypeMappingForDocuments()[$subType] ?? null;
 
             if (!in_array($candidate, PimcoreDocument::getTypes(), true)) {
                 throw new UnknownPimcoreElementType($candidate);
@@ -122,7 +128,7 @@ abstract class AbstractDocument implements DocumentInterface
         }
 
         if ($this->getType() === DocumentType::ASSET) {
-            $candidate = $this->getTypeMappingForAssets()[$this->getSubType()] ?? null;
+            $candidate = $this->getTypeMappingForAssets()[$subType] ?? null;
 
             if (!in_array($candidate, Asset::getTypes(), true)) {
                 throw new UnknownPimcoreElementType($candidate);
@@ -184,10 +190,12 @@ abstract class AbstractDocument implements DocumentInterface
      */
     protected function getTypeMappingForDocuments(): array
     {
+        // the bundles providing these classes are optional and not installed in this package's dev dependencies
+        /** @var array<string,string> $possibleBundleTypes */
         $possibleBundleTypes = [
-            '\Pimcore\Model\DocumentNewsletter' => 'newsletter',
-            '\Pimcore\Model\DocumentPrintpage' => 'printpage',
-            '\Pimcore\Model\DocumentPrintcontainer' => 'printcontainer',
+            'Pimcore\Bundle\NewsletterBundle\Model\Document\Newsletter' => 'newsletter',
+            'Pimcore\Bundle\WebToPrintBundle\Model\Document\Printpage' => 'printpage',
+            'Pimcore\Bundle\WebToPrintBundle\Model\Document\Printcontainer' => 'printcontainer',
         ];
 
         /** @var array<class-string,string> $availableBundleTypes */
