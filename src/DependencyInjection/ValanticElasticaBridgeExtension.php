@@ -6,7 +6,7 @@ namespace Valantic\ElasticaBridgeBundle\DependencyInjection;
 
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\Loader;
+use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 use Symfony\Component\HttpKernel\DependencyInjection\Extension;
 use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
@@ -18,8 +18,9 @@ use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
  */
 class ValanticElasticaBridgeExtension extends Extension
 {
-    private const TAG_INDEX = 'valantic.elastica_bridge.index';
-    private const TAG_DOCUMENT_INDEX = 'valantic.elastica_bridge.document';
+    private const string TAG_INDEX = 'valantic.elastica_bridge.index';
+
+    private const string TAG_DOCUMENT_INDEX = 'valantic.elastica_bridge.document';
 
     /**
      * @param array<mixed> $configs
@@ -34,7 +35,7 @@ class ValanticElasticaBridgeExtension extends Extension
         $configuration = new Configuration();
         $config = $this->processConfiguration($configuration, $configs);
 
-        $loader = new Loader\YamlFileLoader($container, new FileLocator(__DIR__ . '/../Resources/config'));
+        $loader = new YamlFileLoader($container, new FileLocator(__DIR__ . '/../Resources/config'));
         $loader->load('services.yaml');
 
         $container->setParameter('valantic_elastica_bridge', $config);

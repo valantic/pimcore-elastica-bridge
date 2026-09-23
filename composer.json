@@ -4,26 +4,80 @@
   "description": "Elastica bridge for Pimcore",
   "type": "pimcore-bundle",
   "require": {
-    "php": "^8.1",
+    "php": "^8.3",
     "ext-json": "*",
-    "pimcore/pimcore": "^11.0",
+    "elasticsearch/elasticsearch": "^8.19",
+    "pimcore/pimcore": "^12.3.1",
     "psr/log": "^3.0",
     "ruflin/elastica": "^8.0.0",
-    "symfony/console": "^6.2",
-    "symfony/lock": "^6.2"
+    "symfony/console": "^7.3",
+    "symfony/lock": "^7.3"
   },
   "require-dev": {
-    "friendsofphp/php-cs-fixer": "^3.95.10",
+    "doctrine/doctrine-fixtures-bundle": "^4.3.1",
+    "friendsofphp/php-cs-fixer": "^3.95.27",
+    "mockery/mockery": "^1.6.15",
     "phpstan/extension-installer": "^1.4.3",
-    "phpstan/phpstan": "^1.12.33",
-    "phpstan/phpstan-deprecation-rules": "^1.2.1",
-    "phpstan/phpstan-strict-rules": "^1.6.2",
-    "rector/rector": "^1.2.10",
-    "sentry/sentry": "^4.28.0",
-    "symfony/http-client": "^6.4.41",
+    "phpstan/phpstan": "^2.2.14",
+    "phpstan/phpstan-deprecation-rules": "^2.0.5",
+    "phpstan/phpstan-strict-rules": "^2.0.12",
+    "phpunit/phpunit": "^12.5.35",
+    "rector/rector": "^2.6.7",
+    "roave/security-advisories": "dev-latest",
+    "sentry/sentry": "^4.31.0",
+    "symfony/http-client": "^7.4.19",
+    "symfony/phpunit-bridge": "^8.1.6",
     "valantic/php-cs-fixer-config": "^2.2.1"
   },
-  "license": "GPL-3.0-only",
+  "conflict": {
+    "symfony/asset": "<7.0",
+    "symfony/cache": "<7.0",
+    "symfony/clock": "<7.0",
+    "symfony/config": "<7.0",
+    "symfony/console": "<7.0",
+    "symfony/debug-bundle": "<7.0",
+    "symfony/dependency-injection": "<7.0",
+    "symfony/doctrine-bridge": "<7.0",
+    "symfony/doctrine-messenger": "<7.0",
+    "symfony/dom-crawler": "<7.0",
+    "symfony/error-handler": "<7.0",
+    "symfony/event-dispatcher": "<7.0",
+    "symfony/expression-language": "<7.0",
+    "symfony/filesystem": "<7.0",
+    "symfony/finder": "<7.0",
+    "symfony/framework-bundle": "<7.0",
+    "symfony/html-sanitizer": "<7.0",
+    "symfony/http-foundation": "<7.0",
+    "symfony/http-kernel": "<7.0",
+    "symfony/lock": "<7.0",
+    "symfony/mailer": "<7.0",
+    "symfony/messenger": "<7.0",
+    "symfony/monolog-bridge": "<7.0",
+    "symfony/mime": "<7.0",
+    "symfony/options-resolver": "<7.0",
+    "symfony/password-hasher": "<7.0",
+    "symfony/process": "<7.0",
+    "symfony/property-access": "<7.0",
+    "symfony/property-info": "<7.0",
+    "symfony/rate-limiter": "<7.0",
+    "symfony/routing": "<7.0",
+    "symfony/security-bundle": "<7.0",
+    "symfony/security-core": "<7.0",
+    "symfony/security-http": "<7.0",
+    "symfony/serializer": "<7.0",
+    "symfony/stopwatch": "<7.0",
+    "symfony/string": "<7.0",
+    "symfony/translation": "<7.0",
+    "symfony/twig-bridge": "<7.0",
+    "symfony/twig-bundle": "<7.0",
+    "symfony/uid": "<7.0",
+    "symfony/validator": "<7.0",
+    "symfony/var-dumper": "<7.0",
+    "symfony/var-exporter": "<7.0",
+    "symfony/web-profiler-bundle": "<7.0",
+    "symfony/yaml": "<7.0"
+  },
+  "license": "proprietary",
   "authors": [
     {
       "name": "Linus Metzler",
@@ -46,7 +100,8 @@
   "autoload-dev": {
     "psr-4": {
       "App\\": "docs/example/src/",
-      "Pimcore\\Model\\DataObject\\": "docs/example/var/classes/DataObject/"
+      "Pimcore\\Model\\DataObject\\": "docs/example/var/classes/DataObject/",
+      "Valantic\\ElasticaBridgeBundle\\Tests\\": "tests/"
     }
   },
   "scripts": {
@@ -64,14 +119,25 @@
     ],
     "rector": [
       "./vendor/bin/rector process src"
-    ]
+    ],
+    "test": [
+      "./vendor/bin/phpunit"
+    ],
+    "test-coverage": [
+      "./vendor/bin/phpunit --coverage-html coverage"
+    ],
+    "auto-scripts": {
+      "cache:clear": "symfony-cmd",
+      "assets:install %PUBLIC_DIR%": "symfony-cmd"
+    }
   },
   "config": {
     "sort-packages": true,
     "allow-plugins": {
       "ocramius/package-versions": true,
+      "php-http/discovery": true,
       "phpstan/extension-installer": true,
-      "php-http/discovery": true
+      "symfony/flex": true
     },
     "policy": {
       "advisories": {
@@ -79,6 +145,11 @@
           "pimcore/pimcore"
         ]
       }
+    }
+  },
+  "extra": {
+    "symfony": {
+      "docker": false
     }
   }
 }

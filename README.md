@@ -1,8 +1,9 @@
 # Elastica Bridge for Pimcore
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/valantic/pimcore-elastica-bridge.svg?style=flat-square)](https://packagist.org/packages/valantic/pimcore-elastica-bridge)
-[![Software License](https://img.shields.io/badge/license-GPL-brightgreen.svg?style=flat-square)](LICENSE.md)
+[![Software License](https://img.shields.io/badge/license-POCL-brightgreen.svg?style=flat-square)](LICENSE.md)
 [![PHP Checks](https://github.com/valantic/pimcore-elastica-bridge/actions/workflows/php.yml/badge.svg)](https://github.com/valantic/pimcore-elastica-bridge/actions/workflows/php.yml)
+[![codecov](https://codecov.io/gh/valantic/pimcore-elastica-bridge/branch/main/graph/badge.svg)](https://codecov.io/gh/valantic/pimcore-elastica-bridge)
 
 This package is developed by [valantic CEC Schweiz](https://www.valantic.com/en/services/digital-business/) and is under active development.
 
@@ -134,8 +135,41 @@ Description:
   Displays the status of the configured Elasticsearch indices
 ```
 
+## Testing
+
+This bundle includes a comprehensive test suite with unit, integration, and functional tests.
+
+### Running Tests
+
+```bash
+# Run all tests
+composer test
+
+# Run specific test suite
+./vendor/bin/phpunit --testsuite Unit
+./vendor/bin/phpunit --testsuite Integration
+
+# Run with coverage
+composer test-coverage
+```
+
+### Requirements for Testing
+
+- PHP 8.3 or higher
+- PHPUnit 12.5 or higher
+- Elasticsearch 8.x (for integration tests)
+
+For detailed information about writing and running tests, see the [Testing Guide](tests/README.md).
+
+### Continuous Integration
+
+All tests run automatically on GitHub Actions for every push and pull request, testing against:
+- PHP 8.3, 8.4
+- Pimcore 12.x
+- Both minimum and stable dependency versions
+
 ## License
 
-In order to comply with [Pimcore's updated licensing policy](https://pimcore.com/en/resources/blog/breaking-free-pimcore-says-goodbye-to-gpl-and-enters-a-new-era-with-pocl), this bundle is (now) published under the GPLv3 license for compatibility Pimcore Platform Version 2024.4 and will be re-licensed under the POCL license as soon as it is compatible with Pimcore Platform Version 2025.1.
+In order to comply with [Pimcore's updated licensing policy](https://pimcore.com/en/resources/blog/breaking-free-pimcore-says-goodbye-to-gpl-and-enters-a-new-era-with-pocl), this bundle is published under the Pimcore Open Core License (POCL) starting with the version compatible with Pimcore Platform Version 2025.1 (Pimcore 12). Earlier versions for Pimcore Platform Version 2024.4 and below remain available under the GPLv3 license. See [LICENSE.md](LICENSE.md).
 
-If you have any questiosn regarding licensing, please reach out to us at [info@cec.valantic.ch](mailto:info@cec.valantic.ch).
+If you have any questions regarding licensing, please reach out to us at [info@cec.valantic.ch](mailto:info@cec.valantic.ch).
