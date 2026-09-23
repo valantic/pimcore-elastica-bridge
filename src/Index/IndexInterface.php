@@ -28,12 +28,6 @@ interface IndexInterface
     public function getBatchSize(): int;
 
     /**
-     * Defines if the the index should be populated in subprocesses.
-     * This is useful for large indexes to avoid memory issues.
-     */
-    public function shouldPopulateInSubprocesses(): bool;
-
-    /**
      * Defines the mapping to be used for this index.
      * Passed 1:1 to Elasticsearch.
      *

@@ -15,7 +15,7 @@
 - The `--lock-release` option of `valantic:elastica-bridge:index` was renamed to `--ignore-locks`
 - `\Valantic\ElasticaBridgeBundle\Document\DocumentInterface::getListingInstance()` now returns `DataObject\Listing|Document\Listing|Asset\Listing` instead of `AbstractListing`; update the return type of any overrides
 - `\Valantic\ElasticaBridgeBundle\Index\IndexInterface::getBatchSize()` now defaults to `500` and controls how many IDs are loaded per page when dispatching messages
-- `\Valantic\ElasticaBridgeBundle\Index\IndexInterface::shouldPopulateInSubprocesses()` no longer has any effect
+- `\Valantic\ElasticaBridgeBundle\Index\IndexInterface::shouldPopulateInSubprocesses()` was removed; remove any implementations
 
 ## Upgrade from v3 to v4
 

@@ -62,13 +62,6 @@ class AbstractIndexTest extends TestCase
         $this->assertSame(500, $index->getBatchSize());
     }
 
-    public function testShouldPopulateInSubprocessesReturnsFalseByDefault(): void
-    {
-        $index = $this->createTestIndex();
-
-        $this->assertFalse($index->shouldPopulateInSubprocesses());
-    }
-
     public function testGetCreateArgumentsIncludesMappingsAndSettings(): void
     {
         $index = $this->createTestIndex();
