@@ -8,5 +8,7 @@ use Valantic\ElasticaBridgeBundle\Messenger\Middleware\SyncTransportDetectionInt
 
 class PopulateIndexMessage implements SyncTransportDetectionInterface
 {
-    public function __construct(public readonly CreateDocumentMessage|SwitchIndex|ReleaseIndexLock $message) {}
+    public function __construct(public readonly CreateDocumentMessage|SwitchIndex|ReleaseIndexLock $message)
+    {
+    }
 }

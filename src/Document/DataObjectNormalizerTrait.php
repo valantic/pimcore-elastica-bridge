@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Valantic\ElasticaBridgeBundle\Document;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\ParameterType;
 use Pimcore\Localization\LocaleService;
 use Pimcore\Model\DataObject\AbstractObject;
 use Pimcore\Model\DataObject\Concrete;
@@ -20,6 +21,7 @@ use Symfony\Contracts\Service\Attribute\Required;
 trait DataObjectNormalizerTrait
 {
     protected LocaleService $localeService;
+
     private Connection $connection;
 
     #[Required]
@@ -209,15 +211,15 @@ trait DataObjectNormalizerTrait
                 SELECT DISTINCT id
                 FROM CategoryHierarchy where published = 1;';
         $statement = $this->connection->prepare($query);
-        $statement->bindValue(1, $element->getId(), \PDO::PARAM_INT);
+        $statement->bindValue(1, $element->getId(), ParameterType::INTEGER);
 
         foreach ($objectTypes as $index => $type) {
-            $statement->bindValue($index + 2, $type, \PDO::PARAM_STR);
+            $statement->bindValue($index + 2, $type, ParameterType::STRING);
         }
 
         $result = $statement->executeQuery();
 
-        return [DocumentInterface::ATTRIBUTE_CHILDREN_RECURSIVE => array_map('intval', array_keys($result->fetchAllAssociativeIndexed()))];
+        return [DocumentInterface::ATTRIBUTE_CHILDREN_RECURSIVE => array_map(intval(...), array_keys($result->fetchAllAssociativeIndexed()))];
     }
 
     /**

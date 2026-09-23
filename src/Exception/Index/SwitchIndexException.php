@@ -7,4 +7,6 @@ namespace Valantic\ElasticaBridgeBundle\Exception\Index;
 use Symfony\Component\Messenger\Exception\UnrecoverableExceptionInterface;
 use Valantic\ElasticaBridgeBundle\Exception\BaseException;
 
-class SwitchIndexException extends BaseException implements UnrecoverableExceptionInterface {}
+class SwitchIndexException extends BaseException implements UnrecoverableExceptionInterface
+{
+}

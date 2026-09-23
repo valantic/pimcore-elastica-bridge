@@ -19,7 +19,8 @@ class PopulateHandler
         private readonly MessageBusInterface $messengerBusElasticaBridge,
         private readonly PopulateIndexService $populateIndexService,
         private readonly LockService $lockService,
-    ) {}
+    ) {
+    }
 
     public function __invoke(PopulateIndexMessage|TriggerSingleIndexMessage $message, bool $synchronous): void
     {
@@ -31,7 +32,6 @@ class PopulateHandler
         }
 
         try {
-
             if ($synchronous) {
                 throw new PopulationNotStartedException(PopulationNotStartedException::TYPE_NOT_AVAILABLE_IN_SYNC);
             }

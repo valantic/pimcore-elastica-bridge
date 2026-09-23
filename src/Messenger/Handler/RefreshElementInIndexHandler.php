@@ -23,7 +23,8 @@ class RefreshElementInIndexHandler extends AbstractRefreshHandler
         private readonly LockService $lockService,
         private readonly IndexRepository $indexRepository,
         private readonly ConsoleOutputInterface $consoleOutput,
-    ) {}
+    ) {
+    }
 
     public function __invoke(RefreshElementInIndex $message): void
     {

@@ -44,6 +44,7 @@ use Valantic\ElasticaBridgeBundle\Util\ElasticsearchResponse;
 class PopulateIndexService
 {
     private bool $shouldDelete = false;
+
     /**
      * @var string[]
      */
@@ -58,14 +59,14 @@ class PopulateIndexService
         private readonly EventDispatcherInterface $eventDispatcher,
         private readonly MessageBusInterface $messengerBusElasticaBridge,
         private readonly ConsoleOutputInterface $consoleOutput,
-    ) {}
+    ) {
+    }
 
     /**
      * @return \Generator<PopulateIndexMessage|Envelope>
      */
     public function processScheduler(): \Generator
     {
-
         foreach ($this->indexRepository->flattenedAll() as $indexConfig) {
             try {
                 $this->eventDispatcher->dispatch(new PreExecuteEvent($indexConfig, PreExecuteEvent::SOURCE_SCHEDULER), ElasticaBridgeEvents::PRE_EXECUTE);
@@ -97,6 +98,7 @@ class PopulateIndexService
         if (is_string($indexConfig)) {
             $indexConfig = $this->indexRepository->flattenedGet($indexConfig);
         }
+
         $this->eventDispatcher->dispatch(new PreExecuteEvent($indexConfig, PreExecuteEvent::SOURCE_API), ElasticaBridgeEvents::PRE_EXECUTE);
 
         $this->checkIndex($indexConfig, $ignoreCooldown, $ignoreLock, false, ignoreQueueLock: false);
@@ -128,18 +130,18 @@ class PopulateIndexService
             }
 
             yield from $this->generateMessagesForIndex($indexConfig, $ignoreCooldown);
-        } catch (PopulationNotStartedException $e) {
-            if ($e->isSilentModeEnabled()) {
-                throw $e;
+        } catch (PopulationNotStartedException $populationNotStartedException) {
+            if ($populationNotStartedException->isSilentModeEnabled()) {
+                throw $populationNotStartedException;
             }
 
             if (!is_string($indexConfig)) {
                 $indexConfig = $indexConfig->getName();
             }
 
-            $this->log($indexConfig, '<fg=red>' . $e->getMessage() . '</>');
+            $this->log($indexConfig, '<fg=red>' . $populationNotStartedException->getMessage() . '</>');
 
-            throw $e;
+            throw $populationNotStartedException;
         }
     }
 
@@ -191,6 +193,7 @@ class PopulateIndexService
         $oldIndex = $indexConfig->getBlueGreenActiveElasticaIndex();
         $newIndex = $indexConfig->getBlueGreenInactiveElasticaIndex();
         $newIndex->flush();
+
         $oldIndex->removeAlias($indexConfig->getName());
         $this->log($indexConfig->getName(), 'removed alias from ' . $oldIndex->getName(), ConsoleOutputInterface::VERBOSITY_VERBOSE);
         $newIndex->addAlias($indexConfig->getName());
@@ -260,10 +263,15 @@ class PopulateIndexService
                 $listing->setOffset($offset);
                 $listing->setLimit($batchSize);
                 $ids = $listing->loadIdList();
+
                 foreach ($ids ?? [] as $dataObjectId) {
                     $progressbar->advance();
 
                     $elementType = $this->getElementType($listing, $dataObjectId);
+
+                    if ($elementType === null) {
+                        continue;
+                    }
 
                     $batch[] = new PopulateIndexMessage(new CreateDocumentMessage(
                         $dataObjectId,
@@ -409,7 +417,8 @@ class PopulateIndexService
             $indexConfig->getBlueGreenActiveSuffix();
         } catch (BlueGreenIndicesIncorrectlySetupException) {
             $this->esClient->getIndex($indexConfig->getName() . IndexBlueGreenSuffix::BLUE->value)
-                ->addAlias($indexConfig->getName());
+                ->addAlias($indexConfig->getName())
+            ;
         }
 
         $this->log($indexConfig->getName(), '<comment>Ensured indices are correctly set up with alias</comment>');
@@ -452,15 +461,23 @@ class PopulateIndexService
         }
     }
 
-    private function getElementType(AssetListing|DataObjectListing|DocumentListing $listing, mixed $dataObjectId)
+    /**
+     * @return class-string|null null if the element no longer exists
+     */
+    private function getElementType(AssetListing|DataObjectListing|DocumentListing $listing, mixed $dataObjectId): ?string
     {
         if ($listing instanceof AssetListing) {
-            return Asset::getById($dataObjectId)::class;
+            $asset = Asset::getById($dataObjectId);
+
+            return $asset instanceof Asset ? $asset::class : null;
         }
 
         if ($listing instanceof DocumentListing) {
-            return Document::getById($dataObjectId)::class;
+            $document = Document::getById($dataObjectId);
+
+            return $document instanceof Document ? $document::class : null;
         }
+
         $tableName = $listing->getDao()->getTableName();
         $query = sprintf('SELECT %s FROM %s WHERE id = ?', 'className', $tableName);
         $result = Db::getConnection()->fetchOne($query, [$dataObjectId]);
@@ -469,6 +486,12 @@ class PopulateIndexService
             throw new \RuntimeException(sprintf('DataObject with ID %s not found in table %s', $dataObjectId, $tableName));
         }
 
-        return '\\Pimcore\\Model\\DataObject\\' . ucfirst($result);
+        $className = 'Pimcore\\Model\\DataObject\\' . ucfirst((string) $result);
+
+        if (!class_exists($className)) {
+            throw new \RuntimeException(sprintf('DataObject class %s for ID %s does not exist', $className, $dataObjectId));
+        }
+
+        return $className;
     }
 }

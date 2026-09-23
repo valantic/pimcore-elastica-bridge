@@ -11,11 +11,7 @@ use Valantic\ElasticaBridgeBundle\Model\Event\CallbackEvent;
 class CreateDocumentMessage extends AbstractPopulateMessage implements RetryCountSupportInterface, SyncTransportDetectionInterface
 {
     /**
-     * @param int $objectId
      * @param class-string $objectType
-     * @param string $document
-     * @param string $esIndex
-     * @param CallbackEvent|null $callback
      */
     public function __construct(
         public readonly int $objectId,
@@ -23,5 +19,6 @@ class CreateDocumentMessage extends AbstractPopulateMessage implements RetryCoun
         public readonly string $document,
         public readonly string $esIndex,
         public readonly ?CallbackEvent $callback = null,
-    ) {}
+    ) {
+    }
 }

@@ -55,11 +55,11 @@ class AbstractIndexTest extends TestCase
         $this->assertTrue($index->hasMapping());
     }
 
-    public function testGetBatchSizeReturnsDefault5000(): void
+    public function testGetBatchSizeReturnsDefault500(): void
     {
         $index = $this->createTestIndex();
 
-        $this->assertSame(5000, $index->getBatchSize());
+        $this->assertSame(500, $index->getBatchSize());
     }
 
     public function testShouldPopulateInSubprocessesReturnsFalseByDefault(): void

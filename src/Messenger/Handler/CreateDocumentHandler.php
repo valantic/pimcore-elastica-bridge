@@ -22,6 +22,7 @@ use Valantic\ElasticaBridgeBundle\Service\DocumentHelper;
 class CreateDocumentHandler
 {
     public static int $messageCount = 0;
+
     private bool $synchronous;
 
     public function __construct(
@@ -31,7 +32,8 @@ class CreateDocumentHandler
         private readonly ConfigurationRepository $configurationRepository,
         private readonly EventDispatcherInterface $eventDispatcher,
         private readonly ConsoleOutputInterface $consoleOutput,
-    ) {}
+    ) {
+    }
 
     public function __invoke(CreateDocumentMessage $message, int $retryCount = 0, bool $synchronous = true): void
     {
@@ -74,9 +76,9 @@ class CreateDocumentHandler
                         $message->objectId,
                         $currentCount,
                         getmypid(),
-                        $this->synchronous ? 'sync' : 'async'
+                        $this->synchronous ? 'sync' : 'async',
                     ),
-                    ConsoleOutputInterface::VERBOSITY_VERBOSE
+                    ConsoleOutputInterface::VERBOSITY_VERBOSE,
                 );
             }
 
@@ -86,11 +88,11 @@ class CreateDocumentHandler
 
             $documentInstance = $this->documentRepository->get($message->document);
 
-
             $this->documentHelper->setTenantIfNeeded($documentInstance, $index);
 
             if (!$documentInstance->shouldIndex($dataObject)) {
                 $messageDecreased = true;
+
                 return;
             }
 
@@ -129,7 +131,7 @@ class CreateDocumentHandler
                     willRetry: !$this->configurationRepository->shouldSkipFailingDocuments(),
                     throwable: $throwable ?? null,
                 ),
-                ElasticaBridgeEvents::POST_DOCUMENT_CREATE
+                ElasticaBridgeEvents::POST_DOCUMENT_CREATE,
             );
 
             if (!$messageDecreased) {

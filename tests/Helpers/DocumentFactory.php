@@ -53,9 +53,9 @@ class DocumentFactory
                 ];
             }
 
-            public function getListingInstance(\Valantic\ElasticaBridgeBundle\Index\IndexInterface $index): \Pimcore\Model\Listing\AbstractListing
+            public function getListingInstance(\Valantic\ElasticaBridgeBundle\Index\IndexInterface $index): \Pimcore\Model\DataObject\Listing
             {
-                return new class extends \Pimcore\Model\Listing\AbstractListing {
+                return new class extends \Pimcore\Model\DataObject\Listing {
                     public function getTotalCount(): int
                     {
                         return 0;
@@ -66,7 +66,7 @@ class DocumentFactory
                         return 0;
                     }
 
-                    public function getItems(): array
+                    public function getItems(int $offset, int $itemCountPerPage): array
                     {
                         return [];
                     }

@@ -15,5 +15,6 @@ class TriggerSingleIndexMessage extends AbstractPopulateMessage implements SyncT
         public readonly bool $ignoreCooldown,
         public readonly bool $ignoreLock,
         public readonly Key $key,
-    ) {}
+    ) {
+    }
 }

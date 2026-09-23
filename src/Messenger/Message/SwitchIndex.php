@@ -10,7 +10,8 @@ class SwitchIndex extends AbstractPopulateMessage
         public readonly string $indexName,
         public readonly bool $cooldown = true,
         public readonly int $retries = 0,
-    ) {}
+    ) {
+    }
 
     public function retry(): self
     {

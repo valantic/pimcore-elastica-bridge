@@ -12,7 +12,8 @@ class ReleaseIndexLock extends AbstractPopulateMessage
         public readonly string $indexName,
         public readonly ?Key $key = null,
         public readonly int $retries = 0,
-    ) {}
+    ) {
+    }
 
     public function retry(): self
     {

@@ -20,11 +20,15 @@ use Valantic\ElasticaBridgeBundle\Service\PopulateIndexService;
 
 class Index extends BaseCommand
 {
-    private const ARGUMENT_INDEX = 'index';
-    private const OPTION_DELETE = 'delete';
-    private const OPTION_POPULATE = 'populate';
-    private const OPTION_LOCK_RELEASE = 'ignore-locks';
-    private const OPTION_COOLDOWN = 'cooldown';
+    private const string ARGUMENT_INDEX = 'index';
+
+    private const string OPTION_DELETE = 'delete';
+
+    private const string OPTION_POPULATE = 'populate';
+
+    private const string OPTION_LOCK_RELEASE = 'ignore-locks';
+
+    private const string OPTION_COOLDOWN = 'cooldown';
 
     public function __construct(
         private readonly IndexRepository $indexRepository,
@@ -60,14 +64,15 @@ class Index extends BaseCommand
                 self::OPTION_LOCK_RELEASE,
                 'l',
                 InputOption::VALUE_NONE,
-                'Force all indexing locks to be released'
+                'Force all indexing locks to be released',
             )
             ->addOption(
                 self::OPTION_COOLDOWN,
                 null,
                 InputOption::VALUE_NONE,
                 'enable cooldown after index population',
-            );
+            )
+        ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -115,13 +120,11 @@ class Index extends BaseCommand
             );
         }
 
-        if (count($failedIndices) > 0) {
-            foreach ($failedIndices as $type => $indices) {
-                $this->output->writeln('');
-                $this->output->writeln(
-                    sprintf('<fg=red>Failed %s: %s</>', $type, implode(', ', $indices))
-                );
-            }
+        foreach ($failedIndices as $type => $indices) {
+            $this->output->writeln('');
+            $this->output->writeln(
+                sprintf('<fg=red>Failed %s: %s</>', $type, implode(', ', $indices)),
+            );
         }
 
         return self::SUCCESS;
