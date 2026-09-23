@@ -10,5 +10,6 @@ class DocumentContext
         public readonly ?string $tenant = null,
         public readonly ?string $language = null,
         public readonly ?string $country = null,
-    ) {}
+    ) {
+    }
 }

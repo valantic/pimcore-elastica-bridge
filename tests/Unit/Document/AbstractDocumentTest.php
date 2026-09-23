@@ -10,6 +10,8 @@ use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Model\DataObject\Folder;
 use Valantic\ElasticaBridgeBundle\Document\AbstractDocument;
 use Valantic\ElasticaBridgeBundle\Enum\DocumentType;
+use Valantic\ElasticaBridgeBundle\Index\DocumentContext;
+use Valantic\ElasticaBridgeBundle\Index\IndexContext;
 use Valantic\ElasticaBridgeBundle\Tests\Helpers\PimcoreElementFactory;
 
 class AbstractDocumentTest extends TestCase
@@ -70,9 +72,64 @@ class AbstractDocumentTest extends TestCase
         $this->assertFalse($document->treatObjectVariantsAsDocuments());
     }
 
-    private function createTestDocument(): AbstractDocument
+    public function testGetIdForContextWithoutContextFieldsReturnsElasticsearchId(): void
     {
-        return new class extends AbstractDocument {
+        $dataObject = PimcoreElementFactory::createDataObject(789);
+
+        $this->assertSame('object789', AbstractDocument::getIdForContext($dataObject, new DocumentContext()));
+    }
+
+    public function testGetIdForContextAppendsAllContextFields(): void
+    {
+        $dataObject = PimcoreElementFactory::createDataObject(789);
+
+        $this->assertSame('object789_b2b_de_CH', AbstractDocument::getIdForContext($dataObject, new DocumentContext('b2b', 'de', 'CH')));
+    }
+
+    public function testGetIdForContextDistinguishesContextFields(): void
+    {
+        $dataObject = PimcoreElementFactory::createDataObject(789);
+
+        $ids = [
+            AbstractDocument::getIdForContext($dataObject, new DocumentContext(tenant: 'de')),
+            AbstractDocument::getIdForContext($dataObject, new DocumentContext(language: 'de')),
+            AbstractDocument::getIdForContext($dataObject, new DocumentContext(country: 'de')),
+        ];
+
+        $this->assertSame(['object789_de__', 'object789__de_', 'object789___de'], $ids);
+    }
+
+    public function testGetDocumentContextsUsesIndexContextWhenElementShouldBeIndexed(): void
+    {
+        $document = $this->createTestDocument();
+
+        $contexts = $document->getDocumentContexts(PimcoreElementFactory::createDataObject(789), new IndexContext('b2b', 'de'));
+
+        $this->assertEquals([new DocumentContext('b2b', 'de')], $contexts);
+    }
+
+    public function testGetDocumentContextsIsEmptyWhenElementShouldNotBeIndexed(): void
+    {
+        $document = $this->createTestDocument(shouldIndex: false);
+
+        $this->assertSame([], $document->getDocumentContexts(PimcoreElementFactory::createDataObject(789), new IndexContext()));
+    }
+
+    public function testGetNormalizedForContextReturnsNormalized(): void
+    {
+        $document = $this->createTestDocument();
+
+        $this->assertSame(['field' => 'value'], $document->getNormalizedForContext(PimcoreElementFactory::createDataObject(789), new IndexContext(), new DocumentContext()));
+    }
+
+    private function createTestDocument(bool $shouldIndex = true): AbstractDocument
+    {
+        return new class($shouldIndex) extends AbstractDocument {
+            public function __construct(
+                private readonly bool $shouldIndex,
+            ) {
+            }
+
             public function getType(): DocumentType
             {
                 return DocumentType::DATA_OBJECT;
@@ -85,12 +142,12 @@ class AbstractDocumentTest extends TestCase
 
             public function shouldIndex(\Pimcore\Model\Element\AbstractElement $element): bool
             {
-                return true;
+                return $this->shouldIndex;
             }
 
             public function getNormalized(\Pimcore\Model\Element\AbstractElement $element): array
             {
-                return [];
+                return ['field' => 'value'];
             }
 
             public function getIndexListingCondition(): ?string

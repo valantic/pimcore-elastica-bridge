@@ -49,6 +49,38 @@ See the [`ProductIndex` provided in the example](docs/example/src/Elasticsearch/
 
 See the [`ProductIndexDocument` provided in the example](docs/example/src/Elasticsearch/Index/Product/Document/ProductIndexDocument.php) for more details.
 
+### Multiple documents per element
+
+By default, every Pimcore element results in one Elasticsearch document. To store one document per e.g. tenant, language and country in the same index, return `IndexContext` instances from the index's `getContexts()`. For every `IndexContext`, the document's `getDocumentContexts()` returns one `DocumentContext` per Elasticsearch document to create:
+
+- `getDocumentContexts` replaces `shouldIndex`. By default, it returns a single `DocumentContext` with the `IndexContext`'s tenant and language if `shouldIndex` returns true.
+- `getNormalizedForContext` replaces `getNormalized` and receives both contexts. By default, it returns `getNormalized`.
+- `getIdForContext` returns the Elasticsearch ID. By default, the tenant, language, and country are appended to `getElasticsearchId`.
+
+The documents contain the context in the `__tenant`, `__language`, and `__country` fields, which can be used to filter search results. When a Pimcore element changes, all its documents are deleted and re-created.
+
+```php
+// Index
+public function getContexts(): array
+{
+    return [new IndexContext(language: 'de'), new IndexContext(language: 'fr')];
+}
+
+// Document
+public function getDocumentContexts(AbstractElement $element, IndexContext $indexContext): array
+{
+    return array_map(
+        static fn (string $country): DocumentContext => new DocumentContext(language: $indexContext->language, country: $country),
+        $element->isPublished() ? $element->getVisibleCountries() : [],
+    );
+}
+
+public function getNormalizedForContext(AbstractElement $element, IndexContext $indexContext, DocumentContext $documentContext): array
+{
+    return ['name' => $element->getName($documentContext->language)];
+}
+```
+
 ## Configuration
 
 ```yaml
@@ -70,6 +102,12 @@ valantic_elastica_bridge:
 
         # If true, when a document fails to be indexed, it will be skipped and indexing continue with the next document. If false, indexing that index will be aborted.
         should_skip_failing_documents: false
+
+        # Interval in seconds at which the scheduler should be executed
+        interval:             600
+
+        # If true, the built-in Symfony Scheduler provider is registered and triggers indexing automatically.
+        scheduler_enabled:    false
 ```
 
 ### Async Configuration

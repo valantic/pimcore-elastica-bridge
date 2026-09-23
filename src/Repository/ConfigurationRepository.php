@@ -67,9 +67,4 @@ class ConfigurationRepository
     {
         return $this->containerBag->get('valantic_elastica_bridge')['indexing']['cooldown'];
     }
-
-    public function isSchedulerEnabled(): bool
-    {
-        return $this->containerBag->get('valantic_elastica_bridge')['indexing']['scheduler_enabled'] ?? false;
-    }
 }

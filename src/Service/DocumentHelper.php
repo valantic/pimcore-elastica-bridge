@@ -14,7 +14,7 @@ use Valantic\ElasticaBridgeBundle\Index\TenantAwareInterface as IndexTenantAware
 class DocumentHelper
 {
     /**
-     * Creates a single Elastica document for a Pimcore element (legacy single-context path).
+     * Creates an Elastica document based on an DocumentInterface.
      *
      * @internal
      *
@@ -35,10 +35,10 @@ class DocumentHelper
     }
 
     /**
-     * Creates one Elastica document per DocumentContext across all IndexContexts.
+     * Creates the Elastica documents to be stored in an index for a Pimcore element.
      *
-     * When the index returns an empty getContexts() array, falls back to elementToDocument()
-     * to preserve backward compatibility.
+     * For indices without contexts, this is the result of elementToDocument() if DocumentInterface::shouldIndex() allows it.
+     * For indices with contexts, one Elastica document is created per DocumentContext of every IndexContext.
      *
      * @internal
      *
@@ -51,8 +51,10 @@ class DocumentHelper
         AbstractElement $dataObject,
         IndexInterface $index,
     ): array {
-        if (count($index->getContexts()) === 0) {
-            return [$this->elementToDocument($document, $dataObject)];
+        if ($index->getContexts() === []) {
+            return $document->shouldIndex($dataObject)
+                ? [$this->elementToDocument($document, $dataObject)]
+                : [];
         }
 
         $meta = [
@@ -72,7 +74,7 @@ class DocumentHelper
                     DocumentInterface::META_TENANT => $documentContext->tenant,
                     DocumentInterface::META_LANGUAGE => $documentContext->language,
                     DocumentInterface::META_COUNTRY => $documentContext->country,
-                ], static fn ($v) => $v !== null);
+                ], static fn (?string $v): bool => $v !== null);
 
                 $result[] = new Document($id, array_merge($normalized, $meta, $contextMeta));
             }

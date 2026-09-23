@@ -9,5 +9,6 @@ class IndexContext
     public function __construct(
         public readonly ?string $tenant = null,
         public readonly ?string $language = null,
-    ) {}
+    ) {
+    }
 }
