@@ -6,6 +6,7 @@ namespace Valantic\ElasticaBridgeBundle\Tests\Unit\Service;
 
 use Elastic\Elasticsearch\Exception\ElasticsearchException;
 use Elastica\Cluster;
+use Elastica\Exception\ClientException;
 use Elastica\Index;
 use Elastica\Index\Settings;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
@@ -109,6 +110,41 @@ class CleanupServiceTest extends TestCase
         $this->assertSame(['products'], $result->getDeletedIndices());
         $this->assertSame(['broken' => 'delete failed'], $result->getErrors());
         $this->assertTrue($result->hasErrors());
+    }
+
+    public function testMissingIndexIsReportedAndOthersAreStillProcessed(): void
+    {
+        $this->mockKnownIndices(['missing' => false, 'products' => false]);
+
+        $missing = \Mockery::mock(Index::class);
+        $missing->shouldReceive('getSettings->getBool')->andThrow(new ClientException('no such index [missing]'));
+        $missing->shouldNotReceive('delete');
+        $this->esClient->shouldReceive('getIndex')->with('missing')->andReturn($missing);
+
+        $this->mockEsIndex('products');
+
+        $result = $this->cleanupService->cleanUp(dryRun: true);
+
+        $this->assertSame(['products'], $result->getDeletedIndices());
+        $this->assertSame(['missing' => 'no such index [missing]'], $result->getErrors());
+    }
+
+    public function testAliasRemovalErrorSkipsDeletingThatIndex(): void
+    {
+        $this->mockKnownIndices(['products' => false, 'other' => false]);
+        $products = $this->mockEsIndex('products', aliases: ['products_alias']);
+        $products
+            ->shouldReceive('removeAlias')
+            ->andThrow(new class('alias removal failed') extends \RuntimeException implements ElasticsearchException {})
+        ;
+        $products->shouldNotReceive('delete');
+        $this->mockEsIndex('other')->shouldReceive('delete')->once();
+
+        $result = $this->cleanupService->cleanUp();
+
+        $this->assertSame([], $result->getRemovedAliases());
+        $this->assertSame(['other'], $result->getDeletedIndices());
+        $this->assertSame(['products' => 'alias removal failed'], $result->getErrors());
     }
 
     /**

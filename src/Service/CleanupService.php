@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Valantic\ElasticaBridgeBundle\Service;
 
 use Elastic\Elasticsearch\Exception\ElasticsearchException;
+use Elastica\Exception\ExceptionInterface as ElasticaException;
 use Valantic\ElasticaBridgeBundle\Command\NonBundleIndexTrait;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Model\CleanupResult;
@@ -39,25 +40,25 @@ class CleanupService
 
             $index = $this->esClient->getIndex($indexName);
 
-            if ($index->getSettings()->getBool('hidden')) {
-                continue;
-            }
-
-            foreach ($index->getAliases() as $alias) {
-                if (!$dryRun) {
-                    $index->removeAlias($alias);
+            try {
+                if ($index->getSettings()->getBool('hidden')) {
+                    continue;
                 }
 
-                $removedAliases[$indexName][] = $alias;
-            }
+                foreach ($index->getAliases() as $alias) {
+                    if (!$dryRun) {
+                        $index->removeAlias($alias);
+                    }
 
-            try {
+                    $removedAliases[$indexName][] = $alias;
+                }
+
                 if (!$dryRun) {
                     $index->delete();
                 }
 
                 $deletedIndices[] = $indexName;
-            } catch (ElasticsearchException $e) {
+            } catch (ElasticsearchException|ElasticaException $e) {
                 $errors[$indexName] = $e->getMessage();
             }
         }
