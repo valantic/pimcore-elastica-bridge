@@ -126,6 +126,20 @@ Options:
   -h, --help                     Display this help message
 ```
 
+### HTTP endpoint
+
+Pimcore admins can queue the population of an index via `POST /admin/elastica-bridge/refresh-index` (route `admin_elastica_bridge_refresh_index`). This requires an async `elastica_bridge_populate` transport (see [async.md](./async.md)); with the default `sync://` transport the endpoint responds with `409 Conflict`.
+
+The route is not loaded automatically, import it in your project:
+
+```yaml
+# config/routes/valantic_elastica_bridge.yaml
+valantic_elastica_bridge:
+  resource: '@ValanticElasticaBridgeBundle/Resources/config/pimcore/routing.yaml'
+```
+
+Send the index name as `indexName` and a CSRF token for the ID `elastica_bridge_refresh_index` as `_token` or in the `X-CSRF-Token` header, e.g. `csrf_token('elastica_bridge_refresh_index')` in Twig. The endpoint returns `202` when queued, `404` for unknown indices and `409` if the population could not be started (e.g. cooldown or a running population).
+
 ### Specific
 
 The bridge automatically listens to Pimcore events and updates documents as needed. If needed, call `\Valantic\ElasticaBridgeBundle\Service\PropagateChanges::handle` or execute `console valantic:elastica-bridge:refresh`.
