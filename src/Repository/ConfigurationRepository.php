@@ -17,17 +17,11 @@ class ConfigurationRepository
     }
 
     /**
-     * @return string|array{hosts: list<string>}
+     * @return list<string>
      */
-    public function getClientConfig(): string|array
+    public function getClientDsn(): array
     {
-        $config = $this->containerBag->get('valantic_elastica_bridge')['client'];
-
-        if ($config['hosts'] !== []) {
-            return ['hosts' => array_values($config['hosts'])];
-        }
-
-        return $config['dsn'];
+        return array_values($this->containerBag->get('valantic_elastica_bridge')['client']['dsn']);
     }
 
     public function shouldAddSentryBreadcrumbs(): bool

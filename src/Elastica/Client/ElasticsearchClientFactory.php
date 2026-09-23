@@ -24,7 +24,7 @@ class ElasticsearchClientFactory
         }
 
         return new ElasticsearchClient(
-            $this->configurationRepository->getClientConfig(),
+            ['hosts' => $this->configurationRepository->getClientDsn()],
             logger: $logger,
         );
     }
