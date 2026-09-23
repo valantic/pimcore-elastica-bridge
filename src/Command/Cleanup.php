@@ -4,27 +4,24 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Command;
 
-use Elastic\Elasticsearch\Exception\ElasticsearchException;
 use Symfony\Component\Console\Helper\QuestionHelper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
 use Valantic\ElasticaBridgeBundle\Constant\CommandConstants;
-use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
-use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
+use Valantic\ElasticaBridgeBundle\Service\CleanupService;
 
 class Cleanup extends BaseCommand
 {
-    use NonBundleIndexTrait;
-
     private const string OPTION_ALL_IN_CLUSTER = 'all';
 
     private const string OPTION_FORCE = 'force';
 
+    private const string OPTION_DRY_RUN = 'dry-run';
+
     public function __construct(
-        private readonly ElasticsearchClient $esClient,
-        private readonly IndexRepository $indexRepository,
+        private readonly CleanupService $cleanupService,
     ) {
         parent::__construct();
     }
@@ -45,19 +42,32 @@ class Cleanup extends BaseCommand
                 InputOption::VALUE_NONE,
                 'Do not ask for confirmation and instead proceed with deleting indices and aliases',
             )
+            ->addOption(
+                self::OPTION_DRY_RUN,
+                'd',
+                InputOption::VALUE_NONE,
+                'Only list the indices and aliases that would be deleted',
+            )
         ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        $allInCluster = $this->input->getOption(self::OPTION_ALL_IN_CLUSTER) === true;
+        $dryRun = $this->input->getOption(self::OPTION_DRY_RUN) === true;
+
         $this->output->writeln(
-            $this->input->getOption(self::OPTION_ALL_IN_CLUSTER) === true
+            $allInCluster
                 ? 'Deleting ALL indices in the cluster'
                 : 'Only deleting KNOWN indices',
         );
 
-        // Skip confirmation if force option is set
-        if ($this->input->getOption(self::OPTION_FORCE) !== true) {
+        if ($dryRun) {
+            $this->output->writeln('<info>Dry run: nothing will be deleted</info>');
+        }
+
+        // Skip confirmation if force option is set or nothing will be deleted
+        if (!$dryRun && $this->input->getOption(self::OPTION_FORCE) !== true) {
             /** @var QuestionHelper $helper */
             $helper = $this->getHelper('question');
             $question = new ConfirmationQuestion('Are you sure you want to proceed deleting indices and aliases? (y/N)', false);
@@ -67,55 +77,26 @@ class Cleanup extends BaseCommand
             }
         }
 
-        $indices = $this->getIndices();
+        $result = $this->cleanupService->cleanUp($allInCluster, $dryRun);
 
-        foreach ($indices as $index) {
-            if (!$this->shouldProcessNonBundleIndex($index)) {
-                continue;
+        foreach ($result->getRemovedAliases() as $indexName => $aliases) {
+            foreach ($aliases as $alias) {
+                $this->output->writeln(sprintf(
+                    $dryRun ? 'Would remove alias %s from index %s' : 'Removed alias %s from index %s',
+                    $alias,
+                    $indexName,
+                ));
             }
+        }
 
-            $client = $this->esClient->getIndex($index);
+        foreach ($result->getDeletedIndices() as $indexName) {
+            $this->output->writeln(sprintf($dryRun ? 'Would delete index %s' : 'Deleted index %s', $indexName));
+        }
 
-            if ($client->getSettings()->getBool('hidden')) {
-                continue;
-            }
-
-            foreach ($client->getAliases() as $alias) {
-                $client->removeAlias($alias);
-            }
-
-            try {
-                $client->delete();
-            } catch (ElasticsearchException $e) {
-                $this->output->writeln(sprintf('<error>%s</error>', $e->getMessage()));
-            }
+        foreach ($result->getErrors() as $message) {
+            $this->output->writeln(sprintf('<error>%s</error>', $message));
         }
 
         return self::SUCCESS;
-    }
-
-    /**
-     * @return string[]
-     */
-    private function getIndices(): array
-    {
-        if ($this->input->getOption(self::OPTION_ALL_IN_CLUSTER) === true) {
-            return $this->esClient->getCluster()->getIndexNames();
-        }
-
-        $indices = [];
-
-        foreach ($this->indexRepository->flattenedAll() as $indexConfig) {
-            if ($indexConfig->usesBlueGreenIndices()) {
-                $indices[] = $indexConfig->getBlueGreenActiveElasticaIndex()->getName();
-                $indices[] = $indexConfig->getBlueGreenInactiveElasticaIndex()->getName();
-
-                continue;
-            }
-
-            $indices[] = $indexConfig->getName();
-        }
-
-        return $indices;
     }
 }
