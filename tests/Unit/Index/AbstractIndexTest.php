@@ -39,6 +39,16 @@ class AbstractIndexTest extends TestCase
         $this->assertArrayHasKey(DocumentInterface::META_ID, $mapping['properties']);
         $this->assertArrayHasKey(DocumentInterface::META_TYPE, $mapping['properties']);
         $this->assertArrayHasKey(DocumentInterface::META_SUB_TYPE, $mapping['properties']);
+        $this->assertSame('keyword', $mapping['properties'][DocumentInterface::META_TENANT]['type']);
+        $this->assertSame('keyword', $mapping['properties'][DocumentInterface::META_LANGUAGE]['type']);
+        $this->assertSame('keyword', $mapping['properties'][DocumentInterface::META_COUNTRY]['type']);
+    }
+
+    public function testGetContextsReturnsEmptyArrayByDefault(): void
+    {
+        $index = $this->createTestIndex();
+
+        $this->assertSame([], $index->getContexts());
     }
 
     public function testGetSettingsReturnsEmptyArrayByDefault(): void

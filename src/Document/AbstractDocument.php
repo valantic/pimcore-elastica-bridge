@@ -53,15 +53,19 @@ abstract class AbstractDocument implements DocumentInterface
         throw new UnknownPimcoreElementType($documentType?->value);
     }
 
+    /**
+     * Appends all context fields to getElasticsearchId(), keeping empty positions for null fields
+     * so that e.g. a tenant and a language with the same value result in different IDs.
+     */
     public static function getIdForContext(AbstractElement $element, DocumentContext $documentContext): string
     {
-        $parts = array_filter([
-            static::getElasticsearchId($element),
-            $documentContext->language,
-            $documentContext->country,
-        ]);
+        $contextParts = [$documentContext->tenant, $documentContext->language, $documentContext->country];
 
-        return implode('_', $parts);
+        if ($contextParts === [null, null, null]) {
+            return self::getElasticsearchId($element);
+        }
+
+        return implode('_', [self::getElasticsearchId($element), ...array_map(strval(...), $contextParts)]);
     }
 
     public function getNormalizedForContext(AbstractElement $element, IndexContext $indexContext, DocumentContext $documentContext): array
@@ -71,7 +75,9 @@ abstract class AbstractDocument implements DocumentInterface
 
     public function getDocumentContexts(AbstractElement $element, IndexContext $indexContext): array
     {
-        return $this->shouldIndex($element) ? [new DocumentContext()] : [];
+        return $this->shouldIndex($element)
+            ? [new DocumentContext($indexContext->tenant, $indexContext->language)]
+            : [];
     }
 
     public function treatObjectVariantsAsDocuments(): bool

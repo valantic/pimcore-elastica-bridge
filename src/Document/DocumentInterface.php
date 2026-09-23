@@ -14,7 +14,7 @@ use Valantic\ElasticaBridgeBundle\Index\IndexContext;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 
 /**
- * Describes how a Pimcore element relates to an Elasticsearch index.
+ * Describes how a Pimcore element relates to an Elasticsearch in the context of this index.
  *
  * @template TElement of AbstractElement
  */
@@ -86,7 +86,7 @@ interface DocumentInterface
 
     /**
      * Returns the Elasticsearch ID for a Pimcore element.
-     * Used in single-context (legacy) mode. For multi-context mode, getIdForContext() is used.
+     * For indices with contexts, getIdForContext() is used instead.
      *
      * @param TElement $element
      *
@@ -95,12 +95,13 @@ interface DocumentInterface
     public static function getElasticsearchId(AbstractElement $element): string;
 
     /**
-     * Returns the Elasticsearch document ID for a specific DocumentContext.
-     * Default: getElasticsearchId() with non-null context fields appended.
+     * Returns the Elasticsearch ID for a Pimcore element in a DocumentContext.
+     * Used for indices with contexts, where one Pimcore element results in multiple Elasticsearch documents.
+     * The ID must be unique across all DocumentContexts of the element.
      *
      * @param TElement $element
      *
-     * @internal
+     * @see IndexInterface::getContexts()
      */
     public static function getIdForContext(AbstractElement $element, DocumentContext $documentContext): string;
 
@@ -111,6 +112,7 @@ interface DocumentInterface
 
     /**
      * The subtype, e.g. the DataObject class or Document\Page.
+     *
      * Returning null will result in all elements of getType() being included.
      *
      * @return ?class-string<AbstractElement>
@@ -119,17 +121,22 @@ interface DocumentInterface
 
     /**
      * Returns the normalization of the Pimcore element.
-     * Used in single-context (legacy) mode. For multi-context mode, getNormalizedForContext() is used.
+     * This is how the Pimcore element will be stored in the Elasticsearch document.
+     * For indices with contexts, getNormalizedForContext() is used instead.
      *
      * @param TElement $element
      *
      * @return array<mixed>
+     *
+     * @see DocumentNormalizerTrait
+     * @see DocumentRelationAwareDataObjectTrait
+     * @see DataObjectNormalizerTrait
      */
     public function getNormalized(AbstractElement $element): array;
 
     /**
-     * Returns the normalization for a specific IndexContext and DocumentContext.
-     * Default: delegates to getNormalized().
+     * Returns the normalization of the Pimcore element in an IndexContext and DocumentContext.
+     * Used for indices with contexts.
      *
      * @param TElement $element
      *
@@ -138,19 +145,22 @@ interface DocumentInterface
     public function getNormalizedForContext(AbstractElement $element, IndexContext $indexContext, DocumentContext $documentContext): array;
 
     /**
-     * Returns the DocumentContexts for which this element should be indexed within the given IndexContext.
-     * An empty array means the element should not be indexed in this context.
-     * Default: delegates to shouldIndex() and returns a single default DocumentContext.
+     * Returns the DocumentContexts in which the Pimcore element should be indexed within an IndexContext.
+     * One Elasticsearch document is created per DocumentContext.
+     * Used for indices with contexts; return an empty array to not index the element in this IndexContext.
      *
      * @param TElement $element
      *
      * @return DocumentContext[]
+     *
+     * @see IndexInterface::getContexts()
      */
     public function getDocumentContexts(AbstractElement $element, IndexContext $indexContext): array;
 
     /**
      * Indicates whether a Pimcore element should be indexed.
-     * Used in single-context (legacy) mode. For multi-context mode, getDocumentContexts() is used.
+     * E.g. return false when the element is not published.
+     * For indices with contexts, getDocumentContexts() is used instead.
      *
      * @param TElement $element
      */

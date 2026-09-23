@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Service;
 
+use Elastica\Document;
 use Elastica\Exception\NotFoundException;
 use Elastica\Index;
+use Elastica\Query\BoolQuery;
+use Elastica\Query\Term;
 use Pimcore\Model\DataObject\AbstractObject;
 use Pimcore\Model\Element\AbstractElement;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -99,22 +102,24 @@ class PropagateChanges
             return;
         }
 
-        if (count($index->getContexts()) > 0) {
-            $this->doHandleContextIndex($element, $elasticaIndex, $document, $index);
-            $this->documentHelper->resetTenantIfNeeded($document, $index);
+        // For indices with contexts, all documents of the element are replaced, hence there is no INSERT or NOTHING.
+        $contextDocuments = $index->getContexts() !== []
+            ? $this->documentHelper->elementToDocumentsForContexts($document, $element, $index)
+            : null;
 
-            return;
+        if ($contextDocuments !== null) {
+            $operation = $contextDocuments === [] ? ElementInIndexOperation::DELETE : ElementInIndexOperation::UPDATE;
+        } else {
+            $isPresent = $this->isIdInIndex($document::getElasticsearchId($element), $elasticaIndex);
+            $shouldIndex = $document->shouldIndex($element);
+
+            $operation = match (true) {
+                !$isPresent && $shouldIndex => ElementInIndexOperation::INSERT,
+                $isPresent && $shouldIndex => ElementInIndexOperation::UPDATE,
+                $isPresent && !$shouldIndex => ElementInIndexOperation::DELETE,
+                default => ElementInIndexOperation::NOTHING,
+            };
         }
-
-        $isPresent = $this->isIdInIndex($document::getElasticsearchId($element), $elasticaIndex);
-        $shouldIndex = $document->shouldIndex($element);
-
-        $operation = match (true) {
-            !$isPresent && $shouldIndex => ElementInIndexOperation::INSERT,
-            $isPresent && $shouldIndex => ElementInIndexOperation::UPDATE,
-            $isPresent && !$shouldIndex => ElementInIndexOperation::DELETE,
-            default => ElementInIndexOperation::NOTHING,
-        };
 
         $event = new RefreshedElementInIndexEvent($element, $index, $elasticaIndex, $operation);
 
@@ -122,12 +127,16 @@ class PropagateChanges
             $this->eventDispatcher->dispatch($event, ElasticaBridgeEvents::PRE_REFRESH_ELEMENT_IN_INDEX);
         }
 
-        match ($operation) {
-            ElementInIndexOperation::INSERT => $this->addElementToIndex($element, $elasticaIndex, $document),
-            ElementInIndexOperation::UPDATE => $this->updateElementInIndex($element, $elasticaIndex, $document),
-            ElementInIndexOperation::DELETE => $this->deleteElementFromIndex($element, $elasticaIndex, $document),
-            ElementInIndexOperation::NOTHING => null,
-        };
+        if ($contextDocuments !== null) {
+            $this->replaceContextDocumentsInIndex($element, $elasticaIndex, $document, $contextDocuments);
+        } else {
+            match ($operation) {
+                ElementInIndexOperation::INSERT => $this->addElementToIndex($element, $elasticaIndex, $document),
+                ElementInIndexOperation::UPDATE => $this->updateElementInIndex($element, $elasticaIndex, $document),
+                ElementInIndexOperation::DELETE => $this->deleteElementFromIndex($element, $elasticaIndex, $document),
+                ElementInIndexOperation::NOTHING => null,
+            };
+        }
 
         if (!self::$isPropagationStopped && !$event->isPropagationStopped()) {
             $this->eventDispatcher->dispatch($event, ElasticaBridgeEvents::POST_REFRESH_ELEMENT_IN_INDEX);
@@ -138,19 +147,24 @@ class PropagateChanges
 
     /**
      * @param DocumentInterface<AbstractElement> $document
+     * @param Document[] $esDocuments
      */
-    private function doHandleContextIndex(
+    private function replaceContextDocumentsInIndex(
         AbstractElement $element,
         Index $elasticaIndex,
         DocumentInterface $document,
-        IndexInterface $index,
+        array $esDocuments,
     ): void {
-        $esDocuments = $this->documentHelper->elementToDocumentsForContexts($document, $element, $index);
+        // Remove all existing documents of the element first so that documents of removed contexts don't linger.
+        // __id alone is not unique: e.g. an asset and a data object can share the same Pimcore ID.
+        $elasticaIndex->deleteByQuery(
+            (new BoolQuery())
+                ->addFilter(new Term([DocumentInterface::META_ID => $element->getId()]))
+                ->addFilter(new Term([DocumentInterface::META_TYPE => $document->getType()->value])),
+            ['conflicts' => 'proceed'],
+        );
 
-        // Always remove all existing variants first to prevent orphaned documents when contexts shrink.
-        $elasticaIndex->deleteByQuery(['term' => [DocumentInterface::META_ID => $element->getId()]]);
-
-        if (count($esDocuments) === 0) {
+        if ($esDocuments === []) {
             return;
         }
 

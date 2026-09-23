@@ -93,7 +93,7 @@ class CreateDocumentHandler
             $esIndex = $index->getBlueGreenInactiveElasticaIndex();
             $esDocuments = $this->documentHelper->elementToDocumentsForContexts($documentInstance, $dataObject, $index);
 
-            if (count($esDocuments) === 0) {
+            if ($esDocuments === []) {
                 $messageDecreased = true;
 
                 return;

@@ -35,6 +35,15 @@ abstract class AbstractIndex implements IndexInterface
                 DocumentInterface::META_SUB_TYPE => [
                     'type' => 'keyword',
                 ],
+                DocumentInterface::META_TENANT => [
+                    'type' => 'keyword',
+                ],
+                DocumentInterface::META_LANGUAGE => [
+                    'type' => 'keyword',
+                ],
+                DocumentInterface::META_COUNTRY => [
+                    'type' => 'keyword',
+                ],
             ],
         ];
     }
@@ -44,26 +53,9 @@ abstract class AbstractIndex implements IndexInterface
         return [];
     }
 
-    public function getNameForContext(IndexContext $context): string
-    {
-        $parts = array_filter([$this->getName(), $context->tenant, $context->language]);
-
-        return implode('_', $parts);
-    }
-
     public function getContexts(): array
     {
         return [];
-    }
-
-    public function getDefaultContext(): IndexContext
-    {
-        return new IndexContext();
-    }
-
-    public function shouldSkipFailingDocuments(): bool
-    {
-        return false;
     }
 
     final public function hasMapping(): bool
