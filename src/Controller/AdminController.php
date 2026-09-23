@@ -14,14 +14,13 @@ use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 use Valantic\ElasticaBridgeBundle\Service\PopulateIndexService;
 
 #[Route(path: '/admin/elastica-bridge')]
-
 class AdminController extends UserAwareController
 {
     #[Route(
         path: '/refresh-index',
         name: 'admin_elastica_bridge_refresh_index',
         options: ['expose' => true],
-        methods: [Request::METHOD_GET]
+        methods: [Request::METHOD_GET],
     )]
     public function index(
         IndexRepository $indexRepository,
@@ -33,12 +32,12 @@ class AdminController extends UserAwareController
 
         try {
             $populateIndexService->processApi($indexRepository->flattenedGet($indexName), true, ignoreCooldown: true);
-        } catch (\Throwable $e) {
+        } catch (\Throwable $throwable) {
             return new JsonResponse([
                 'success' => false,
                 'log' => $populateIndexService->getLog(),
-                'error' => $e->getMessage(),
-                'stackTrace' => $e->getTrace(),
+                'error' => $throwable->getMessage(),
+                'stackTrace' => $throwable->getTrace(),
             ]);
         }
 

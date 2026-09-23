@@ -8,10 +8,14 @@ use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 
 class WaitForCompletionEvent extends AbstractPopulateEvent
 {
-    private const MAX_SLEEP_DURATION = 300;
+    private const int MAX_SLEEP_DURATION = 300;
+
     public int $maximumRetries = 3;
+
     public int $rescheduleIntervalSeconds = 60;
+
     private int $remainingMessages = 0;
+
     private bool $success = true;
 
     private int $sleepDuration = 3;
@@ -39,6 +43,7 @@ class WaitForCompletionEvent extends AbstractPopulateEvent
         if ($sleepDuration > self::MAX_SLEEP_DURATION) {
             throw new \InvalidArgumentException('Sleep duration must be less than or equal to ' . self::MAX_SLEEP_DURATION);
         }
+
         $this->sleepDuration = $sleepDuration;
     }
 
@@ -71,9 +76,9 @@ class WaitForCompletionEvent extends AbstractPopulateEvent
         $this->remainingMessages = $remainingMessages;
     }
 
-    public function getRemainingMessages(): ?int
+    public function getRemainingMessages(): int
     {
-        return $this->remainingMessages ?? 0;
+        return $this->remainingMessages;
     }
 
     public function isSuccess(): bool

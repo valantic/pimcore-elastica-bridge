@@ -10,6 +10,7 @@ use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 class PreDocumentCreateEvent extends AbstractPopulateEvent
 {
     private bool $stopExecution = false;
+
     private int $currentCount = 0;
 
     public function __construct(

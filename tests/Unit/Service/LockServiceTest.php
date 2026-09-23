@@ -6,6 +6,8 @@ namespace Valantic\ElasticaBridgeBundle\Tests\Unit\Service;
 
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Console\Output\ConsoleOutputInterface;
+use Symfony\Component\Lock\Key;
 use Symfony\Component\Lock\LockFactory;
 use Symfony\Component\Lock\SharedLockInterface;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
@@ -30,6 +32,7 @@ class LockServiceTest extends TestCase
         $this->lockService = new LockService(
             $this->lockFactory,
             $this->configurationRepository,
+            \Mockery::mock(ConsoleOutputInterface::class),
         );
     }
 
@@ -47,9 +50,9 @@ class LockServiceTest extends TestCase
         ;
 
         $this->lockFactory
-            ->shouldReceive('createLock')
+            ->shouldReceive('createLockFromKey')
             ->once()
-            ->with('pimcore-elastica-bridge:indexing:test_index', 300.0)
+            ->with(\Mockery::on(static fn (Key $key): bool => (string) $key === 'pimcore-elastica-bridge:indexing:test_index'), 300.0, false)
             ->andReturn($lock)
         ;
 
@@ -72,9 +75,9 @@ class LockServiceTest extends TestCase
         ;
 
         $this->lockFactory
-            ->shouldReceive('createLock')
+            ->shouldReceive('createLockFromKey')
             ->once()
-            ->with('pimcore-elastica-bridge:indexing:another_index', 600.0)
+            ->with(\Mockery::on(static fn (Key $key): bool => (string) $key === 'pimcore-elastica-bridge:indexing:another_index'), 600.0, false)
             ->andReturn($lock)
         ;
 

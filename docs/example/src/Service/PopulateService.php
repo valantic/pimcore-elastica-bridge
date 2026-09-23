@@ -19,7 +19,8 @@ class PopulateService
         private readonly \Redis $redis,
         private readonly Connection $connection,
         private readonly ConsoleOutputInterface $consoleOutput,
-    ) {}
+    ) {
+    }
 
     public function decrementRemainingMessages(string $indexName): void
     {

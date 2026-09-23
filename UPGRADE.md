@@ -4,12 +4,18 @@
 
 - Pimcore 12 (Pimcore Platform Version 2025.1) is required: `pimcore/pimcore` `^12.3.1`. Stay on v4 for Pimcore 11.
 - PHP 8.3+ is required
-- Symfony 7: `symfony/console` and `symfony/lock` require `^7.3`
+- Symfony 7: `symfony/console`, `symfony/lock`, `symfony/messenger` and `symfony/scheduler` require `^7.3`
 - `elasticsearch/elasticsearch` `^8.19` is now a direct dependency
 - The bundle is now licensed under the [Pimcore Open Core License (POCL)](https://github.com/pimcore/pimcore/blob/2026.x/LICENSE.md). v4 and below remain available under GPLv3.
 - If you extend `\Valantic\ElasticaBridgeBundle\DependencyInjection\Configuration`, `getConfigTreeBuilder()` now declares a `TreeBuilder` return type
 - If you index documents from the Newsletter or WebToPrint bundles, the sub-types `newsletter`, `printpage`, and `printcontainer` are now detected by their Pimcore 12 class names (`Pimcore\Bundle\NewsletterBundle\Model\Document\Newsletter`, `Pimcore\Bundle\WebToPrintBundle\Model\Document\Printpage`, `Pimcore\Bundle\WebToPrintBundle\Model\Document\Printcontainer`)
 - Added `--dry-run` to `:cleanup` to list the indices and aliases that would be deleted without deleting them [#92](https://github.com/valantic/pimcore-elastica-bridge/pull/92)
+- Index population now runs via Symfony Messenger. The default transport `elastica_bridge_populate` is `sync://`, so no configuration is needed; see [async.md](./async.md) to run it asynchronously and to use the Symfony Scheduler
+- The internal commands `valantic:elastica-bridge:populate-index` and `valantic:elastica-bridge:do-populate-index` were removed, use `valantic:elastica-bridge:index --populate` instead
+- The `--lock-release` option of `valantic:elastica-bridge:index` was renamed to `--ignore-locks`
+- `\Valantic\ElasticaBridgeBundle\Document\DocumentInterface::getListingInstance()` now returns `DataObject\Listing|Document\Listing|Asset\Listing` instead of `AbstractListing`; update the return type of any overrides
+- `\Valantic\ElasticaBridgeBundle\Index\IndexInterface::getBatchSize()` now defaults to `500` and controls how many IDs are loaded per page when dispatching messages
+- `\Valantic\ElasticaBridgeBundle\Index\IndexInterface::shouldPopulateInSubprocesses()` no longer has any effect
 
 ## Upgrade from v3 to v4
 

@@ -24,7 +24,8 @@ class LockService
         private readonly LockFactory $lockFactory,
         private readonly ConfigurationRepository $configurationRepository,
         private readonly ConsoleOutputInterface $consoleOutput,
-    ) {}
+    ) {
+    }
 
     public function getIndexingLock(IndexInterface $indexConfig, bool $autorelease = false): LockInterface
     {
@@ -32,8 +33,9 @@ class LockService
             ->createLockFromKey(
                 $this->getIndexingKey($indexConfig),
                 ttl: $this->configurationRepository->getIndexingLockTimeout(),
-                autoRelease: $autorelease
-            );
+                autoRelease: $autorelease,
+            )
+        ;
     }
 
     public function getIndexingKey(IndexInterface $indexConfig): Key
@@ -51,7 +53,7 @@ class LockService
         return $this->lockFactory->createLockFromKey(
             $key,
             ttl: $ttl ?? $this->configurationRepository->getIndexingLockTimeout() + $this->configurationRepository->getCooldown(),
-            autoRelease: $autorelease ?? false
+            autoRelease: $autorelease ?? false,
         );
     }
 

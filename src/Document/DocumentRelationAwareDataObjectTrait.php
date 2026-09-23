@@ -23,6 +23,7 @@ use Valantic\ElasticaBridgeBundle\Service\PopulateIndexService;
 trait DocumentRelationAwareDataObjectTrait
 {
     protected IndexInterface $index;
+
     private PopulateIndexService $privatePopulateIndexService;
 
     public function shouldIndex(AbstractElement $element): bool
@@ -37,7 +38,8 @@ trait DocumentRelationAwareDataObjectTrait
                     (new BoolQuery())
                         ->addFilter(new MatchQuery(DocumentInterface::META_TYPE, DocumentType::DOCUMENT))
                         ->addFilter(new MatchQuery(DocumentInterface::ATTRIBUTE_RELATED_OBJECTS, $element->getId())),
-                );
+                )
+            ;
         } catch (ClientResponseException|ServerResponseException) {
             $result = 0;
         }

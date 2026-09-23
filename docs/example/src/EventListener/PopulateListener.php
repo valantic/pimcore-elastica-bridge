@@ -18,7 +18,21 @@ class PopulateListener implements EventSubscriberInterface
 {
     public function __construct(
         private readonly PopulateService $populateService,
-    ) {}
+    ) {
+    }
+
+    public static function getSubscribedEvents(): array
+    {
+        return [
+            ElasticaBridgeEvents::PRE_EXECUTE => 'onPrePopulateIndex',
+            ElasticaBridgeEvents::PRE_PROCESS_MESSAGES_EVENT => 'preProcessMessagesEvent',
+            ElasticaBridgeEvents::PRE_DOCUMENT_CREATE => 'onPreDocumentCreate',
+            ElasticaBridgeEvents::POST_DOCUMENT_CREATE => 'onPostDocumentCreate',
+            ElasticaBridgeEvents::PRE_SWITCH_INDEX => 'onPreSwitchIndex',
+            ElasticaBridgeEvents::WAIT_FOR_COMPLETION_EVENT => 'onWaitForCompletion',
+            ElasticaBridgeEvents::POST_SWITCH_INDEX => 'onPostSwitchIndex',
+        ];
+    }
 
     public function onPostDocumentCreate(PostDocumentCreateEvent $event): void
     {
@@ -35,7 +49,9 @@ class PopulateListener implements EventSubscriberInterface
         $this->populateService->lockExecution($event->index->getName());
     }
 
-    public function onPostSwitchIndex(): void {}
+    public function onPostSwitchIndex(): void
+    {
+    }
 
     public function onPreDocumentCreate(PreDocumentCreateEvent $event): void
     {
@@ -86,18 +102,5 @@ class PopulateListener implements EventSubscriberInterface
     public function preProcessMessagesEvent(PreProcessMessagesEvent $messageQueueInitializedEvent): void
     {
         $this->populateService->setExpectedMessages($messageQueueInitializedEvent->index->getName(), $messageQueueInitializedEvent->expectedMessages);
-    }
-
-    public static function getSubscribedEvents(): array
-    {
-        return [
-            ElasticaBridgeEvents::PRE_EXECUTE => 'onPrePopulateIndex',
-            ElasticaBridgeEvents::PRE_PROCESS_MESSAGES_EVENT => 'preProcessMessagesEvent',
-            ElasticaBridgeEvents::PRE_DOCUMENT_CREATE => 'onPreDocumentCreate',
-            ElasticaBridgeEvents::POST_DOCUMENT_CREATE => 'onPostDocumentCreate',
-            ElasticaBridgeEvents::PRE_SWITCH_INDEX => 'onPreSwitchIndex',
-            ElasticaBridgeEvents::WAIT_FOR_COMPLETION_EVENT => 'onWaitForCompletion',
-            ElasticaBridgeEvents::POST_SWITCH_INDEX => 'onPostSwitchIndex',
-        ];
     }
 }

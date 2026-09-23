@@ -9,18 +9,16 @@ use Symfony\Contracts\EventDispatcher\Event;
 class CallbackEvent extends Event
 {
     private ?string $eventName = null;
+
     private ?string $eventClass = null;
+
     /**
      * @var array<int|string|object>
      */
     private array $parameters = [];
 
     /**
-     * @param string $eventName
-     * @param string $eventClass
      * @param array<int|string|object> $parameters
-     *
-     * @return void
      */
     public function setEvent(
         string $eventName,
@@ -42,9 +40,6 @@ class CallbackEvent extends Event
         return $this->eventName;
     }
 
-    /**
-     * @return object
-     */
     public function getEvent(): object
     {
         return new $this->eventClass(...$this->parameters);

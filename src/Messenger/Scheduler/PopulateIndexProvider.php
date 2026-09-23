@@ -21,7 +21,8 @@ class PopulateIndexProvider implements ScheduleProviderInterface
     public function __construct(
         private readonly PopulateIndexService $populateIndexService,
         private readonly ConfigurationRepository $configurationRepository,
-    ) {}
+    ) {
+    }
 
     public function getSchedule(): Schedule
     {
@@ -29,9 +30,10 @@ class PopulateIndexProvider implements ScheduleProviderInterface
             ->with(
                 RecurringMessage::trigger(
                     new PeriodicalTrigger($this->configurationRepository->getInterval()),
-                    new CallbackMessageProvider($this->populateIndexService->processScheduler(...))
+                    new CallbackMessageProvider($this->populateIndexService->processScheduler(...)),
                 ),
-            );
+            )
+        ;
     }
 
     public function getId(): string

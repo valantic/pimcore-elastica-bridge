@@ -34,7 +34,8 @@ class SwitchIndexHandler
         private readonly EventDispatcherInterface $eventDispatcher,
         private readonly MessageBusInterface $messengerBusElasticaBridge,
         private readonly IndexRepository $indexRepository,
-    ) {}
+    ) {
+    }
 
     public function __invoke(ReleaseIndexLock|SwitchIndex $message): void
     {
@@ -95,7 +96,7 @@ class SwitchIndexHandler
         } catch (\Throwable $e) {
             $this->populateIndexService->log($message->indexName, sprintf('Switch failed: %s', $e->getMessage()));
 
-            throw new SwitchIndexException('Switch failed', previous: $e);
+            throw new SwitchIndexException('Switch failed', $e->getCode(), previous: $e);
         }
 
         $this->populateIndexService->switchBlueGreenIndex($message->indexName);
@@ -105,7 +106,6 @@ class SwitchIndexHandler
         }
 
         $this->eventDispatcher->dispatch(new PostSwitchIndexEvent($index), ElasticaBridgeEvents::POST_SWITCH_INDEX);
-
     }
 
     private function releaseLock(ReleaseIndexLock $message): void
@@ -118,7 +118,7 @@ class SwitchIndexHandler
             } catch (\Throwable $e) {
                 $this->populateIndexService->log($message->indexName, sprintf('Release failed: %s', $e->getMessage()));
 
-                throw new SwitchIndexException('Release failed', previous: $e);
+                throw new SwitchIndexException('Release failed', $e->getCode(), previous: $e);
             }
 
             $this->consoleOutput->writeln(sprintf('releasing lock %s (%s)', $message->key, hash('sha256', (string) $message->key)), ConsoleOutputInterface::VERBOSITY_VERBOSE);

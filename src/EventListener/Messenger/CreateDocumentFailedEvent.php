@@ -15,7 +15,16 @@ use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 #[AsEventListener]
 class CreateDocumentFailedEvent implements EventSubscriberInterface
 {
-    public function __construct(private readonly EventDispatcherInterface $eventDispatcher, private readonly IndexRepository $indexRepository) {}
+    public function __construct(private readonly EventDispatcherInterface $eventDispatcher, private readonly IndexRepository $indexRepository)
+    {
+    }
+
+    public static function getSubscribedEvents(): array
+    {
+        return [
+            WorkerMessageFailedEvent::class => 'onMessageFailed',
+        ];
+    }
 
     public function onMessageFailed(WorkerMessageFailedEvent $event): void
     {
@@ -33,15 +42,8 @@ class CreateDocumentFailedEvent implements EventSubscriberInterface
                 $message->objectId,
                 null,
                 false,
-                willRetry: false
-            )
+                willRetry: false,
+            ),
         );
-    }
-
-    public static function getSubscribedEvents()
-    {
-        return [
-            WorkerMessageFailedEvent::class => 'onMessageFailed',
-        ];
     }
 }

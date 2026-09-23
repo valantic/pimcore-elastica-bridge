@@ -11,5 +11,6 @@ abstract class AbstractPopulateEvent extends Event
 {
     public function __construct(
         public readonly IndexInterface $index,
-    ) {}
+    ) {
+    }
 }

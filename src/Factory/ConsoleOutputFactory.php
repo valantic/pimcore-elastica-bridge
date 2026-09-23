@@ -12,7 +12,7 @@ final class ConsoleOutputFactory
     public function create(): ConsoleOutput
     {
         return new ConsoleOutput(
-            OutputInterface::VERBOSITY_VERBOSE
+            OutputInterface::VERBOSITY_VERBOSE,
         );
     }
 }

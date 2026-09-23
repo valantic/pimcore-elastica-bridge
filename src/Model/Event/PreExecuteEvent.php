@@ -9,7 +9,9 @@ use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 class PreExecuteEvent extends AbstractPopulateEvent
 {
     public const SOURCE_SCHEDULER = 1;
+
     public const SOURCE_CLI = 2;
+
     public const SOURCE_API = 3;
 
     public function __construct(

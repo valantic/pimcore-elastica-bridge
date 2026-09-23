@@ -9,6 +9,7 @@ use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 class PreSwitchIndexEvent extends AbstractPopulateEvent
 {
     private int $remainingMessages = 0;
+
     private bool $success = true;
 
     public function __construct(
@@ -29,9 +30,9 @@ class PreSwitchIndexEvent extends AbstractPopulateEvent
         $this->remainingMessages = $remainingMessages;
     }
 
-    public function getRemainingMessages(): ?int
+    public function getRemainingMessages(): int
     {
-        return $this->remainingMessages ?? 0;
+        return $this->remainingMessages;
     }
 
     public function isSuccess(): bool
