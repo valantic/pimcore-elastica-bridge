@@ -155,8 +155,8 @@ composer test-coverage
 
 ### Requirements for Testing
 
-- PHP 8.2 or higher
-- PHPUnit 11.0 or higher
+- PHP 8.3 or higher
+- PHPUnit 12.5 or higher
 - Elasticsearch 8.x (for integration tests)
 
 For detailed information about writing and running tests, see the [Testing Guide](tests/README.md).
@@ -164,8 +164,8 @@ For detailed information about writing and running tests, see the [Testing Guide
 ### Continuous Integration
 
 All tests run automatically on GitHub Actions for every push and pull request, testing against:
-- PHP 8.2, 8.3, 8.4
-- Pimcore 11.x, 12.x
+- PHP 8.3, 8.4
+- Pimcore 12.x
 - Both minimum and stable dependency versions
 
 ## License
