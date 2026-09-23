@@ -1,5 +1,15 @@
 # UPGRADE
 
+## Upgrade from v4 to v5
+
+- Pimcore 12 (Pimcore Platform Version 2025.1) is required: `pimcore/pimcore` `^12.3.1`. Stay on v4 for Pimcore 11.
+- PHP 8.3+ is required
+- Symfony 7: `symfony/console` and `symfony/lock` require `^7.3`
+- `elasticsearch/elasticsearch` `^8.19` is now a direct dependency
+- The bundle is now licensed under the [Pimcore Open Core License (POCL)](https://github.com/pimcore/pimcore/blob/2026.x/LICENSE.md). v4 and below remain available under GPLv3.
+- If you extend `\Valantic\ElasticaBridgeBundle\DependencyInjection\Configuration`, `getConfigTreeBuilder()` now declares a `TreeBuilder` return type
+- If you index documents from the Newsletter or WebToPrint bundles, the sub-types `newsletter`, `printpage`, and `printcontainer` are now detected by their Pimcore 12 class names (`Pimcore\Bundle\NewsletterBundle\Model\Document\Newsletter`, `Pimcore\Bundle\WebToPrintBundle\Model\Document\Printpage`, `Pimcore\Bundle\WebToPrintBundle\Model\Document\Printcontainer`)
+
 ## Upgrade from v3 to v4
 
 - Remove deprecated options `valantic_elastica_bridge.client.host` and `valantic_elastica_bridge.client.port`. Use `valantic_elastica_bridge.client.dsn` instead, e.g. `http://localhost:9200`
