@@ -9,8 +9,6 @@
 - The bundle is now licensed under the [Pimcore Open Core License (POCL)](https://github.com/pimcore/pimcore/blob/2026.x/LICENSE.md). v4 and below remain available under GPLv3.
 - If you extend `\Valantic\ElasticaBridgeBundle\DependencyInjection\Configuration`, `getConfigTreeBuilder()` now declares a `TreeBuilder` return type
 - If you index documents from the Newsletter or WebToPrint bundles, the sub-types `newsletter`, `printpage`, and `printcontainer` are now detected by their Pimcore 12 class names (`Pimcore\Bundle\NewsletterBundle\Model\Document\Newsletter`, `Pimcore\Bundle\WebToPrintBundle\Model\Document\Printpage`, `Pimcore\Bundle\WebToPrintBundle\Model\Document\Printcontainer`)
-- If you extend or instantiate `\Valantic\ElasticaBridgeBundle\Command\Cleanup`, its constructor now takes a `\Valantic\ElasticaBridgeBundle\Service\CleanupService` instead of the Elasticsearch client and index repository
-- Added `\Valantic\ElasticaBridgeBundle\Service\CleanupService::cleanUp` to programmatically delete indices and aliases; it returns a `\Valantic\ElasticaBridgeBundle\Model\CleanupResult` [#92](https://github.com/valantic/pimcore-elastica-bridge/pull/92)
 - Added `--dry-run` to `:cleanup` to list the indices and aliases that would be deleted without deleting them [#92](https://github.com/valantic/pimcore-elastica-bridge/pull/92)
 
 ## Upgrade from v3 to v4
