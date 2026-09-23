@@ -58,6 +58,9 @@ valantic_elastica_bridge:
         # The DSN to connect to the Elasticsearch cluster.
         dsn:                  'http://localhost:9200'
 
+        # A list of DSNs to connect to the Elasticsearch cluster. If set, takes precedence over `dsn` and allows failover if a node is unavailable.
+        hosts:                []
+
         # If true, breadcrumbs are added to Sentry for every request made to Elasticsearch via Elastica.
         should_add_sentry_breadcrumbs: false
     indexing:

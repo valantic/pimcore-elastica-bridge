@@ -17,6 +17,7 @@ class Configuration implements ConfigurationInterface
             ->arrayNode('client')
             ->children()
             ->scalarNode('dsn')->defaultValue('http://localhost:9200')->info('The DSN to connect to the Elasticsearch cluster.')->end()
+            ->arrayNode('hosts')->scalarPrototype()->end()->info('A list of DSNs to connect to the Elasticsearch cluster. If set, takes precedence over `dsn` and allows failover if a node is unavailable.')->end()
             ->booleanNode('should_add_sentry_breadcrumbs')->defaultFalse()->info('If true, breadcrumbs are added to Sentry for every request made to Elasticsearch via Elastica.')->end()
             ->end()
             ->end()
