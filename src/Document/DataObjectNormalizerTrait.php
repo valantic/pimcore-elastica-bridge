@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Document;
 
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
 use Pimcore\Localization\LocaleService;
@@ -198,28 +199,28 @@ trait DataObjectNormalizerTrait
         Concrete $element,
         array $objectTypes = [AbstractObject::OBJECT_TYPE_OBJECT, AbstractObject::OBJECT_TYPE_FOLDER],
     ): array {
-        $placeholders = implode(',', array_fill(0, count($objectTypes), '?'));
-
-        $query = 'WITH RECURSIVE CategoryHierarchy AS (
-                    SELECT id, parentId, published
-                    FROM objects WHERE id = ? AND type in (' . $placeholders . ') AND published = 1
-                    UNION ALL
-                    SELECT c.id, c.parentId, c.published
-                    FROM objects c
-                    INNER JOIN CategoryHierarchy ch ON ch.id = c.parentId
-                )
-                SELECT DISTINCT id
-                FROM CategoryHierarchy where published = 1;';
-        $statement = $this->connection->prepare($query);
-        $statement->bindValue(1, $element->getId(), ParameterType::INTEGER);
-
-        foreach ($objectTypes as $index => $type) {
-            $statement->bindValue($index + 2, $type, ParameterType::STRING);
+        if ($objectTypes === []) {
+            return [DocumentInterface::ATTRIBUTE_CHILDREN_RECURSIVE => []];
         }
 
-        $result = $statement->executeQuery();
+        // mirrors $element->getChildren($objectTypes) applied recursively: the element itself is excluded
+        // and unpublished children (including their descendants) are skipped
+        $query = 'WITH RECURSIVE descendants AS (
+                    SELECT id FROM objects WHERE parentId = ? AND type IN (?) AND published = 1
+                    UNION ALL
+                    SELECT o.id FROM objects o
+                    INNER JOIN descendants d ON o.parentId = d.id
+                    WHERE o.type IN (?) AND o.published = 1
+                )
+                SELECT id FROM descendants';
 
-        return [DocumentInterface::ATTRIBUTE_CHILDREN_RECURSIVE => array_map(intval(...), array_keys($result->fetchAllAssociativeIndexed()))];
+        $ids = $this->connection->fetchFirstColumn(
+            $query,
+            [$element->getId(), $objectTypes, $objectTypes],
+            [ParameterType::INTEGER, ArrayParameterType::STRING, ArrayParameterType::STRING],
+        );
+
+        return [DocumentInterface::ATTRIBUTE_CHILDREN_RECURSIVE => array_map(intval(...), $ids)];
     }
 
     /**
