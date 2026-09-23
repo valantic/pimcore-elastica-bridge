@@ -21,6 +21,7 @@ class Configuration implements ConfigurationInterface
             ->beforeNormalization()->castToArray()->end()
             ->scalarPrototype()->end()
             ->requiresAtLeastOneElement()
+            ->performNoDeepMerging()
             ->defaultValue(['http://localhost:9200'])
             ->end()
             ->booleanNode('should_add_sentry_breadcrumbs')->defaultFalse()->info('If true, breadcrumbs are added to Sentry for every request made to Elasticsearch via Elastica.')->end()
