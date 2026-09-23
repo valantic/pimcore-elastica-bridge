@@ -7,8 +7,9 @@ namespace Valantic\ElasticaBridgeBundle\Tests\Integration\Command;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\MockInterface;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Helper\HelperSet;
+use Symfony\Component\Console\Helper\QuestionHelper;
 use Symfony\Component\Console\Tester\CommandTester;
 use Valantic\ElasticaBridgeBundle\Command\Cleanup;
 use Valantic\ElasticaBridgeBundle\Model\CleanupResult;
@@ -27,9 +28,9 @@ class CleanupCommandTest extends TestCase
 
         $this->cleanupService = \Mockery::mock(CleanupService::class);
 
-        $application = new Application();
-        $application->addCommand(new Cleanup($this->cleanupService));
-        $this->commandTester = new CommandTester($application->find('valantic:elastica-bridge:cleanup'));
+        $command = new Cleanup($this->cleanupService);
+        $command->setHelperSet(new HelperSet([new QuestionHelper()]));
+        $this->commandTester = new CommandTester($command);
     }
 
     public function testDryRunSkipsConfirmationAndListsWhatWouldBeDeleted(): void
