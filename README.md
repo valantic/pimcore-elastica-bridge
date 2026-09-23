@@ -55,8 +55,11 @@ See the [`ProductIndexDocument` provided in the example](docs/example/src/Elasti
 valantic_elastica_bridge:
     client:
 
-        # The DSN to connect to the Elasticsearch cluster.
-        dsn:                  'http://localhost:9200'
+        # The DSN to connect to the Elasticsearch cluster. Pass a list of DSNs to allow failover if a node is unavailable.
+        dsn:
+
+            # Default:
+            - http://localhost:9200
 
         # If true, breadcrumbs are added to Sentry for every request made to Elasticsearch via Elastica.
         should_add_sentry_breadcrumbs: false

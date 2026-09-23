@@ -16,9 +16,16 @@ class ConfigurationRepository
     ) {
     }
 
-    public function getClientDsn(): string
+    /**
+     * @return list<string>
+     */
+    public function getClientDsn(): array
     {
-        return $this->containerBag->get('valantic_elastica_bridge')['client']['dsn'];
+        // a list provided via e.g. %env(json:...)% is wrapped in another list during config normalization
+        return array_values(array_merge(...array_map(
+            static fn (array|string $dsn): array => (array) $dsn,
+            array_values($this->containerBag->get('valantic_elastica_bridge')['client']['dsn']),
+        )));
     }
 
     public function shouldAddSentryBreadcrumbs(): bool
