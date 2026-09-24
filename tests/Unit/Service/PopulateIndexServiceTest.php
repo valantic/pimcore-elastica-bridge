@@ -68,6 +68,40 @@ class PopulateIndexServiceTest extends TestCase
         $this->service->switchBlueGreenIndex('products');
     }
 
+    public function testSetupAppliesBulkSettingsToRecreatedInactiveIndex(): void
+    {
+        $inactiveIndex = $this->mockIndex('products--green');
+        $indexConfig = $this->mockIndexConfig(blueGreen: true, inactive: $inactiveIndex);
+
+        $inactiveIndex->shouldReceive('delete')->once()->ordered();
+        $inactiveIndex->shouldReceive('create')->once()->ordered();
+        $inactiveIndex->shouldReceive('setSettings')->once()->with(self::BULK_SETTINGS)->ordered();
+
+        $this->service->setupIndex($indexConfig);
+    }
+
+    public function testSetupDoesNotApplyBulkSettingsToNonBlueGreenIndex(): void
+    {
+        $liveIndex = \Mockery::mock(Index::class)->shouldIgnoreMissing();
+        $liveIndex->shouldReceive('exists')->andReturn(true);
+        $liveIndex->shouldNotReceive('setSettings');
+        $indexConfig = $this->mockIndexConfig(blueGreen: false);
+        $indexConfig->shouldReceive('getElasticaIndex')->andReturn($liveIndex);
+        $this->esClient->shouldReceive('getIndex')->with('products')->andReturn($liveIndex);
+
+        $this->service->setupIndex($indexConfig);
+    }
+
+    public function testPostPopulateOnlyRefreshesNonBlueGreenIndex(): void
+    {
+        $liveIndex = \Mockery::mock(Index::class);
+        $liveIndex->shouldReceive('refresh')->once();
+        $liveIndex->shouldNotReceive('setSettings');
+        $this->esClient->shouldReceive('getIndex')->with('products')->andReturn($liveIndex);
+
+        $this->service->postPopulateIndex($this->mockIndexConfig(blueGreen: false));
+    }
+
     private function mockIndex(string $name): Index&MockInterface
     {
         $index = \Mockery::mock(Index::class);

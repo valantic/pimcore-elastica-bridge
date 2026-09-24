@@ -48,13 +48,14 @@ interface IndexInterface
     /**
      * Elasticsearch index settings applied while the inactive index is being populated.
      * Disabling refresh and replicas during bulk indexing significantly speeds up ingestion.
+     * Only applied to blue/green indices; other indices are live while being populated.
      *
      * @return array<string, mixed>
      */
     public function getBulkIndexingSettings(): array;
 
     /**
-     * Elasticsearch index settings restored after population completes (before alias switch).
+     * Elasticsearch index settings restored on the inactive blue/green index after population completes (before the alias switch).
      *
      * @return array<string, mixed>
      */

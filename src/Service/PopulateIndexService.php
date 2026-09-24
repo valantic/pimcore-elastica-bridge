@@ -156,38 +156,42 @@ class PopulateIndexService
     {
         $this->ensureCorrectIndexSetup($indexConfig);
 
-        if ($indexConfig->usesBlueGreenIndices()) {
-            $inactiveElasticaIndex = $indexConfig->getBlueGreenInactiveElasticaIndex();
-            $inactiveElasticaIndex->delete();
-            $inactiveElasticaIndex->create($indexConfig->getCreateArguments());
-            $this->log($indexConfig->getName(), '<comment>Re-created inactive blue/green index</comment>');
+        if (!$indexConfig->usesBlueGreenIndices()) {
+            return;
         }
 
+        $inactiveElasticaIndex = $indexConfig->getBlueGreenInactiveElasticaIndex();
+        $inactiveElasticaIndex->delete();
+        $inactiveElasticaIndex->create($indexConfig->getCreateArguments());
+        $this->log($indexConfig->getName(), '<comment>Re-created inactive blue/green index</comment>');
+
+        // Only the inactive blue/green index gets bulk settings: it is not live yet and
+        // switchBlueGreenIndex() restores the production settings before it goes live.
         $bulkSettings = $indexConfig->getBulkIndexingSettings();
 
         if ($bulkSettings !== []) {
-            $targetIndex = $indexConfig->usesBlueGreenIndices()
-                ? $indexConfig->getBlueGreenInactiveElasticaIndex()
-                : $this->esClient->getIndex($indexConfig->getName());
-            $targetIndex->setSettings($bulkSettings);
-            $this->log($indexConfig->getName(), '<comment>Applied bulk indexing settings (refresh_interval=-1, replicas=0)</comment>');
+            $inactiveElasticaIndex->setSettings($bulkSettings);
+            $this->log($indexConfig->getName(), '<comment>Applied bulk indexing settings</comment>');
         }
     }
 
     public function postPopulateIndex(IndexInterface $indexConfig): void
     {
-        $currentIndex = $indexConfig->usesBlueGreenIndices()
-            ? $indexConfig->getBlueGreenInactiveElasticaIndex()
-            : $this->esClient->getIndex($indexConfig->getName());
+        if (!$indexConfig->usesBlueGreenIndices()) {
+            $this->esClient->getIndex($indexConfig->getName())->refresh();
 
+            return;
+        }
+
+        $inactiveElasticaIndex = $indexConfig->getBlueGreenInactiveElasticaIndex();
         $postSettings = $indexConfig->getPostBulkIndexingSettings();
 
         if ($postSettings !== []) {
-            $currentIndex->setSettings($postSettings);
+            $inactiveElasticaIndex->setSettings($postSettings);
             $this->log($indexConfig->getName(), '<comment>Restored production index settings</comment>');
         }
 
-        $currentIndex->refresh();
+        $inactiveElasticaIndex->refresh();
     }
 
     /**
