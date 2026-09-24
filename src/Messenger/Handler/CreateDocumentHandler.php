@@ -126,7 +126,29 @@ class CreateDocumentHandler
         }
 
         if ($allEsDocuments !== []) {
-            $esIndex->addDocuments($allEsDocuments);
+            try {
+                $esIndex->addDocuments($allEsDocuments);
+            } catch (\Throwable $throwable) {
+                $this->consoleOutput->writeln(sprintf(
+                    'Error indexing %s (objectIds %s): %s (%s)',
+                    $message->esIndex,
+                    implode(', ', $pendingSuccessIds),
+                    $throwable->getMessage(),
+                    $throwable::class,
+                ), ConsoleOutputInterface::VERBOSITY_NORMAL);
+
+                $skipFailingDocuments = $this->configurationRepository->shouldSkipFailingDocuments();
+
+                foreach ($pendingSuccessIds as $objectId) {
+                    $this->dispatchPost($index, $message->objectType, $objectId, null, success: false, willRetry: !$skipFailingDocuments, throwable: $throwable);
+                }
+
+                if (!$skipFailingDocuments) {
+                    throw $throwable;
+                }
+
+                $pendingSuccessIds = [];
+            }
         }
 
         foreach ($pendingSuccessIds as $objectId) {
