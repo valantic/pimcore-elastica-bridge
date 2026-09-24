@@ -35,11 +35,25 @@ abstract class AbstractIndex implements IndexInterface
                 DocumentInterface::META_SUB_TYPE => [
                     'type' => 'keyword',
                 ],
+                DocumentInterface::META_TENANT => [
+                    'type' => 'keyword',
+                ],
+                DocumentInterface::META_LANGUAGE => [
+                    'type' => 'keyword',
+                ],
+                DocumentInterface::META_COUNTRY => [
+                    'type' => 'keyword',
+                ],
             ],
         ];
     }
 
     public function getSettings(): array
+    {
+        return [];
+    }
+
+    public function getContexts(): array
     {
         return [];
     }

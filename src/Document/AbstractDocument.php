@@ -20,6 +20,8 @@ use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\Enum\DocumentType;
 use Valantic\ElasticaBridgeBundle\Exception\DocumentType\PimcoreListingClassNotFoundException;
 use Valantic\ElasticaBridgeBundle\Exception\DocumentType\UnknownPimcoreElementType;
+use Valantic\ElasticaBridgeBundle\Index\DocumentContext;
+use Valantic\ElasticaBridgeBundle\Index\IndexContext;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 
 /**
@@ -49,6 +51,33 @@ abstract class AbstractDocument implements DocumentInterface
         }
 
         throw new UnknownPimcoreElementType($documentType?->value);
+    }
+
+    /**
+     * Appends all context fields to getElasticsearchId(), keeping empty positions for null fields
+     * so that e.g. a tenant and a language with the same value result in different IDs.
+     */
+    public static function getIdForContext(AbstractElement $element, DocumentContext $documentContext): string
+    {
+        $contextParts = [$documentContext->tenant, $documentContext->language, $documentContext->country];
+
+        if ($contextParts === [null, null, null]) {
+            return self::getElasticsearchId($element);
+        }
+
+        return implode('_', [self::getElasticsearchId($element), ...array_map(strval(...), $contextParts)]);
+    }
+
+    public function getNormalizedForContext(AbstractElement $element, IndexContext $indexContext, DocumentContext $documentContext): array
+    {
+        return $this->getNormalized($element);
+    }
+
+    public function getDocumentContexts(AbstractElement $element, IndexContext $indexContext): array
+    {
+        return $this->shouldIndex($element)
+            ? [new DocumentContext($indexContext->tenant, $indexContext->language)]
+            : [];
     }
 
     public function treatObjectVariantsAsDocuments(): bool

@@ -32,6 +32,11 @@ class IndexFactory
                 return $this->name;
             }
 
+            public function getContexts(): array
+            {
+                return [];
+            }
+
             public function getAllowedDocuments(): array
             {
                 return $this->allowedDocuments;

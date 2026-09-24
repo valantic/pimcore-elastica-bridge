@@ -16,6 +16,11 @@
 - `\Valantic\ElasticaBridgeBundle\Document\DocumentInterface::getListingInstance()` now returns `DataObject\Listing|Document\Listing|Asset\Listing` instead of `AbstractListing`; update the return type of any overrides
 - `\Valantic\ElasticaBridgeBundle\Index\IndexInterface::getBatchSize()` now defaults to `500` and controls how many IDs are loaded per page when dispatching messages
 - `\Valantic\ElasticaBridgeBundle\Index\IndexInterface::shouldPopulateInSubprocesses()` was removed; remove any implementations
+- The Symfony Scheduler provider is only registered when `valantic_elastica_bridge.indexing.scheduler_enabled` is `true`
+- Indices can store multiple documents per Pimcore element, see [README.md](./README.md#multiple-documents-per-element). If you implement the interfaces without extending the abstract classes, add the new methods:
+  - `\Valantic\ElasticaBridgeBundle\Index\IndexInterface::getContexts()`; return `[]` to keep one document per element
+  - `\Valantic\ElasticaBridgeBundle\Document\DocumentInterface::getIdForContext()`, `getNormalizedForContext()`, and `getDocumentContexts()`
+- `\Valantic\ElasticaBridgeBundle\Index\AbstractIndex::getMapping()` now also maps `__tenant`, `__language`, and `__country` as `keyword`
 
 ## Upgrade from v3 to v4
 

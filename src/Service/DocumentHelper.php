@@ -35,6 +35,55 @@ class DocumentHelper
     }
 
     /**
+     * Creates the Elastica documents to be stored in an index for a Pimcore element.
+     *
+     * For indices without contexts, this is the result of elementToDocument() if DocumentInterface::shouldIndex() allows it.
+     * For indices with contexts, one Elastica document is created per DocumentContext of every IndexContext.
+     *
+     * @internal
+     *
+     * @param DocumentInterface<AbstractElement> $document
+     *
+     * @return Document[]
+     */
+    public function elementToDocumentsForContexts(
+        DocumentInterface $document,
+        AbstractElement $dataObject,
+        IndexInterface $index,
+    ): array {
+        if ($index->getContexts() === []) {
+            return $document->shouldIndex($dataObject)
+                ? [$this->elementToDocument($document, $dataObject)]
+                : [];
+        }
+
+        $meta = [
+            DocumentInterface::META_TYPE => $document->getType(),
+            DocumentInterface::META_SUB_TYPE => $document->getSubType(),
+            DocumentInterface::META_ID => $dataObject->getId(),
+        ];
+
+        $result = [];
+
+        foreach ($index->getContexts() as $indexContext) {
+            foreach ($document->getDocumentContexts($dataObject, $indexContext) as $documentContext) {
+                $id = $document::getIdForContext($dataObject, $documentContext);
+                $normalized = $document->getNormalizedForContext($dataObject, $indexContext, $documentContext);
+
+                $contextMeta = array_filter([
+                    DocumentInterface::META_TENANT => $documentContext->tenant,
+                    DocumentInterface::META_LANGUAGE => $documentContext->language,
+                    DocumentInterface::META_COUNTRY => $documentContext->country,
+                ], static fn (?string $v): bool => $v !== null);
+
+                $result[] = new Document($id, array_merge($normalized, $meta, $contextMeta));
+            }
+        }
+
+        return $result;
+    }
+
+    /**
      * Set the tenant (if needed) on the Document based on the Index tenant.
      *
      * @param DocumentInterface<AbstractElement> $document

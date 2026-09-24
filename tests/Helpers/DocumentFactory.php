@@ -8,6 +8,8 @@ use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Enum\DocumentType;
+use Valantic\ElasticaBridgeBundle\Index\DocumentContext;
+use Valantic\ElasticaBridgeBundle\Index\IndexContext;
 
 class DocumentFactory
 {
@@ -51,6 +53,21 @@ class DocumentFactory
                     DocumentInterface::META_TYPE => $this->type->value,
                     DocumentInterface::META_SUB_TYPE => $this->subType ?? $element::class,
                 ];
+            }
+
+            public static function getIdForContext(AbstractElement $element, DocumentContext $documentContext): string
+            {
+                return self::getElasticsearchId($element);
+            }
+
+            public function getNormalizedForContext(AbstractElement $element, IndexContext $indexContext, DocumentContext $documentContext): array
+            {
+                return $this->getNormalized($element);
+            }
+
+            public function getDocumentContexts(AbstractElement $element, IndexContext $indexContext): array
+            {
+                return $this->shouldIndex ? [new DocumentContext()] : [];
             }
 
             public function getListingInstance(\Valantic\ElasticaBridgeBundle\Index\IndexInterface $index): \Pimcore\Model\DataObject\Listing

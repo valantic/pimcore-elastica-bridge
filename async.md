@@ -49,7 +49,16 @@ $ bin/console messenger:consume elastica_bridge_populate
 ```
 
 ### Scheduler Worker
-To process the messages in a scheduled manner, you can use the following command:
+To populate the indices at a fixed interval, enable the scheduler and set the interval in seconds:
+
+```yaml
+valantic_elastica_bridge:
+    indexing:
+        scheduler_enabled: true
+        interval: 600
+```
+
+Then run the scheduler worker:
 
 ```shell
 $ bin/console messenger:consume scheduler_populate_index

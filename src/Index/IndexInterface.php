@@ -20,6 +20,18 @@ interface IndexInterface
     public function getName(): string;
 
     /**
+     * The contexts (e.g. tenant and language) this index stores documents for.
+     * All contexts share this index; DocumentInterface::getDocumentContexts() decides which documents are created per context.
+     *
+     * Returning an empty array (default) creates exactly one document per Pimcore element.
+     *
+     * @return IndexContext[]
+     *
+     * @see DocumentInterface::getDocumentContexts()
+     */
+    public function getContexts(): array;
+
+    /**
      * The number of Pimcore elements to be stored in the index in one batch.
      * This is used e.g. when populating the index.
      *
