@@ -20,6 +20,7 @@ use Valantic\ElasticaBridgeBundle\Messenger\Handler\CreateDocumentHandler;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\CreateDocumentMessage;
 use Valantic\ElasticaBridgeBundle\Model\Event\ElasticaBridgeEvents;
 use Valantic\ElasticaBridgeBundle\Model\Event\PostDocumentCreateEvent;
+use Valantic\ElasticaBridgeBundle\Model\Event\PreDocumentCreateEvent;
 use Valantic\ElasticaBridgeBundle\Repository\ConfigurationRepository;
 use Valantic\ElasticaBridgeBundle\Repository\DocumentRepository;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
@@ -36,6 +37,7 @@ class CreateDocumentHandlerTest extends TestCase
     private ConfigurationRepository&MockInterface $configurationRepository;
     private DocumentInterface&MockInterface $document;
     private IndexInterface&MockInterface $index;
+    private EventDispatcher $eventDispatcher;
     private CreateDocumentHandler $handler;
 
     /**
@@ -73,8 +75,8 @@ class CreateDocumentHandlerTest extends TestCase
         $this->documentHelper->shouldReceive('setTenantIfNeeded');
         $this->configurationRepository = \Mockery::mock(ConfigurationRepository::class);
 
-        $eventDispatcher = new EventDispatcher();
-        $eventDispatcher->addListener(ElasticaBridgeEvents::POST_DOCUMENT_CREATE, function (PostDocumentCreateEvent $event): void {
+        $this->eventDispatcher = new EventDispatcher();
+        $this->eventDispatcher->addListener(ElasticaBridgeEvents::POST_DOCUMENT_CREATE, function (PostDocumentCreateEvent $event): void {
             $this->postEvents[] = $event;
         });
 
@@ -83,7 +85,7 @@ class CreateDocumentHandlerTest extends TestCase
             $documentRepository,
             $indexRepository,
             $this->configurationRepository,
-            $eventDispatcher,
+            $this->eventDispatcher,
             \Mockery::spy(ConsoleOutputInterface::class),
         );
     }
@@ -147,6 +149,110 @@ class CreateDocumentHandlerTest extends TestCase
         foreach ($this->postEvents as $event) {
             $this->assertTrue($event->success);
         }
+    }
+
+    public function testRetriedMessageOnlyReportsTheFailingElement(): void
+    {
+        $this->givenElementsWithoutDocuments(1);
+        $this->givenSkippedElement(2);
+        $exception = new \RuntimeException('normalization failed');
+        $this->givenFailingElement(3, $exception);
+        $this->configurationRepository->shouldReceive('shouldSkipFailingDocuments')->andReturn(false);
+        $this->esIndex->shouldNotReceive('addDocuments');
+        CreateDocumentHandler::$messageCount = 3;
+
+        try {
+            $this->handle(1, 2, 3);
+            $this->fail('Expected the element failure to be rethrown');
+        } catch (\RuntimeException $e) {
+            $this->assertSame($exception, $e);
+        }
+
+        // Elements 1 and 2 are reported when the message is retried; reporting them now would count them twice.
+        $this->assertCount(1, $this->postEvents);
+        $this->assertSame(3, $this->postEvents[0]->elementId);
+        $this->assertTrue($this->postEvents[0]->willRetry);
+        $this->assertSame(3, CreateDocumentHandler::$messageCount);
+    }
+
+    public function testRetriedBulkFailureDoesNotReportElementsWithoutDocuments(): void
+    {
+        $this->givenElementsWithoutDocuments(1);
+        $this->givenElementsWithDocuments(2);
+        $this->configurationRepository->shouldReceive('shouldSkipFailingDocuments')->andReturn(false);
+        $this->esIndex->shouldReceive('addDocuments')->once()->andThrow(new \RuntimeException('bulk failed'));
+
+        try {
+            $this->handle(1, 2);
+            $this->fail('Expected the bulk failure to be rethrown');
+        } catch (\RuntimeException) {
+        }
+
+        $this->assertSame([2], array_map(static fn (PostDocumentCreateEvent $event): ?int => $event->elementId, $this->postEvents));
+        $this->assertTrue($this->postEvents[0]->willRetry);
+    }
+
+    public function testCompletedMessageReportsEveryElementOnce(): void
+    {
+        $this->givenElementsWithoutDocuments(1);
+        $this->givenSkippedElement(2);
+        $this->givenFailingElement(3, new \RuntimeException('normalization failed'));
+        $this->givenElementsWithDocuments(4);
+        $this->configurationRepository->shouldReceive('shouldSkipFailingDocuments')->andReturn(true);
+        $this->esIndex->shouldReceive('addDocuments')->once();
+        CreateDocumentHandler::$messageCount = 4;
+
+        $this->handle(1, 2, 3, 4);
+
+        $outcomes = [];
+
+        foreach ($this->postEvents as $event) {
+            $outcomes[$event->elementId] = [$event->success, $event->skipped, $event->willRetry];
+        }
+
+        ksort($outcomes);
+        $this->assertSame([
+            1 => [true, false, false],
+            2 => [false, true, false],
+            3 => [false, false, false],
+            4 => [true, false, false],
+        ], $outcomes);
+        $this->assertSame(2, CreateDocumentHandler::$messageCount);
+    }
+
+    private function givenElementsWithoutDocuments(int ...$ids): void
+    {
+        foreach ($ids as $id) {
+            $element = PimcoreElementFactory::createDataObject($id);
+            StaticElementRegistry::$elements[$id] = $element;
+            $this->documentHelper
+                ->shouldReceive('elementToDocumentsForContexts')
+                ->with($this->document, $element, $this->index)
+                ->andReturn([])
+            ;
+        }
+    }
+
+    private function givenSkippedElement(int $id): void
+    {
+        $element = PimcoreElementFactory::createDataObject($id);
+        StaticElementRegistry::$elements[$id] = $element;
+        $this->eventDispatcher->addListener(ElasticaBridgeEvents::PRE_DOCUMENT_CREATE, static function (PreDocumentCreateEvent $event) use ($element): void {
+            if ($event->element === $element) {
+                $event->stopExecution();
+            }
+        });
+    }
+
+    private function givenFailingElement(int $id, \Throwable $throwable): void
+    {
+        $element = PimcoreElementFactory::createDataObject($id);
+        StaticElementRegistry::$elements[$id] = $element;
+        $this->documentHelper
+            ->shouldReceive('elementToDocumentsForContexts')
+            ->with($this->document, $element, $this->index)
+            ->andThrow($throwable)
+        ;
     }
 
     private function givenElementsWithDocuments(int ...$ids): void

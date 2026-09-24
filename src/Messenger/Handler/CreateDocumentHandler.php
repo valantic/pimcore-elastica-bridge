@@ -55,8 +55,11 @@ class CreateDocumentHandler
 
         // Collect ES documents from all elements in the batch, then send in one bulk call.
         $allEsDocuments = [];
-        // IDs that contributed ES documents — PostDocumentCreateEvent dispatched after addDocuments().
-        $pendingSuccessIds = [];
+        // Elements that contributed ES documents, keyed by ID; reported once addDocuments() succeeded.
+        $pendingElements = [];
+        // Post events are held back until the outcome of the whole message is final: if the message
+        // is retried, every element in it is processed and reported again.
+        $postEvents = [];
 
         foreach ($message->objectIds as $objectId) {
             $dataObject = null;
@@ -66,7 +69,7 @@ class CreateDocumentHandler
                 $event = $this->eventDispatcher->dispatch(new PreDocumentCreateEvent($index, $dataObject), ElasticaBridgeEvents::PRE_DOCUMENT_CREATE);
 
                 if ($event->isExecutionStopped()) {
-                    $this->dispatchPost($index, $message->objectType, $objectId, $dataObject, skipped: true);
+                    $postEvents[] = new PostDocumentCreateEvent($index, $message->objectType, $objectId, $dataObject, success: false, skipped: true);
 
                     continue;
                 }
@@ -94,18 +97,14 @@ class CreateDocumentHandler
                 $esDocuments = $this->documentHelper->elementToDocumentsForContexts($documentInstance, $dataObject, $index);
 
                 if ($esDocuments === []) {
-                    // Nothing to index for this element — count it as success immediately.
-                    $this->dispatchPost($index, $message->objectType, $objectId, $dataObject, success: true);
-
-                    if ($this->synchronous) {
-                        self::$messageCount--;
-                    }
+                    // Nothing to index for this element — count it as success.
+                    $postEvents[] = new PostDocumentCreateEvent($index, $message->objectType, $objectId, $dataObject);
 
                     continue;
                 }
 
                 $allEsDocuments = [...$allEsDocuments, ...$esDocuments];
-                $pendingSuccessIds[] = $objectId;
+                $pendingElements[$objectId] = $dataObject;
             } catch (\Throwable $throwable) {
                 $this->consoleOutput->writeln(sprintf(
                     'Error processing %s (objectId %s): %s (%s)',
@@ -116,12 +115,12 @@ class CreateDocumentHandler
                 ), ConsoleOutputInterface::VERBOSITY_NORMAL);
 
                 if (!$this->configurationRepository->shouldSkipFailingDocuments()) {
-                    $this->dispatchPost($index, $message->objectType, $objectId, $dataObject, success: false, willRetry: true, throwable: $throwable);
+                    $this->dispatchPost(new PostDocumentCreateEvent($index, $message->objectType, $objectId, $dataObject, success: false, willRetry: true, throwable: $throwable));
 
                     throw $throwable;
                 }
 
-                $this->dispatchPost($index, $message->objectType, $objectId, $dataObject, success: false, willRetry: false, throwable: $throwable);
+                $postEvents[] = new PostDocumentCreateEvent($index, $message->objectType, $objectId, $dataObject, success: false, throwable: $throwable);
             }
         }
 
@@ -132,29 +131,35 @@ class CreateDocumentHandler
                 $this->consoleOutput->writeln(sprintf(
                     'Error indexing %s (objectIds %s): %s (%s)',
                     $message->esIndex,
-                    implode(', ', $pendingSuccessIds),
+                    implode(', ', array_keys($pendingElements)),
                     $throwable->getMessage(),
                     $throwable::class,
                 ), ConsoleOutputInterface::VERBOSITY_NORMAL);
 
-                $skipFailingDocuments = $this->configurationRepository->shouldSkipFailingDocuments();
+                if (!$this->configurationRepository->shouldSkipFailingDocuments()) {
+                    foreach ($pendingElements as $objectId => $dataObject) {
+                        $this->dispatchPost(new PostDocumentCreateEvent($index, $message->objectType, $objectId, $dataObject, success: false, willRetry: true, throwable: $throwable));
+                    }
 
-                foreach ($pendingSuccessIds as $objectId) {
-                    $this->dispatchPost($index, $message->objectType, $objectId, null, success: false, willRetry: !$skipFailingDocuments, throwable: $throwable);
-                }
-
-                if (!$skipFailingDocuments) {
                     throw $throwable;
                 }
 
-                $pendingSuccessIds = [];
+                foreach ($pendingElements as $objectId => $dataObject) {
+                    $postEvents[] = new PostDocumentCreateEvent($index, $message->objectType, $objectId, $dataObject, success: false, throwable: $throwable);
+                }
+
+                $pendingElements = [];
             }
         }
 
-        foreach ($pendingSuccessIds as $objectId) {
-            $this->dispatchPost($index, $message->objectType, $objectId, null, success: true);
+        foreach ($pendingElements as $objectId => $dataObject) {
+            $postEvents[] = new PostDocumentCreateEvent($index, $message->objectType, $objectId, $dataObject);
+        }
 
-            if ($this->synchronous) {
+        foreach ($postEvents as $postEvent) {
+            $this->dispatchPost($postEvent);
+
+            if ($postEvent->success && $this->synchronous) {
                 self::$messageCount--;
             }
         }
@@ -166,28 +171,8 @@ class CreateDocumentHandler
         \Pimcore::collectGarbage();
     }
 
-    private function dispatchPost(
-        mixed $index,
-        string $elementType,
-        int $elementId,
-        mixed $element,
-        bool $success = false,
-        bool $skipped = false,
-        bool $willRetry = false,
-        ?\Throwable $throwable = null,
-    ): void {
-        $this->eventDispatcher->dispatch(
-            new PostDocumentCreateEvent(
-                $index,
-                $elementType,
-                $elementId,
-                $element,
-                success: $success,
-                skipped: $skipped,
-                willRetry: $willRetry,
-                throwable: $throwable,
-            ),
-            ElasticaBridgeEvents::POST_DOCUMENT_CREATE,
-        );
+    private function dispatchPost(PostDocumentCreateEvent $event): void
+    {
+        $this->eventDispatcher->dispatch($event, ElasticaBridgeEvents::POST_DOCUMENT_CREATE);
     }
 }
