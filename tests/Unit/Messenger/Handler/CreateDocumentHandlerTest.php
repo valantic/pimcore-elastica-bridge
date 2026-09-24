@@ -268,6 +268,69 @@ class CreateDocumentHandlerTest extends TestCase
         $this->assertSame(10, $this->populationProgress->getRemaining());
     }
 
+    public function testRetriedMessageOnlyReportsTheFailingElement(): void
+    {
+        StubDataObject::$existingIds = [1, 2, 3];
+        $exception = new \RuntimeException('normalization failed');
+        $this->givenShouldIndex([1 => false, 3 => $exception]);
+        $this->givenSkippedElement(2);
+        $this->inactiveIndex->shouldNotReceive('addDocuments');
+
+        try {
+            ($this->handler)($this->createMessage(objectIds: [1, 2, 3]));
+            $this->fail('Expected the element failure to be rethrown');
+        } catch (\RuntimeException $e) {
+            $this->assertSame($exception, $e);
+        }
+
+        // Elements 1 and 2 are reported when the message is retried; reporting them now would count them twice.
+        $this->assertSame([3], $this->getPostEventElementIds());
+        $this->assertTrue($this->postEvents[0]->willRetry);
+        $this->assertSame(10, $this->populationProgress->getRemaining());
+    }
+
+    public function testRetriedBulkFailureDoesNotReportElementsWithoutDocuments(): void
+    {
+        StubDataObject::$existingIds = [1, 2];
+        $this->givenShouldIndex([1 => false, 2 => true]);
+        $this->inactiveIndex->shouldReceive('addDocuments')->once()->andThrow(new \RuntimeException('bulk failed'));
+
+        try {
+            ($this->handler)($this->createMessage(objectIds: [1, 2]));
+            $this->fail('Expected the bulk failure to be rethrown');
+        } catch (\RuntimeException) {
+        }
+
+        $this->assertSame([2], $this->getPostEventElementIds());
+        $this->assertTrue($this->postEvents[0]->willRetry);
+    }
+
+    public function testCompletedMessageReportsEveryElementOnce(): void
+    {
+        StubDataObject::$existingIds = [1, 2, 3, 4];
+        $this->configurationRepository->shouldReceive('shouldSkipFailingDocuments')->andReturn(true);
+        $this->givenShouldIndex([1 => false, 3 => new \RuntimeException('normalization failed'), 4 => true]);
+        $this->givenSkippedElement(2);
+        $this->inactiveIndex->shouldReceive('addDocuments')->once();
+
+        ($this->handler)($this->createMessage(objectIds: [1, 2, 3, 4]));
+
+        $outcomes = [];
+
+        foreach ($this->postEvents as $event) {
+            $outcomes[$event->elementId] = [$event->success, $event->skipped, $event->willRetry];
+        }
+
+        ksort($outcomes);
+        $this->assertSame([
+            1 => [true, false, false],
+            2 => [false, true, false],
+            3 => [false, true, false],
+            4 => [true, false, false],
+        ], $outcomes);
+        $this->assertSame(8, $this->populationProgress->getRemaining());
+    }
+
     public function testMissingElementCountsAsProcessedWithoutRetry(): void
     {
         $this->document->shouldNotReceive('shouldIndex');
@@ -320,6 +383,31 @@ class CreateDocumentHandlerTest extends TestCase
     private function createMessage(array $objectIds = [42], ?CallbackEvent $callback = null): CreateDocumentMessage
     {
         return new CreateDocumentMessage($objectIds, StubDataObject::class, 'ProductDocument', 'products', $callback);
+    }
+
+    /**
+     * @param array<int, bool|\Throwable> $outcomes element ID => shouldIndex() result, or the exception it throws
+     */
+    private function givenShouldIndex(array $outcomes): void
+    {
+        $this->document->shouldReceive('shouldIndex')->andReturnUsing(static function (StubDataObject $element) use ($outcomes): bool {
+            $outcome = $outcomes[$element->getId()];
+
+            if ($outcome instanceof \Throwable) {
+                throw $outcome;
+            }
+
+            return $outcome;
+        });
+    }
+
+    private function givenSkippedElement(int $id): void
+    {
+        $this->eventDispatcher->addListener(ElasticaBridgeEvents::PRE_DOCUMENT_CREATE, static function (PreDocumentCreateEvent $event) use ($id): void {
+            if ($event->element->getId() === $id) {
+                $event->stopExecution();
+            }
+        });
     }
 
     /**

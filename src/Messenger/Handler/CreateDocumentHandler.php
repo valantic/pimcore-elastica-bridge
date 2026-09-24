@@ -58,6 +58,9 @@ class CreateDocumentHandler
         $allEsDocuments = [];
         // Elements that contributed ES documents, keyed by ID; reported once addDocuments() succeeded.
         $pendingElements = [];
+        // Post events are held back until the outcome of the whole message is final: if the message
+        // is retried, every element in it is processed and reported again.
+        $postEvents = [];
 
         foreach ($message->objectIds as $objectId) {
             $dataObject = null;
@@ -68,7 +71,7 @@ class CreateDocumentHandler
                 if ($dataObject === null) {
                     // the element was deleted after the message was generated, so there is nothing to index or to retry
                     $this->consoleOutput->writeln(sprintf('Element %s %s no longer exists. (Index: %s)', $message->objectType, $objectId, $message->esIndex), ConsoleOutputInterface::VERBOSITY_VERBOSE);
-                    $this->dispatchPost(new PostDocumentCreateEvent($index, $message->objectType, $objectId, null));
+                    $postEvents[] = new PostDocumentCreateEvent($index, $message->objectType, $objectId, null);
 
                     continue;
                 }
@@ -76,7 +79,7 @@ class CreateDocumentHandler
                 $event = $this->eventDispatcher->dispatch(new PreDocumentCreateEvent($index, $dataObject), ElasticaBridgeEvents::PRE_DOCUMENT_CREATE);
 
                 if ($event->isExecutionStopped()) {
-                    $this->dispatchPost(new PostDocumentCreateEvent($index, $message->objectType, $objectId, $dataObject, success: false, skipped: true));
+                    $postEvents[] = new PostDocumentCreateEvent($index, $message->objectType, $objectId, $dataObject, success: false, skipped: true);
 
                     continue;
                 }
@@ -105,7 +108,7 @@ class CreateDocumentHandler
 
                 if ($esDocuments === []) {
                     // Nothing to index for this element — count it as success.
-                    $this->dispatchPost(new PostDocumentCreateEvent($index, $message->objectType, $objectId, $dataObject));
+                    $postEvents[] = new PostDocumentCreateEvent($index, $message->objectType, $objectId, $dataObject);
 
                     continue;
                 }
@@ -127,7 +130,7 @@ class CreateDocumentHandler
                     throw $throwable;
                 }
 
-                $this->dispatchPost(new PostDocumentCreateEvent($index, $message->objectType, $objectId, $dataObject, success: false, skipped: true, throwable: $throwable));
+                $postEvents[] = new PostDocumentCreateEvent($index, $message->objectType, $objectId, $dataObject, success: false, skipped: true, throwable: $throwable);
             }
         }
 
@@ -143,14 +146,16 @@ class CreateDocumentHandler
                     $throwable::class,
                 ), ConsoleOutputInterface::VERBOSITY_NORMAL);
 
-                $skipFailingDocuments = $this->configurationRepository->shouldSkipFailingDocuments();
+                if (!$this->configurationRepository->shouldSkipFailingDocuments()) {
+                    foreach ($pendingElements as $objectId => $dataObject) {
+                        $this->dispatchPost(new PostDocumentCreateEvent($index, $message->objectType, $objectId, $dataObject, success: false, willRetry: true, throwable: $throwable));
+                    }
 
-                foreach ($pendingElements as $objectId => $dataObject) {
-                    $this->dispatchPost(new PostDocumentCreateEvent($index, $message->objectType, $objectId, $dataObject, success: false, skipped: $skipFailingDocuments, willRetry: !$skipFailingDocuments, throwable: $throwable));
+                    throw $throwable;
                 }
 
-                if (!$skipFailingDocuments) {
-                    throw $throwable;
+                foreach ($pendingElements as $objectId => $dataObject) {
+                    $postEvents[] = new PostDocumentCreateEvent($index, $message->objectType, $objectId, $dataObject, success: false, skipped: true, throwable: $throwable);
                 }
 
                 $pendingElements = [];
@@ -158,7 +163,11 @@ class CreateDocumentHandler
         }
 
         foreach ($pendingElements as $objectId => $dataObject) {
-            $this->dispatchPost(new PostDocumentCreateEvent($index, $message->objectType, $objectId, $dataObject));
+            $postEvents[] = new PostDocumentCreateEvent($index, $message->objectType, $objectId, $dataObject);
+        }
+
+        foreach ($postEvents as $postEvent) {
+            $this->dispatchPost($postEvent);
         }
 
         if ($message->callback?->shouldCallEvent() === true) {
