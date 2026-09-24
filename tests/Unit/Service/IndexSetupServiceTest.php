@@ -99,6 +99,32 @@ class IndexSetupServiceTest extends TestCase
         $this->assertContains('products: <comment>Re-created inactive blue/green index</comment>', $this->logger->getLog());
     }
 
+    public function testSetupAppliesBulkSettingsToRecreatedInactiveIndex(): void
+    {
+        [$blue, $green] = $this->blueGreenIndices();
+        $blue->shouldReceive('exists')->andReturn(true);
+        $green->shouldReceive('exists')->andReturn(true);
+        $this->indexConfig->shouldReceive('getBlueGreenActiveSuffix')->andReturn(IndexBlueGreenSuffix::BLUE);
+        $this->indexConfig->shouldReceive('getBulkIndexingSettings')->andReturn(self::BULK_SETTINGS);
+        $inactive = \Mockery::mock(Index::class);
+        $inactive->shouldReceive('delete')->once()->ordered();
+        $inactive->shouldReceive('create')->once()->ordered();
+        $inactive->shouldReceive('setSettings')->once()->with(self::BULK_SETTINGS)->ordered();
+        $this->indexConfig->shouldReceive('getBlueGreenInactiveElasticaIndex')->andReturn($inactive);
+
+        $this->service->setupIndex($this->indexConfig);
+    }
+
+    public function testSetupDoesNotApplyBulkSettingsToNonBlueGreenIndex(): void
+    {
+        $index = $this->simpleIndex();
+        $index->shouldReceive('exists')->andReturn(true);
+        $index->shouldNotReceive('setSettings');
+        $this->indexConfig->shouldReceive('getBulkIndexingSettings')->andReturn(self::BULK_SETTINGS);
+
+        $this->service->setupIndex($this->indexConfig);
+    }
+
     public function testSwitchNeverDeletesExistingIndices(): void
     {
         [$blue, $green] = $this->blueGreenIndices();
@@ -154,6 +180,7 @@ class IndexSetupServiceTest extends TestCase
         $index->shouldNotReceive('delete');
         $index->shouldNotReceive('addAlias');
         $index->shouldNotReceive('removeAlias');
+        $index->shouldNotReceive('setSettings');
 
         $this->service->switchBlueGreenIndex($this->indexConfig);
     }

@@ -32,21 +32,22 @@ class IndexSetupService
     {
         $this->ensureCorrectIndexSetup($indexConfig, $deleteExisting);
 
-        if ($indexConfig->usesBlueGreenIndices()) {
-            $inactiveElasticaIndex = $indexConfig->getBlueGreenInactiveElasticaIndex();
-            $inactiveElasticaIndex->delete();
-            $inactiveElasticaIndex->create($indexConfig->getCreateArguments());
-            $this->logger->log($indexConfig->getName(), '<comment>Re-created inactive blue/green index</comment>');
+        if (!$indexConfig->usesBlueGreenIndices()) {
+            return;
         }
 
+        $inactiveElasticaIndex = $indexConfig->getBlueGreenInactiveElasticaIndex();
+        $inactiveElasticaIndex->delete();
+        $inactiveElasticaIndex->create($indexConfig->getCreateArguments());
+        $this->logger->log($indexConfig->getName(), '<comment>Re-created inactive blue/green index</comment>');
+
+        // Only the inactive blue/green index gets bulk settings: it is not live yet and
+        // switchBlueGreenIndex() restores the production settings before it goes live.
         $bulkSettings = $indexConfig->getBulkIndexingSettings();
 
         if ($bulkSettings !== []) {
-            $targetIndex = $indexConfig->usesBlueGreenIndices()
-                ? $indexConfig->getBlueGreenInactiveElasticaIndex()
-                : $this->esClient->getIndex($indexConfig->getName());
-            $targetIndex->setSettings($bulkSettings);
-            $this->logger->log($indexConfig->getName(), '<comment>Applied bulk indexing settings (refresh_interval=-1, replicas=0)</comment>');
+            $inactiveElasticaIndex->setSettings($bulkSettings);
+            $this->logger->log($indexConfig->getName(), '<comment>Applied bulk indexing settings</comment>');
         }
     }
 
@@ -67,7 +68,7 @@ class IndexSetupService
         $oldIndex = $indexConfig->getBlueGreenActiveElasticaIndex();
         $newIndex = $indexConfig->getBlueGreenInactiveElasticaIndex();
         // Must run while the new index is still the inactive one, i.e. before the alias moves.
-        $this->postPopulateIndex($indexConfig);
+        $this->restoreProductionSettings($indexConfig, $newIndex);
         $newIndex->flush();
 
         $oldIndex->removeAlias($indexConfig->getName());
@@ -77,20 +78,16 @@ class IndexSetupService
         $oldIndex->flush();
     }
 
-    private function postPopulateIndex(IndexInterface $indexConfig): void
+    private function restoreProductionSettings(IndexInterface $indexConfig, Index $inactiveElasticaIndex): void
     {
-        $currentIndex = $indexConfig->usesBlueGreenIndices()
-            ? $indexConfig->getBlueGreenInactiveElasticaIndex()
-            : $this->esClient->getIndex($indexConfig->getName());
-
         $postSettings = $indexConfig->getPostBulkIndexingSettings();
 
         if ($postSettings !== []) {
-            $currentIndex->setSettings($postSettings);
+            $inactiveElasticaIndex->setSettings($postSettings);
             $this->logger->log($indexConfig->getName(), '<comment>Restored production index settings</comment>');
         }
 
-        $currentIndex->refresh();
+        $inactiveElasticaIndex->refresh();
     }
 
     private function ensureCorrectIndexSetup(IndexInterface $indexConfig, bool $deleteExisting): void
