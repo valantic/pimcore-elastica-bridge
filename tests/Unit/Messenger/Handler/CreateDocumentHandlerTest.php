@@ -207,12 +207,73 @@ class CreateDocumentHandlerTest extends TestCase
         $this->assertInstanceOf(\RuntimeException::class, $event->throwable);
     }
 
+    public function testSuccessfulBatchIsSentInOneBulkRequest(): void
+    {
+        StubDataObject::$existingIds = [1, 2];
+        $this->document->shouldReceive('shouldIndex')->andReturn(true);
+        $this->inactiveIndex->shouldReceive('addDocuments')->once()->with(\Mockery::on(static fn (array $documents): bool => count($documents) === 2));
+
+        ($this->handler)($this->createMessage(objectIds: [1, 2]));
+
+        $this->assertSame([1, 2], $this->getPostEventElementIds());
+
+        foreach ($this->postEvents as $event) {
+            $this->assertTrue($event->success);
+        }
+
+        $this->assertSame(8, $this->populationProgress->getRemaining());
+    }
+
+    public function testBulkFailureIsReportedPerElementWhenSkippingFailingDocuments(): void
+    {
+        StubDataObject::$existingIds = [1, 2];
+        $this->configurationRepository->shouldReceive('shouldSkipFailingDocuments')->andReturn(true);
+        $this->document->shouldReceive('shouldIndex')->andReturn(true);
+        $exception = new \RuntimeException('bulk failed');
+        $this->inactiveIndex->shouldReceive('addDocuments')->once()->andThrow($exception);
+
+        ($this->handler)($this->createMessage(objectIds: [1, 2]));
+
+        $this->assertSame([1, 2], $this->getPostEventElementIds());
+
+        foreach ($this->postEvents as $event) {
+            $this->assertFalse($event->success);
+            $this->assertTrue($event->skipped);
+            $this->assertFalse($event->willRetry);
+            $this->assertSame($exception, $event->throwable);
+        }
+    }
+
+    public function testBulkFailureIsRethrownForRetryWhenNotSkippingFailingDocuments(): void
+    {
+        StubDataObject::$existingIds = [1, 2];
+        $this->document->shouldReceive('shouldIndex')->andReturn(true);
+        $exception = new \RuntimeException('bulk failed');
+        $this->inactiveIndex->shouldReceive('addDocuments')->once()->andThrow($exception);
+
+        try {
+            ($this->handler)($this->createMessage(objectIds: [1, 2]));
+            $this->fail('Expected the bulk failure to be rethrown');
+        } catch (\RuntimeException $e) {
+            $this->assertSame($exception, $e);
+        }
+
+        $this->assertSame([1, 2], $this->getPostEventElementIds());
+
+        foreach ($this->postEvents as $event) {
+            $this->assertFalse($event->success);
+            $this->assertTrue($event->willRetry);
+        }
+
+        $this->assertSame(10, $this->populationProgress->getRemaining());
+    }
+
     public function testMissingElementCountsAsProcessedWithoutRetry(): void
     {
         $this->document->shouldNotReceive('shouldIndex');
         $this->inactiveIndex->shouldNotReceive('addDocuments');
 
-        ($this->handler)($this->createMessage(objectId: 404));
+        ($this->handler)($this->createMessage(objectIds: [404]));
 
         $event = $this->getPostEvent();
         $this->assertTrue($event->success);
@@ -228,7 +289,7 @@ class CreateDocumentHandlerTest extends TestCase
     {
         $this->configurationRepository->shouldReceive('shouldSkipFailingDocuments')->andReturn(true);
 
-        ($this->handler)($this->createMessage(objectId: 404));
+        ($this->handler)($this->createMessage(objectIds: [404]));
 
         $event = $this->getPostEvent();
         $this->assertTrue($event->success);
@@ -253,9 +314,20 @@ class CreateDocumentHandlerTest extends TestCase
         $this->assertCount(1, $callbackEvents);
     }
 
-    private function createMessage(int $objectId = 42, ?CallbackEvent $callback = null): CreateDocumentMessage
+    /**
+     * @param int[] $objectIds
+     */
+    private function createMessage(array $objectIds = [42], ?CallbackEvent $callback = null): CreateDocumentMessage
     {
-        return new CreateDocumentMessage([$objectId], StubDataObject::class, 'ProductDocument', 'products', $callback);
+        return new CreateDocumentMessage($objectIds, StubDataObject::class, 'ProductDocument', 'products', $callback);
+    }
+
+    /**
+     * @return array<int|null>
+     */
+    private function getPostEventElementIds(): array
+    {
+        return array_map(static fn (PostDocumentCreateEvent $event): ?int => $event->elementId, $this->postEvents);
     }
 
     private function getPostEvent(): PostDocumentCreateEvent
