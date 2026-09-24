@@ -40,6 +40,28 @@ interface IndexInterface
     public function getBatchSize(): int;
 
     /**
+     * Number of element IDs packed into a single CreateDocumentMessage.
+     * Higher values reduce message-queue and HTTP overhead during populate.
+     */
+    public function getMessageBatchSize(): int;
+
+    /**
+     * Elasticsearch index settings applied while the inactive index is being populated.
+     * Disabling refresh and replicas during bulk indexing significantly speeds up ingestion.
+     * Only applied to blue/green indices; other indices are live while being populated.
+     *
+     * @return array<string, mixed>
+     */
+    public function getBulkIndexingSettings(): array;
+
+    /**
+     * Elasticsearch index settings restored on the inactive blue/green index after population completes (before the alias switch).
+     *
+     * @return array<string, mixed>
+     */
+    public function getPostBulkIndexingSettings(): array;
+
+    /**
      * Defines the mapping to be used for this index.
      * Passed 1:1 to Elasticsearch.
      *

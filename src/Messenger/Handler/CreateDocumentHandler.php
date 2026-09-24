@@ -46,99 +46,133 @@ class CreateDocumentHandler
      * @throws ServerResponseException
      * @throws MissingParameterException
      */
-    private function handleMessage(
-        CreateDocumentMessage $message,
-    ): void {
-        $messageDecreased = false;
-        $dataObject = null;
-        $throwable = null;
+    private function handleMessage(CreateDocumentMessage $message): void
+    {
         $index = $this->indexRepository->flattenedGet($message->esIndex);
+        $documentInstance = $this->documentRepository->get($message->document);
+        $this->documentHelper->setTenantIfNeeded($documentInstance, $index);
+        $esIndex = $index->getBlueGreenInactiveElasticaIndex();
 
-        try {
-            $dataObject = $message->objectType::getById($message->objectId) ?? throw new \RuntimeException('DataObject not found');
-            $event = $this->eventDispatcher->dispatch(new PreDocumentCreateEvent($index, $dataObject), ElasticaBridgeEvents::PRE_DOCUMENT_CREATE);
+        // Collect ES documents from all elements in the batch, then send in one bulk call.
+        $allEsDocuments = [];
+        // Elements that contributed ES documents, keyed by ID; reported once addDocuments() succeeded.
+        $pendingElements = [];
+        // Post events are held back until the outcome of the whole message is final: if the message
+        // is retried, every element in it is processed and reported again.
+        $postEvents = [];
 
-            if ($event->isExecutionStopped()) {
-                return;
-            }
+        foreach ($message->objectIds as $objectId) {
+            $dataObject = null;
 
-            if ($this->consoleOutput->getVerbosity() > ConsoleOutputInterface::VERBOSITY_NORMAL) {
-                $currentCount = $event->getCurrentCount();
+            try {
+                $dataObject = $message->objectType::getById($objectId) ?? throw new \RuntimeException('DataObject not found: ' . $objectId);
+                $event = $this->eventDispatcher->dispatch(new PreDocumentCreateEvent($index, $dataObject), ElasticaBridgeEvents::PRE_DOCUMENT_CREATE);
 
-                if ($this->synchronous) {
-                    $currentCount = self::$messageCount;
+                if ($event->isExecutionStopped()) {
+                    $postEvents[] = new PostDocumentCreateEvent($index, $message->objectType, $objectId, $dataObject, success: false, skipped: true);
+
+                    continue;
                 }
 
-                $this->consoleOutput->writeln(
-                    sprintf(
-                        'Processing message of %s %s. ~%s left. (PID: %s) (%s)',
-                        $message->esIndex,
-                        $message->objectId,
-                        $currentCount,
-                        getmypid(),
-                        $this->synchronous ? 'sync' : 'async',
-                    ),
-                    ConsoleOutputInterface::VERBOSITY_VERBOSE,
-                );
+                if ($this->consoleOutput->getVerbosity() > ConsoleOutputInterface::VERBOSITY_NORMAL) {
+                    $currentCount = $event->getCurrentCount();
+
+                    if ($this->synchronous) {
+                        $currentCount = self::$messageCount;
+                    }
+
+                    $this->consoleOutput->writeln(
+                        sprintf(
+                            'Processing message of %s %s. ~%s left. (PID: %s) (%s)',
+                            $message->esIndex,
+                            $objectId,
+                            $currentCount,
+                            getmypid(),
+                            $this->synchronous ? 'sync' : 'async',
+                        ),
+                        ConsoleOutputInterface::VERBOSITY_VERBOSE,
+                    );
+                }
+
+                $esDocuments = $this->documentHelper->elementToDocumentsForContexts($documentInstance, $dataObject, $index);
+
+                if ($esDocuments === []) {
+                    // Nothing to index for this element — count it as success.
+                    $postEvents[] = new PostDocumentCreateEvent($index, $message->objectType, $objectId, $dataObject);
+
+                    continue;
+                }
+
+                $allEsDocuments = [...$allEsDocuments, ...$esDocuments];
+                $pendingElements[$objectId] = $dataObject;
+            } catch (\Throwable $throwable) {
+                $this->consoleOutput->writeln(sprintf(
+                    'Error processing %s (objectId %s): %s (%s)',
+                    $message->esIndex,
+                    $objectId,
+                    $throwable->getMessage(),
+                    $throwable::class,
+                ), ConsoleOutputInterface::VERBOSITY_NORMAL);
+
+                if (!$this->configurationRepository->shouldSkipFailingDocuments()) {
+                    $this->dispatchPost(new PostDocumentCreateEvent($index, $message->objectType, $objectId, $dataObject, success: false, willRetry: true, throwable: $throwable));
+
+                    throw $throwable;
+                }
+
+                $postEvents[] = new PostDocumentCreateEvent($index, $message->objectType, $objectId, $dataObject, success: false, throwable: $throwable);
             }
+        }
 
-            if ($message->callback?->shouldCallEvent() === true) {
-                $this->eventDispatcher->dispatch($message->callback->getEvent(), $message->callback->getEventName());
+        if ($allEsDocuments !== []) {
+            try {
+                $esIndex->addDocuments($allEsDocuments);
+            } catch (\Throwable $throwable) {
+                $this->consoleOutput->writeln(sprintf(
+                    'Error indexing %s (objectIds %s): %s (%s)',
+                    $message->esIndex,
+                    implode(', ', array_keys($pendingElements)),
+                    $throwable->getMessage(),
+                    $throwable::class,
+                ), ConsoleOutputInterface::VERBOSITY_NORMAL);
+
+                if (!$this->configurationRepository->shouldSkipFailingDocuments()) {
+                    foreach ($pendingElements as $objectId => $dataObject) {
+                        $this->dispatchPost(new PostDocumentCreateEvent($index, $message->objectType, $objectId, $dataObject, success: false, willRetry: true, throwable: $throwable));
+                    }
+
+                    throw $throwable;
+                }
+
+                foreach ($pendingElements as $objectId => $dataObject) {
+                    $postEvents[] = new PostDocumentCreateEvent($index, $message->objectType, $objectId, $dataObject, success: false, throwable: $throwable);
+                }
+
+                $pendingElements = [];
             }
+        }
 
-            $documentInstance = $this->documentRepository->get($message->document);
+        foreach ($pendingElements as $objectId => $dataObject) {
+            $postEvents[] = new PostDocumentCreateEvent($index, $message->objectType, $objectId, $dataObject);
+        }
 
-            $this->documentHelper->setTenantIfNeeded($documentInstance, $index);
+        foreach ($postEvents as $postEvent) {
+            $this->dispatchPost($postEvent);
 
-            $esIndex = $index->getBlueGreenInactiveElasticaIndex();
-            $esDocuments = $this->documentHelper->elementToDocumentsForContexts($documentInstance, $dataObject, $index);
-
-            if ($esDocuments === []) {
-                $messageDecreased = true;
-
-                return;
-            }
-
-            $esIndex->addDocuments($esDocuments);
-
-            $messageDecreased = true;
-
-            return;
-        } catch (\Throwable $throwable) {
-            $this->consoleOutput->writeln(sprintf(
-                'Error processing message %s (objectId %s): %s (%s)',
-                $message->esIndex,
-                $message->objectId,
-                $throwable->getMessage(),
-                $throwable::class,
-            ), ConsoleOutputInterface::VERBOSITY_NORMAL);
-
-            if (!$this->configurationRepository->shouldSkipFailingDocuments()) {
-                throw $throwable;
-            }
-
-            return;
-        } finally {
-            $this->eventDispatcher->dispatch(
-                new PostDocumentCreateEvent(
-                    $index,
-                    $message->objectType,
-                    $message->objectId,
-                    $dataObject,
-                    success: $messageDecreased,
-                    willRetry: !$this->configurationRepository->shouldSkipFailingDocuments(),
-                    throwable: $throwable ?? null,
-                ),
-                ElasticaBridgeEvents::POST_DOCUMENT_CREATE,
-            );
-
-            if (!$messageDecreased) {
-                $this->consoleOutput->writeln(sprintf('Message %s not processed. (ID: %s)', $message->esIndex, $message->objectId), ConsoleOutputInterface::VERBOSITY_VERBOSE);
-            } elseif ($this->synchronous) {
+            if ($postEvent->success && $this->synchronous) {
                 self::$messageCount--;
             }
-
-            \Pimcore::collectGarbage();
         }
+
+        if ($message->callback?->shouldCallEvent() === true) {
+            $this->eventDispatcher->dispatch($message->callback->getEvent(), $message->callback->getEventName());
+        }
+
+        \Pimcore::collectGarbage();
+    }
+
+    private function dispatchPost(PostDocumentCreateEvent $event): void
+    {
+        $this->eventDispatcher->dispatch($event, ElasticaBridgeEvents::POST_DOCUMENT_CREATE);
     }
 }
