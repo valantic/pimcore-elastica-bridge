@@ -446,18 +446,31 @@ class PopulateIndexService
             throw new PopulationNotStartedException(PopulationNotStartedException::TYPE_PROCESSING);
         }
 
-        if (!$ignoreCooldown && !$cooldownLock->acquire()) {
-            throw new PopulationNotStartedException(PopulationNotStartedException::TYPE_COOLDOWN);
-        }
+        try {
+            if (!$ignoreCooldown && !$cooldownLock->acquire()) {
+                throw new PopulationNotStartedException(PopulationNotStartedException::TYPE_COOLDOWN);
+            }
 
-        if (!$messagesProcessed) {
-            throw new PopulationNotStartedException(PopulationNotStartedException::TYPE_PROCESSING_MESSAGES);
-        }
+            if (!$messagesProcessed) {
+                throw new PopulationNotStartedException(PopulationNotStartedException::TYPE_PROCESSING_MESSAGES);
+            }
 
-        $cooldownLock->release();
+            $cooldownLock->release();
 
-        if (!$ignoreLock && !$processingLock->acquire()) {
-            throw new PopulationNotStartedException(PopulationNotStartedException::TYPE_PROCESSING);
+            if (!$ignoreLock && !$processingLock->acquire()) {
+                throw new PopulationNotStartedException(PopulationNotStartedException::TYPE_PROCESSING);
+            }
+        } catch (PopulationNotStartedException $exception) {
+            // population is not starting, so do not keep the locks acquired above
+            if (!$ignoreQueueLock) {
+                $queueLock->release();
+            }
+
+            if ($cooldownLock->isAcquired()) {
+                $cooldownLock->release();
+            }
+
+            throw $exception;
         }
     }
 
