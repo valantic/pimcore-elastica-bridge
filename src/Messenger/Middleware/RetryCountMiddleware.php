@@ -16,7 +16,9 @@ class RetryCountMiddleware implements MiddlewareInterface
     {
         // Check based on interface, class, stamp or something else
         if ($envelope->getMessage() instanceof RetryCountSupportInterface) {
+            // the handler only receives the last HandlerArgumentsStamp, so keep arguments added by other middleware
             $envelope = $envelope->with(new HandlerArgumentsStamp([
+                ...$envelope->last(HandlerArgumentsStamp::class)?->getAdditionalArguments() ?? [],
                 'retryCount' => RedeliveryStamp::getRetryCountFromEnvelope($envelope),
             ]));
         }

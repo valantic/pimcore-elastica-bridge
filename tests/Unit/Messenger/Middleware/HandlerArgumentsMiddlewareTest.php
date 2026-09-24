@@ -7,6 +7,9 @@ namespace Valantic\ElasticaBridgeBundle\Tests\Unit\Messenger\Middleware;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Lock\Key;
 use Symfony\Component\Messenger\Envelope;
+use Symfony\Component\Messenger\Handler\HandlersLocator;
+use Symfony\Component\Messenger\MessageBus;
+use Symfony\Component\Messenger\Middleware\HandleMessageMiddleware;
 use Symfony\Component\Messenger\Middleware\MiddlewareInterface;
 use Symfony\Component\Messenger\Middleware\StackInterface;
 use Symfony\Component\Messenger\Middleware\StackMiddleware;
@@ -83,6 +86,37 @@ class HandlerArgumentsMiddlewareTest extends TestCase
         $envelope = $this->handle(new RetryCountMiddleware(), new Envelope(new SwitchIndex('products'), [new RedeliveryStamp(2)]));
 
         $this->assertNull($envelope->last(HandlerArgumentsStamp::class));
+    }
+
+    public function testHandlerReceivesArgumentsFromBothMiddlewares(): void
+    {
+        $received = null;
+        $handler = static function (CreateDocumentMessage $message, int $retryCount = 0, bool $synchronous = true) use (&$received): void {
+            $received = ['retryCount' => $retryCount, 'synchronous' => $synchronous];
+        };
+
+        // same order as in Resources/config/pimcore/messenger.yaml
+        $bus = new MessageBus([
+            new RetryCountMiddleware(),
+            new SyncTransportMiddleware(),
+            new HandleMessageMiddleware(new HandlersLocator([CreateDocumentMessage::class => [$handler]])),
+        ]);
+
+        $bus->dispatch(new Envelope(new CreateDocumentMessage(1, \stdClass::class, 'product_document', 'products'), [new RedeliveryStamp(3)]));
+
+        $this->assertSame(['retryCount' => 3, 'synchronous' => false], $received);
+    }
+
+    public function testMiddlewareKeepsExistingHandlerArguments(): void
+    {
+        $envelope = $this->handle(
+            new SyncTransportMiddleware(),
+            new Envelope(new TriggerSingleIndexMessage('products', true, false, false, new Key('queue')), [
+                new HandlerArgumentsStamp(['retryCount' => 2, 'synchronous' => true]),
+            ]),
+        );
+
+        $this->assertSame(['retryCount' => 2, 'synchronous' => false], $envelope->last(HandlerArgumentsStamp::class)?->getAdditionalArguments());
     }
 
     private function handle(MiddlewareInterface $middleware, Envelope $envelope): Envelope

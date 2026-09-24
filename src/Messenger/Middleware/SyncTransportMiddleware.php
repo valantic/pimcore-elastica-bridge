@@ -17,7 +17,9 @@ class SyncTransportMiddleware implements MiddlewareInterface
     {
         // Check based on interface, class, stamp or something else
         if ($envelope->getMessage() instanceof SyncTransportDetectionInterface) {
+            // the handler only receives the last HandlerArgumentsStamp, so keep arguments added by other middleware
             $envelope = $envelope->with(new HandlerArgumentsStamp([
+                ...$envelope->last(HandlerArgumentsStamp::class)?->getAdditionalArguments() ?? [],
                 'synchronous' => $envelope->last(SentStamp::class)?->getSenderClass() === SyncTransport::class,
             ]));
         }
