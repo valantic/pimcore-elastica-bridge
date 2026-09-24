@@ -12,7 +12,7 @@ use Valantic\ElasticaBridgeBundle\Messenger\Message\TriggerSingleIndexMessage;
 use Valantic\ElasticaBridgeBundle\Service\LockService;
 use Valantic\ElasticaBridgeBundle\Service\PopulateIndexService;
 
-#[AsMessageHandler(fromTransport: 'elastica_bridge_populate')]
+#[AsMessageHandler]
 class PopulateHandler
 {
     public function __construct(
