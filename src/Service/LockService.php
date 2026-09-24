@@ -38,6 +38,23 @@ class LockService
         ;
     }
 
+    /**
+     * Whether any process, including this one, currently holds the indexing lock of $indexConfig.
+     */
+    public function isIndexingLocked(IndexInterface $indexConfig): bool
+    {
+        // a fresh key has its own token, so a lock held via getIndexingKey() in this process counts as well
+        $lock = $this->lockFactory->createLockFromKey($this->getKey($indexConfig->getName(), 'indexing'), autoRelease: false);
+
+        if (!$lock->acquire()) {
+            return true;
+        }
+
+        $lock->release();
+
+        return false;
+    }
+
     public function getIndexingKey(IndexInterface $indexConfig): Key
     {
         return $this->indexingKey[$indexConfig->getName()] ??= $this->getKey($indexConfig->getName(), 'indexing');
