@@ -331,13 +331,7 @@ class PopulateIndexService
 
     public function isPopulating(IndexInterface $indexConfig): bool
     {
-        try {
-            $this->checkIndex($indexConfig, true, false, false);
-        } catch (PopulationNotStartedException) {
-            return false;
-        }
-
-        return true;
+        return $this->lockService->isIndexingLocked($indexConfig);
     }
 
     /**

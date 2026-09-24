@@ -168,6 +168,31 @@ class PopulateIndexServiceLockingTest extends TestCase
         $this->assertFalse($this->createLockService()->getIndexingLock($index)->acquire(), 'indexing lock should be held by the population');
     }
 
+    public function testIsNotPopulatingWhenIdle(): void
+    {
+        $index = $this->createIndex();
+
+        $this->assertFalse($this->service->isPopulating($index));
+        $this->assertTrue($this->createLockService()->getIndexingLock($index)->acquire(), 'checking must not keep the indexing lock');
+    }
+
+    public function testIsPopulatingWhileAnotherProcessPopulates(): void
+    {
+        $index = $this->createIndex();
+        $this->assertTrue($this->createLockService()->getIndexingLock($index)->acquire());
+
+        $this->assertTrue($this->service->isPopulating($index));
+    }
+
+    public function testIsPopulatingWhileThisProcessPopulates(): void
+    {
+        $index = $this->createIndex();
+        $generator = $this->service->triggerSingleIndex($index, populate: true);
+        $generator->current();
+
+        $this->assertTrue($this->service->isPopulating($index));
+    }
+
     public function testMessageGenerationWithoutDocumentsOnlyReleasesLockAndStartsCooldown(): void
     {
         $this->documentCount = 0;
