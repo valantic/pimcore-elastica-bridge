@@ -435,7 +435,7 @@ class PopulateIndexService
         $queueKey = $this->lockService->getKey($indexConfig->getName(), 'queue');
         $queueLock = $this->lockService->createLockFromKey($queueKey);
         $cooldownLock = $this->lockService->createLockFromKey($cooldownKey, ttl: 0);
-        $messagesProcessed = $this->eventDispatcher->dispatch(new PreSwitchIndexEvent($indexConfig))->getRemainingMessages() === 0;
+        $messagesProcessed = $this->eventDispatcher->dispatch(new PreSwitchIndexEvent($indexConfig), ElasticaBridgeEvents::PRE_SWITCH_INDEX)->getRemainingMessages() === 0;
         $processingLock = $this->lockService->getIndexingLock($indexConfig, autorelease: !$keepProcessingLock);
 
         if ($this->getDocumentCount($indexConfig) === 0) {

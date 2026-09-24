@@ -28,6 +28,7 @@ use Valantic\ElasticaBridgeBundle\Messenger\Message\ReleaseIndexLock;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\TriggerSingleIndexMessage;
 use Valantic\ElasticaBridgeBundle\Model\Event\ElasticaBridgeEvents;
 use Valantic\ElasticaBridgeBundle\Model\Event\PreExecuteEvent;
+use Valantic\ElasticaBridgeBundle\Model\Event\PreSwitchIndexEvent;
 use Valantic\ElasticaBridgeBundle\Repository\ConfigurationRepository;
 use Valantic\ElasticaBridgeBundle\Repository\DocumentRepository;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
@@ -36,7 +37,7 @@ use Valantic\ElasticaBridgeBundle\Service\LockService;
 use Valantic\ElasticaBridgeBundle\Service\PopulateIndexService;
 
 /**
- * Covers when population may start (documents, cooldown, locks) and what gets dispatched.
+ * Covers when population may start (documents, cooldown, locks, pending messages) and what gets dispatched.
  */
 class PopulateIndexServiceLockingTest extends TestCase
 {
@@ -146,6 +147,15 @@ class PopulateIndexServiceLockingTest extends TestCase
         $messages = iterator_to_array($this->service->triggerSingleIndex($this->createIndex(), populate: false, ignoreLock: true), false);
 
         $this->assertSame([], $messages);
+    }
+
+    public function testRefusesToPopulateWhileMessagesArePending(): void
+    {
+        $this->eventDispatcher->addListener(ElasticaBridgeEvents::PRE_SWITCH_INDEX, static function (PreSwitchIndexEvent $event): void {
+            $event->setRemainingMessages(3);
+        });
+
+        $this->assertNotStarted(PopulationNotStartedException::TYPE_PROCESSING_MESSAGES, fn () => iterator_to_array($this->service->triggerSingleIndex($this->createIndex(), populate: true)));
     }
 
     public function testPopulationKeepsIndexingLockUntilReleaseMessage(): void
