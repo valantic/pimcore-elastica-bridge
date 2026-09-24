@@ -50,6 +50,7 @@ class CreateDocumentHandler
         CreateDocumentMessage $message,
     ): void {
         $messageDecreased = false;
+        $executionStopped = false;
         $dataObject = null;
         $throwable = null;
         $index = $this->indexRepository->flattenedGet($message->esIndex);
@@ -59,6 +60,8 @@ class CreateDocumentHandler
             $event = $this->eventDispatcher->dispatch(new PreDocumentCreateEvent($index, $dataObject), ElasticaBridgeEvents::PRE_DOCUMENT_CREATE);
 
             if ($event->isExecutionStopped()) {
+                $executionStopped = true;
+
                 return;
             }
 
@@ -121,6 +124,8 @@ class CreateDocumentHandler
 
             return;
         } finally {
+            $skipFailingDocuments = $this->configurationRepository->shouldSkipFailingDocuments();
+
             $this->eventDispatcher->dispatch(
                 new PostDocumentCreateEvent(
                     $index,
@@ -128,8 +133,9 @@ class CreateDocumentHandler
                     $message->objectId,
                     $dataObject,
                     success: $messageDecreased,
-                    willRetry: !$this->configurationRepository->shouldSkipFailingDocuments(),
-                    throwable: $throwable ?? null,
+                    skipped: $executionStopped || ($throwable !== null && $skipFailingDocuments),
+                    willRetry: $throwable !== null && !$skipFailingDocuments,
+                    throwable: $throwable,
                 ),
                 ElasticaBridgeEvents::POST_DOCUMENT_CREATE,
             );
