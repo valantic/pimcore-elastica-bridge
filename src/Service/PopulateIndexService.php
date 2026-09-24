@@ -63,6 +63,31 @@ class PopulateIndexService
     }
 
     /**
+     * Groups IDs by element type into chunks of at most $size, as a CreateDocumentMessage carries a single element type.
+     *
+     * @param iterable<int, class-string> $elementTypes element ID => element type
+     *
+     * @return \Generator<int, array{class-string, int[]}>
+     */
+    private static function chunkIdsByType(iterable $elementTypes, int $size): \Generator
+    {
+        $chunks = [];
+
+        foreach ($elementTypes as $id => $elementType) {
+            $chunks[$elementType][] = $id;
+
+            if (count($chunks[$elementType]) >= $size) {
+                yield [$elementType, $chunks[$elementType]];
+                unset($chunks[$elementType]);
+            }
+        }
+
+        foreach ($chunks as $elementType => $ids) {
+            yield [$elementType, $ids];
+        }
+    }
+
+    /**
      * @return \Generator<PopulateIndexMessage|Envelope>
      */
     public function processScheduler(): \Generator
@@ -276,65 +301,27 @@ class PopulateIndexService
                 continue;
             }
 
-            $offset = 0;
             $progressbar->setMaxSteps($totalCount);
             $progressbar->setProgress(0);
             $count = 0;
-            // IDs accumulated for the current CreateDocumentMessage batch.
-            $idBatch = [];
-            $batchType = null;
+            $elementTypes = $this->loadElementTypes($listing, $totalCount, $batchSize, $progressbar);
 
-            while ($offset < $totalCount) {
-                $listing->setOffset($offset);
-                $listing->setLimit($batchSize);
-                $ids = $listing->loadIdList();
-                $typeMap = $this->getElementTypes($listing, $ids ?? []);
-
-                foreach ($ids ?? [] as $dataObjectId) {
-                    $progressbar->advance();
-
-                    $elementType = $typeMap[$dataObjectId] ?? null;
-
-                    if ($elementType === null) {
-                        continue;
-                    }
-
-                    $batchType ??= $elementType;
-                    $idBatch[] = $dataObjectId;
-                    $count++;
-
-                    if (count($idBatch) >= $messageBatchSize) {
-                        $batch[] = new PopulateIndexMessage(new CreateDocumentMessage(
-                            $idBatch,
-                            $batchType,
-                            $document,
-                            $indexConfig->getName(),
-                        ));
-                        $messageGenerated = true;
-                        $idBatch = [];
-                        $batchType = null;
-
-                        if (count($batch) >= $yieldSize) {
-                            $this->eventDispatcher->dispatch(new PreAddDocumentToQueueEvent($indexConfig, count($batch)), ElasticaBridgeEvents::PRE_ADD_DOCUMENT_TO_QUEUE);
-
-                            yield from $batch;
-                            $batch = [];
-                        }
-                    }
-                }
-
-                $offset += $batchSize;
-            }
-
-            // Flush remaining IDs for this document class.
-            if ($batchType !== null) {
+            foreach (self::chunkIdsByType($elementTypes, $messageBatchSize) as [$elementType, $ids]) {
                 $batch[] = new PopulateIndexMessage(new CreateDocumentMessage(
-                    $idBatch,
-                    $batchType,
+                    $ids,
+                    $elementType,
                     $document,
                     $indexConfig->getName(),
                 ));
                 $messageGenerated = true;
+                $count += count($ids);
+
+                if (count($batch) >= $yieldSize) {
+                    $this->eventDispatcher->dispatch(new PreAddDocumentToQueueEvent($indexConfig, count($batch)), ElasticaBridgeEvents::PRE_ADD_DOCUMENT_TO_QUEUE);
+
+                    yield from $batch;
+                    $batch = [];
+                }
             }
 
             \Pimcore::collectGarbage();
@@ -502,6 +489,31 @@ class PopulateIndexService
 
         if (!$ignoreLock && !$processingLock->acquire()) {
             throw new PopulationNotStartedException(PopulationNotStartedException::TYPE_PROCESSING);
+        }
+    }
+
+    /**
+     * @return \Generator<int, class-string> element ID => element type, skipping elements that no longer exist
+     */
+    private function loadElementTypes(
+        AssetListing|DataObjectListing|DocumentListing $listing,
+        int $totalCount,
+        int $batchSize,
+        ProgressBar $progressbar,
+    ): \Generator {
+        for ($offset = 0; $offset < $totalCount; $offset += $batchSize) {
+            $listing->setOffset($offset);
+            $listing->setLimit($batchSize);
+            $ids = $listing->loadIdList() ?? [];
+            $types = $this->getElementTypes($listing, $ids);
+
+            foreach ($ids as $id) {
+                $progressbar->advance();
+
+                if (isset($types[$id])) {
+                    yield $id => $types[$id];
+                }
+            }
         }
     }
 

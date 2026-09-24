@@ -8,6 +8,8 @@ use Elastica\Index;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\MockInterface;
 use PHPUnit\Framework\TestCase;
+use Pimcore\Model\Asset\Image;
+use Pimcore\Model\Asset\Video;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -100,6 +102,57 @@ class PopulateIndexServiceTest extends TestCase
         $this->esClient->shouldReceive('getIndex')->with('products')->andReturn($liveIndex);
 
         $this->service->postPopulateIndex($this->mockIndexConfig(blueGreen: false));
+    }
+
+    public function testChunkIdsByTypeNeverMixesElementTypes(): void
+    {
+        $chunks = $this->chunkIdsByType([
+            1 => Image::class,
+            2 => Video::class,
+            3 => Image::class,
+            4 => Image::class,
+            5 => Video::class,
+            6 => Image::class,
+        ], 2);
+
+        $this->assertSame([
+            [Image::class, [1, 3]],
+            [Video::class, [2, 5]],
+            [Image::class, [4, 6]],
+        ], $chunks);
+    }
+
+    public function testChunkIdsByTypeFlushesPartialChunks(): void
+    {
+        $chunks = $this->chunkIdsByType([
+            1 => Image::class,
+            2 => Image::class,
+            3 => Image::class,
+            4 => Video::class,
+        ], 2);
+
+        $this->assertSame([
+            [Image::class, [1, 2]],
+            [Image::class, [3]],
+            [Video::class, [4]],
+        ], $chunks);
+    }
+
+    public function testChunkIdsByTypeYieldsNothingForNoElements(): void
+    {
+        $this->assertSame([], $this->chunkIdsByType([], 50));
+    }
+
+    /**
+     * @param array<int, class-string> $elementTypes
+     *
+     * @return list<array{class-string, int[]}>
+     */
+    private function chunkIdsByType(array $elementTypes, int $size): array
+    {
+        $method = new \ReflectionMethod(PopulateIndexService::class, 'chunkIdsByType');
+
+        return iterator_to_array($method->invoke(null, $elementTypes, $size), false);
     }
 
     private function mockIndex(string $name): Index&MockInterface
