@@ -66,6 +66,8 @@ class IndexSetupService
         $this->logger->log($indexConfig->getName(), '<comment>Switching blue/green index</comment>');
         $oldIndex = $indexConfig->getBlueGreenActiveElasticaIndex();
         $newIndex = $indexConfig->getBlueGreenInactiveElasticaIndex();
+        // Must run while the new index is still the inactive one, i.e. before the alias moves.
+        $this->postPopulateIndex($indexConfig);
         $newIndex->flush();
 
         $oldIndex->removeAlias($indexConfig->getName());
@@ -73,7 +75,6 @@ class IndexSetupService
         $newIndex->addAlias($indexConfig->getName());
         $this->logger->log($indexConfig->getName(), 'added alias to ' . $newIndex->getName(), ConsoleOutputInterface::VERBOSITY_VERBOSE);
         $oldIndex->flush();
-        $this->postPopulateIndex($indexConfig);
     }
 
     private function postPopulateIndex(IndexInterface $indexConfig): void

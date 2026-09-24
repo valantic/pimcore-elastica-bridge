@@ -20,6 +20,8 @@ class IndexSetupServiceTest extends TestCase
     use MockeryPHPUnitIntegration;
 
     private const array CREATE_ARGUMENTS = ['settings' => ['number_of_shards' => 1]];
+    private const array BULK_SETTINGS = ['refresh_interval' => '-1', 'number_of_replicas' => 0];
+    private const array POST_SETTINGS = ['refresh_interval' => '1s', 'number_of_replicas' => 1];
 
     private ElasticsearchClient&MockInterface $esClient;
 
@@ -118,6 +120,29 @@ class IndexSetupServiceTest extends TestCase
         $blue->shouldReceive('flush')->once();
         $green->shouldReceive('refresh')->once();
         $this->esClient->shouldReceive('getIndex')->with('products')->andReturn($this->missingIndex());
+
+        $this->service->switchBlueGreenIndex($this->indexConfig);
+    }
+
+    public function testSwitchRestoresSettingsOnNewIndexBeforeMovingAlias(): void
+    {
+        [$blue, $green] = $this->blueGreenIndices();
+        $blue->shouldReceive('exists')->andReturn(true);
+        $green->shouldReceive('exists')->andReturn(true);
+        $this->indexConfig->shouldReceive('getBlueGreenActiveSuffix')->andReturn(IndexBlueGreenSuffix::BLUE);
+        $this->indexConfig->shouldReceive('getBlueGreenActiveElasticaIndex')->andReturn($blue);
+        $this->indexConfig->shouldReceive('getBlueGreenInactiveElasticaIndex')->andReturn($green);
+        $this->indexConfig->shouldReceive('getPostBulkIndexingSettings')->andReturn(self::POST_SETTINGS);
+        $blue->shouldReceive('getName')->andReturn('products--blue');
+        $green->shouldReceive('getName')->andReturn('products--green');
+        $green->shouldReceive('flush');
+        $blue->shouldReceive('flush');
+
+        $green->shouldReceive('setSettings')->once()->with(self::POST_SETTINGS)->ordered();
+        $green->shouldReceive('refresh')->once()->ordered();
+        $blue->shouldReceive('removeAlias')->once()->with('products')->ordered();
+        $green->shouldReceive('addAlias')->once()->with('products')->ordered();
+        $blue->shouldNotReceive('setSettings');
 
         $this->service->switchBlueGreenIndex($this->indexConfig);
     }
