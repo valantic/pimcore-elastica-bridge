@@ -12,7 +12,14 @@ use Symfony\Component\Lock\Key;
 use Symfony\Component\Lock\LockFactory;
 use Symfony\Component\Lock\LockInterface;
 use Symfony\Component\Lock\Store\InMemoryStore;
+use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Messenger\Envelope;
+use Symfony\Component\Messenger\Handler\HandlerDescriptor;
+use Symfony\Component\Messenger\Handler\HandlersLocator;
+use Symfony\Component\Messenger\MessageBus;
+use Symfony\Component\Messenger\Middleware\HandleMessageMiddleware;
+use Symfony\Component\Messenger\Stamp\HandlerArgumentsStamp;
+use Symfony\Component\Messenger\Stamp\ReceivedStamp;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Valantic\ElasticaBridgeBundle\Exception\Index\PopulationNotStartedException;
 use Valantic\ElasticaBridgeBundle\Messenger\Handler\PopulateHandler;
@@ -66,6 +73,26 @@ class PopulateHandlerTest extends TestCase
         $inner = new SwitchIndex('products');
 
         ($this->handler)(new PopulateIndexMessage($inner), synchronous: false);
+
+        $this->assertSame([$inner], $this->dispatched);
+    }
+
+    public function testHandlesMessagesReceivedFromSchedulerTransport(): void
+    {
+        $attribute = (new \ReflectionClass(PopulateHandler::class))->getAttributes(AsMessageHandler::class)[0]->newInstance();
+        $options = $attribute->fromTransport !== null ? ['from_transport' => $attribute->fromTransport] : [];
+        $bus = new MessageBus([
+            new HandleMessageMiddleware(new HandlersLocator([
+                PopulateIndexMessage::class => [new HandlerDescriptor($this->handler, $options)],
+            ])),
+        ]);
+        $inner = new SwitchIndex('products');
+
+        // what the scheduler worker dispatches for envelopes yielded by PopulateIndexService::processScheduler()
+        $bus->dispatch(new Envelope(new PopulateIndexMessage($inner), [
+            new HandlerArgumentsStamp(['synchronous' => false]),
+            new ReceivedStamp('scheduler_populate_index'),
+        ]));
 
         $this->assertSame([$inner], $this->dispatched);
     }
