@@ -207,6 +207,8 @@ class PopulateIndexService
         $this->log($indexName, '<comment>Switching blue/green index</comment>');
         $oldIndex = $indexConfig->getBlueGreenActiveElasticaIndex();
         $newIndex = $indexConfig->getBlueGreenInactiveElasticaIndex();
+        // Must run while the new index is still the inactive one, i.e. before the alias moves.
+        $this->postPopulateIndex($indexConfig);
         $newIndex->flush();
 
         $oldIndex->removeAlias($indexConfig->getName());
@@ -214,7 +216,6 @@ class PopulateIndexService
         $newIndex->addAlias($indexConfig->getName());
         $this->log($indexConfig->getName(), 'added alias to ' . $newIndex->getName(), ConsoleOutputInterface::VERBOSITY_VERBOSE);
         $oldIndex->flush();
-        $this->postPopulateIndex($indexConfig);
     }
 
     public function getDocumentCount(IndexInterface $indexConfig): int
