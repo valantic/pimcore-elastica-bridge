@@ -213,6 +213,31 @@ class PopulateIndexServiceLockingTest extends TestCase
         $this->assertCount(1, $this->dispatched);
     }
 
+    public function testProcessApiReleasesQueueLockWhenPopulationCannotStart(): void
+    {
+        $index = $this->createIndex();
+        $otherProcess = $this->createLockService()->getIndexingLock($index);
+        $this->assertTrue($otherProcess->acquire());
+
+        $this->assertNotStarted(PopulationNotStartedException::TYPE_PROCESSING, fn () => $this->service->processApi($index, populate: true, ignoreCooldown: true));
+
+        $otherProcess->release();
+        $this->createService($this->createLockService())->processApi($index, populate: true, ignoreCooldown: true);
+
+        $this->assertCount(1, $this->dispatched);
+    }
+
+    public function testDoesNotLeaveCooldownActiveWhenMessagesArePending(): void
+    {
+        $this->eventDispatcher->addListener(ElasticaBridgeEvents::PRE_SWITCH_INDEX, static function (PreSwitchIndexEvent $event): void {
+            $event->setRemainingMessages(3);
+        });
+
+        $this->assertNotStarted(PopulationNotStartedException::TYPE_PROCESSING_MESSAGES, fn () => iterator_to_array($this->service->triggerSingleIndex($this->createIndex(), populate: true)));
+
+        $this->assertTrue($this->createLockService()->createLockFromKey($this->lockService->getKey('products', 'cooldown'))->acquire(), 'cooldown should not be active');
+    }
+
     public function testProcessApiResolvesIndexByName(): void
     {
         $index = $this->createIndex();
