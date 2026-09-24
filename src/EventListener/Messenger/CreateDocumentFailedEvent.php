@@ -9,6 +9,7 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Messenger\Event\WorkerMessageFailedEvent;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\CreateDocumentMessage;
+use Valantic\ElasticaBridgeBundle\Model\Event\ElasticaBridgeEvents;
 use Valantic\ElasticaBridgeBundle\Model\Event\PostDocumentCreateEvent;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 
@@ -44,6 +45,7 @@ class CreateDocumentFailedEvent implements EventSubscriberInterface
                 false,
                 willRetry: false,
             ),
+            ElasticaBridgeEvents::POST_DOCUMENT_CREATE,
         );
     }
 }
