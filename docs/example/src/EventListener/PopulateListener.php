@@ -93,9 +93,10 @@ class PopulateListener implements EventSubscriberInterface
         $event->setRemainingMessages($this->populateService->getRemainingMessages($event->index->getName()));
 
         if ($retryCount > $event->maximumRetries - 1) {
-            $remainingMessages = $this->populateService->getActualMessageCount($event->index->getName());
-            $event->setRemainingMessages($remainingMessages);
-            $this->populateService->setExpectedMessages($event->index->getName(), $remainingMessages);
+            // The counter tracks elements, and each queued message carries a batch of them.
+            $remainingElements = $this->populateService->getRemainingElementCount($event->index->getName());
+            $event->setRemainingMessages($remainingElements);
+            $this->populateService->setExpectedMessages($event->index->getName(), $remainingElements);
         }
     }
 
