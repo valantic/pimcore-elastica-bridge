@@ -33,6 +33,7 @@ use Valantic\ElasticaBridgeBundle\Messenger\Message\PopulateIndexMessage;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\ReleaseIndexLock;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\SwitchIndex;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\TriggerSingleIndexMessage;
+use Valantic\ElasticaBridgeBundle\Messenger\Middleware\SyncTransportDetectionInterface;
 use Valantic\ElasticaBridgeBundle\Model\Event\ElasticaBridgeEvents;
 use Valantic\ElasticaBridgeBundle\Model\Event\PreAddDocumentToQueueEvent;
 use Valantic\ElasticaBridgeBundle\Model\Event\PreExecuteEvent;
@@ -77,7 +78,7 @@ class PopulateIndexService
 
                 foreach ($this->generateMessagesForIndex($indexConfig) as $message) {
                     yield (new Envelope($message))->with(new HandlerArgumentsStamp([
-                        'synchronous' => false,
+                        SyncTransportDetectionInterface::SYNCHRONOUS_ARGUMENT => false,
                     ]));
                 }
             } catch (PopulationNotStartedException $e) {

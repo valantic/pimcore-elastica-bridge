@@ -20,7 +20,7 @@ class SyncTransportMiddleware implements MiddlewareInterface
             // the handler only receives the last HandlerArgumentsStamp, so keep arguments added by other middleware
             $envelope = $envelope->with(new HandlerArgumentsStamp([
                 ...$envelope->last(HandlerArgumentsStamp::class)?->getAdditionalArguments() ?? [],
-                'synchronous' => $envelope->last(SentStamp::class)?->getSenderClass() === SyncTransport::class,
+                SyncTransportDetectionInterface::SYNCHRONOUS_ARGUMENT => $envelope->last(SentStamp::class)?->getSenderClass() === SyncTransport::class,
             ]));
         }
 

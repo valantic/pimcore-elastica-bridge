@@ -22,6 +22,7 @@ class PopulateHandler
     ) {
     }
 
+    // parameter name must match SyncTransportDetectionInterface::SYNCHRONOUS_ARGUMENT
     public function __invoke(PopulateIndexMessage|TriggerSingleIndexMessage $message, bool $synchronous): void
     {
         if ($message instanceof PopulateIndexMessage) {
