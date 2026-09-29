@@ -11,6 +11,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Valantic\ElasticaBridgeBundle\Constant\CommandConstants;
+use Valantic\ElasticaBridgeBundle\Enum\PopulationSource;
 use Valantic\ElasticaBridgeBundle\Exception\Index\PopulationNotStartedException;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\PopulateIndexMessage;
 use Valantic\ElasticaBridgeBundle\Model\Event\ElasticaBridgeEvents;
@@ -96,7 +97,7 @@ class Index extends BaseCommand
             }
 
             try {
-                $this->eventDispatcher->dispatch(new PreExecuteEvent($indexConfig, PreExecuteEvent::SOURCE_CLI), ElasticaBridgeEvents::PRE_EXECUTE);
+                $this->eventDispatcher->dispatch(new PreExecuteEvent($indexConfig, PopulationSource::CLI), ElasticaBridgeEvents::PRE_EXECUTE);
             } catch (PopulationNotStartedException $e) {
                 $failedIndices[$e->getType()][] = $indexConfig->getName();
 

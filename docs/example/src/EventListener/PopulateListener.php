@@ -6,6 +6,7 @@ namespace App\EventListener;
 
 use App\Service\PopulateService;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Valantic\ElasticaBridgeBundle\Enum\PopulationSource;
 use Valantic\ElasticaBridgeBundle\Model\Event\ElasticaBridgeEvents;
 use Valantic\ElasticaBridgeBundle\Model\Event\PostDocumentCreateEvent;
 use Valantic\ElasticaBridgeBundle\Model\Event\PreDocumentCreateEvent;
@@ -66,7 +67,7 @@ class PopulateListener implements EventSubscriberInterface
 
     public function onPrePopulateIndex(PreExecuteEvent $prePopulateEvent): void
     {
-        if ($prePopulateEvent->source === PreExecuteEvent::SOURCE_CLI) {
+        if ($prePopulateEvent->source === PopulationSource::CLI) {
             $this->populateService->unlockExecution($prePopulateEvent->index->getName());
         }
     }

@@ -13,6 +13,7 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Valantic\ElasticaBridgeBundle\Command\Index;
+use Valantic\ElasticaBridgeBundle\Enum\PopulationSource;
 use Valantic\ElasticaBridgeBundle\Exception\Index\PopulationNotStartedException;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\PopulateIndexMessage;
@@ -99,7 +100,7 @@ class IndexCommandTest extends TestCase
         $this->assertSame(Command::SUCCESS, $exitCode);
         $this->assertSame([$switch, $release], $this->dispatched);
         $this->assertCount(2, $preExecuteEvents);
-        $this->assertSame(PreExecuteEvent::SOURCE_CLI, $preExecuteEvents[0]->source);
+        $this->assertSame(PopulationSource::CLI, $preExecuteEvents[0]->source);
     }
 
     public function testPassesOptionsToPopulateService(): void

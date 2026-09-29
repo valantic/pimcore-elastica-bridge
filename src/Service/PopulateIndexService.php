@@ -23,6 +23,7 @@ use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Messenger\Stamp\HandlerArgumentsStamp;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Enum\IndexBlueGreenSuffix;
+use Valantic\ElasticaBridgeBundle\Enum\PopulationSource;
 use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
 use Valantic\ElasticaBridgeBundle\Exception\Index\PopulationNotStartedException;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
@@ -69,7 +70,7 @@ class PopulateIndexService
     {
         foreach ($this->indexRepository->flattenedAll() as $indexConfig) {
             try {
-                $this->eventDispatcher->dispatch(new PreExecuteEvent($indexConfig, PreExecuteEvent::SOURCE_SCHEDULER), ElasticaBridgeEvents::PRE_EXECUTE);
+                $this->eventDispatcher->dispatch(new PreExecuteEvent($indexConfig, PopulationSource::SCHEDULER), ElasticaBridgeEvents::PRE_EXECUTE);
                 $this->checkIndex($indexConfig);
 
                 $this->setupIndex($indexConfig);
@@ -99,7 +100,7 @@ class PopulateIndexService
             $indexConfig = $this->indexRepository->flattenedGet($indexConfig);
         }
 
-        $this->eventDispatcher->dispatch(new PreExecuteEvent($indexConfig, PreExecuteEvent::SOURCE_API), ElasticaBridgeEvents::PRE_EXECUTE);
+        $this->eventDispatcher->dispatch(new PreExecuteEvent($indexConfig, PopulationSource::API), ElasticaBridgeEvents::PRE_EXECUTE);
 
         $this->checkIndex($indexConfig, $ignoreCooldown, $ignoreLock, false, ignoreQueueLock: false);
 
