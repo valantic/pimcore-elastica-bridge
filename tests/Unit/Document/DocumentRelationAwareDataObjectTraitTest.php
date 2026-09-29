@@ -15,7 +15,7 @@ use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Document\DocumentRelationAwareDataObjectTrait;
 use Valantic\ElasticaBridgeBundle\Enum\DocumentType;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
-use Valantic\ElasticaBridgeBundle\Service\PopulateIndexService;
+use Valantic\ElasticaBridgeBundle\Service\LockService;
 use Valantic\ElasticaBridgeBundle\Tests\Helpers\PimcoreElementFactory;
 
 class DocumentRelationAwareDataObjectTraitTest extends TestCase
@@ -25,7 +25,7 @@ class DocumentRelationAwareDataObjectTraitTest extends TestCase
     private IndexInterface&MockInterface $index;
     private Index&MockInterface $activeIndex;
     private Index&MockInterface $inactiveIndex;
-    private PopulateIndexService&MockInterface $populateIndexService;
+    private LockService&MockInterface $lockService;
     private object $document;
 
     protected function setUp(): void
@@ -37,7 +37,7 @@ class DocumentRelationAwareDataObjectTraitTest extends TestCase
         $this->index = \Mockery::mock(IndexInterface::class);
         $this->index->shouldReceive('getElasticaIndex')->andReturn($this->activeIndex);
         $this->index->shouldReceive('getBlueGreenInactiveElasticaIndex')->andReturn($this->inactiveIndex);
-        $this->populateIndexService = \Mockery::mock(PopulateIndexService::class);
+        $this->lockService = \Mockery::mock(LockService::class);
 
         $this->document = new class($this->index) {
             use DocumentRelationAwareDataObjectTrait;
@@ -47,7 +47,7 @@ class DocumentRelationAwareDataObjectTraitTest extends TestCase
                 $this->index = $index;
             }
         };
-        $this->document->setIndexPopulationService($this->populateIndexService);
+        $this->document->setIndexingLockService($this->lockService);
     }
 
     public function testCountsDocumentsReferencingTheElementInActiveIndex(): void
@@ -115,7 +115,7 @@ class DocumentRelationAwareDataObjectTraitTest extends TestCase
 
     private function givenPopulating(bool $populating, bool $blueGreen): void
     {
-        $this->populateIndexService->shouldReceive('isPopulating')->with($this->index)->andReturn($populating);
+        $this->lockService->shouldReceive('isIndexingLocked')->with($this->index)->andReturn($populating);
         $this->index->shouldReceive('usesBlueGreenIndices')->andReturn($blueGreen);
     }
 }

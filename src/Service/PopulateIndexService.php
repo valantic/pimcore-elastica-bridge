@@ -111,9 +111,4 @@ class PopulateIndexService
             throw $populationNotStartedException;
         }
     }
-
-    public function isPopulating(IndexInterface $indexConfig): bool
-    {
-        return $this->lockService->isIndexingLocked($indexConfig);
-    }
 }
