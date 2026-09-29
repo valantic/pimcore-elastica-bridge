@@ -11,6 +11,7 @@ use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Document\DocumentNormalizerTrait;
 use Valantic\ElasticaBridgeBundle\Enum\IndexBlueGreenSuffix;
 use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
+use Valantic\ElasticaBridgeBundle\Service\LockService;
 
 interface IndexInterface
 {
@@ -91,10 +92,10 @@ interface IndexInterface
      * When indexing DataObjects based on usage in Pimcore Documents, the index is queried during indexing.
      * In these instances, the index needs to be refreshed in order for newly-added data to be available immediately.
      *
-     * While populating is happening (as indicated by IndexCommand::$isPopulating), use the inactive index.
+     * While populating is happening (as indicated by LockService::isIndexingLocked()), use the inactive index.
      *
      * @see DocumentNormalizerTrait::$relatedObjects
-     * @see IndexCommand
+     * @see LockService::isIndexingLocked()
      * @see IndexInterface::getBlueGreenInactiveElasticaIndex()
      */
     public function refreshIndexAfterEveryDocumentWhenPopulating(): bool;
