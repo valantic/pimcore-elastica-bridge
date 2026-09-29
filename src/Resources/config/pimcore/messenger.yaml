@@ -4,7 +4,6 @@ framework:
     buses:
       messenger.bus.elasticaBridge:
         middleware:
-          - 'Valantic\ElasticaBridgeBundle\Messenger\Middleware\RetryCountMiddleware'
           - 'Valantic\ElasticaBridgeBundle\Messenger\Middleware\SyncTransportMiddleware'
     transports:
       elastica_bridge_index: 'doctrine://default?queue_name=elastica_bridge_index'

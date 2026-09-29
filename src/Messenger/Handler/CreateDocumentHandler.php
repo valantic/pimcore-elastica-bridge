@@ -35,8 +35,8 @@ class CreateDocumentHandler
     ) {
     }
 
-    // parameter names must match RetryCountSupportInterface::RETRY_COUNT_ARGUMENT and SyncTransportDetectionInterface::SYNCHRONOUS_ARGUMENT
-    public function __invoke(CreateDocumentMessage $message, int $retryCount = 0, bool $synchronous = true): void
+    // parameter name must match SyncTransportDetectionInterface::SYNCHRONOUS_ARGUMENT
+    public function __invoke(CreateDocumentMessage $message, bool $synchronous = true): void
     {
         $this->synchronous = $synchronous;
         $this->handleMessage($message);

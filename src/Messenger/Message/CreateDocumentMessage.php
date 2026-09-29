@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Messenger\Message;
 
-use Valantic\ElasticaBridgeBundle\Messenger\Middleware\RetryCountSupportInterface;
 use Valantic\ElasticaBridgeBundle\Messenger\Middleware\SyncTransportDetectionInterface;
 use Valantic\ElasticaBridgeBundle\Model\Event\CallbackEvent;
 
-class CreateDocumentMessage extends AbstractPopulateMessage implements RetryCountSupportInterface, SyncTransportDetectionInterface
+class CreateDocumentMessage extends AbstractPopulateMessage implements SyncTransportDetectionInterface
 {
     /**
      * @param class-string $objectType

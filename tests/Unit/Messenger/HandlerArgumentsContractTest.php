@@ -8,7 +8,6 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Valantic\ElasticaBridgeBundle\Messenger\Handler\CreateDocumentHandler;
 use Valantic\ElasticaBridgeBundle\Messenger\Handler\PopulateHandler;
-use Valantic\ElasticaBridgeBundle\Messenger\Middleware\RetryCountSupportInterface;
 use Valantic\ElasticaBridgeBundle\Messenger\Middleware\SyncTransportDetectionInterface;
 
 /**
@@ -24,8 +23,6 @@ class HandlerArgumentsContractTest extends TestCase
         yield 'PopulateHandler synchronous' => [PopulateHandler::class, SyncTransportDetectionInterface::SYNCHRONOUS_ARGUMENT, 'bool'];
 
         yield 'CreateDocumentHandler synchronous' => [CreateDocumentHandler::class, SyncTransportDetectionInterface::SYNCHRONOUS_ARGUMENT, 'bool'];
-
-        yield 'CreateDocumentHandler retryCount' => [CreateDocumentHandler::class, RetryCountSupportInterface::RETRY_COUNT_ARGUMENT, 'int'];
     }
 
     /**
