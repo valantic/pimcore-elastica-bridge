@@ -27,6 +27,7 @@ use Valantic\ElasticaBridgeBundle\Repository\ConfigurationRepository;
 use Valantic\ElasticaBridgeBundle\Repository\DocumentRepository;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 use Valantic\ElasticaBridgeBundle\Service\DocumentHelper;
+use Valantic\ElasticaBridgeBundle\Service\PopulationProgress;
 use Valantic\ElasticaBridgeBundle\Tests\Helpers\StubDataObject;
 
 class CreateDocumentHandlerTest extends TestCase
@@ -38,6 +39,7 @@ class CreateDocumentHandlerTest extends TestCase
     private ConfigurationRepository&MockInterface $configurationRepository;
     private EventDispatcher $eventDispatcher;
     private CreateDocumentHandler $handler;
+    private PopulationProgress $populationProgress;
     private ?KernelInterface $previousKernel;
 
     /**
@@ -58,7 +60,8 @@ class CreateDocumentHandlerTest extends TestCase
         \Pimcore::setKernel($kernel);
 
         StubDataObject::$existingIds = [42];
-        CreateDocumentHandler::$messageCount = 10;
+        $this->populationProgress = new PopulationProgress();
+        $this->populationProgress->start(10);
 
         $this->inactiveIndex = \Mockery::mock(Index::class);
         $index = \Mockery::mock(IndexInterface::class);
@@ -95,6 +98,7 @@ class CreateDocumentHandlerTest extends TestCase
             $this->configurationRepository,
             $this->eventDispatcher,
             $consoleOutput,
+            $this->populationProgress,
         );
     }
 
@@ -124,7 +128,7 @@ class CreateDocumentHandlerTest extends TestCase
         $this->assertFalse($event->willRetry);
         $this->assertNull($event->throwable);
         $this->assertInstanceOf(StubDataObject::class, $event->element);
-        $this->assertSame(9, CreateDocumentHandler::$messageCount);
+        $this->assertSame(9, $this->populationProgress->getRemaining());
     }
 
     public function testAsynchronousMessagesDoNotChangeMessageCount(): void
@@ -135,7 +139,7 @@ class CreateDocumentHandlerTest extends TestCase
         ($this->handler)($this->createMessage(), synchronous: false);
 
         $this->assertTrue($this->getPostEvent()->success);
-        $this->assertSame(10, CreateDocumentHandler::$messageCount);
+        $this->assertSame(10, $this->populationProgress->getRemaining());
     }
 
     public function testElementThatShouldNotBeIndexedCountsAsProcessed(): void
@@ -146,7 +150,7 @@ class CreateDocumentHandlerTest extends TestCase
         ($this->handler)($this->createMessage());
 
         $this->assertTrue($this->getPostEvent()->success);
-        $this->assertSame(9, CreateDocumentHandler::$messageCount);
+        $this->assertSame(9, $this->populationProgress->getRemaining());
     }
 
     public function testStoppedExecutionIsReportedAsSkipped(): void
@@ -163,7 +167,7 @@ class CreateDocumentHandlerTest extends TestCase
         $this->assertFalse($event->success);
         $this->assertTrue($event->skipped);
         $this->assertFalse($event->willRetry);
-        $this->assertSame(10, CreateDocumentHandler::$messageCount);
+        $this->assertSame(10, $this->populationProgress->getRemaining());
     }
 
     public function testFailureIsRethrownAndReportedAsRetryWhenNotSkippingFailingDocuments(): void
@@ -183,7 +187,7 @@ class CreateDocumentHandlerTest extends TestCase
         $this->assertFalse($event->skipped);
         $this->assertTrue($event->willRetry);
         $this->assertSame($e, $event->throwable);
-        $this->assertSame(10, CreateDocumentHandler::$messageCount);
+        $this->assertSame(10, $this->populationProgress->getRemaining());
     }
 
     public function testFailureIsReportedAsSkippedWhenSkippingFailingDocuments(): void

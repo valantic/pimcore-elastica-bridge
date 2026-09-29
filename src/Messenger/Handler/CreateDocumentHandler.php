@@ -17,12 +17,11 @@ use Valantic\ElasticaBridgeBundle\Repository\ConfigurationRepository;
 use Valantic\ElasticaBridgeBundle\Repository\DocumentRepository;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 use Valantic\ElasticaBridgeBundle\Service\DocumentHelper;
+use Valantic\ElasticaBridgeBundle\Service\PopulationProgress;
 
 #[AsMessageHandler]
 class CreateDocumentHandler
 {
-    public static int $messageCount = 0;
-
     private bool $synchronous;
 
     public function __construct(
@@ -32,6 +31,7 @@ class CreateDocumentHandler
         private readonly ConfigurationRepository $configurationRepository,
         private readonly EventDispatcherInterface $eventDispatcher,
         private readonly ConsoleOutputInterface $consoleOutput,
+        private readonly PopulationProgress $populationProgress,
     ) {
     }
 
@@ -70,7 +70,7 @@ class CreateDocumentHandler
                 $currentCount = $event->getCurrentCount();
 
                 if ($this->synchronous) {
-                    $currentCount = self::$messageCount;
+                    $currentCount = $this->populationProgress->getRemaining();
                 }
 
                 $this->consoleOutput->writeln(
@@ -144,7 +144,7 @@ class CreateDocumentHandler
             if (!$messageDecreased) {
                 $this->consoleOutput->writeln(sprintf('Message %s not processed. (ID: %s)', $message->esIndex, $message->objectId), ConsoleOutputInterface::VERBOSITY_VERBOSE);
             } elseif ($this->synchronous) {
-                self::$messageCount--;
+                $this->populationProgress->markProcessed();
             }
 
             \Pimcore::collectGarbage();

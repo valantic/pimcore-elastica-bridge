@@ -37,6 +37,7 @@ use Valantic\ElasticaBridgeBundle\Service\LockService;
 use Valantic\ElasticaBridgeBundle\Service\PopulateIndexService;
 use Valantic\ElasticaBridgeBundle\Service\PopulateLogger;
 use Valantic\ElasticaBridgeBundle\Service\PopulationGuard;
+use Valantic\ElasticaBridgeBundle\Service\PopulationProgress;
 
 /**
  * Covers when population may start (documents, cooldown, locks, pending messages) and what gets dispatched.
@@ -309,6 +310,7 @@ class PopulateIndexServiceLockingTest extends TestCase
             $this->bus,
             $consoleOutput,
             $this->logger,
+            new PopulationProgress(),
         );
     }
 

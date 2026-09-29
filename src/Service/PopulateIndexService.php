@@ -20,7 +20,6 @@ use Symfony\Component\Messenger\Stamp\HandlerArgumentsStamp;
 use Valantic\ElasticaBridgeBundle\Enum\PopulationSource;
 use Valantic\ElasticaBridgeBundle\Exception\Index\PopulationNotStartedException;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
-use Valantic\ElasticaBridgeBundle\Messenger\Handler\CreateDocumentHandler;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\CreateDocumentMessage;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\PopulateIndexMessage;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\ReleaseIndexLock;
@@ -49,6 +48,7 @@ class PopulateIndexService
         private readonly MessageBusInterface $messengerBusElasticaBridge,
         private readonly ConsoleOutputInterface $consoleOutput,
         private readonly PopulateLogger $logger,
+        private readonly PopulationProgress $populationProgress,
     ) {
     }
 
@@ -162,7 +162,7 @@ class PopulateIndexService
         $batch = [];
         $documentCount = $this->getDocumentCount($indexConfig);
         $this->eventDispatcher->dispatch(new PreProcessMessagesEvent($indexConfig, $documentCount), ElasticaBridgeEvents::PRE_PROCESS_MESSAGES_EVENT);
-        CreateDocumentHandler::$messageCount = $documentCount;
+        $this->populationProgress->start($documentCount);
 
         if ($documentCount === 0) {
             $allowedDocuments = [];
