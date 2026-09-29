@@ -22,6 +22,7 @@ use Valantic\ElasticaBridgeBundle\Exception\Repository\ItemNotFoundInRepositoryE
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 use Valantic\ElasticaBridgeBundle\Service\PopulateIndexService;
+use Valantic\ElasticaBridgeBundle\Service\PopulateLogger;
 
 class AdminControllerTest extends TestCase
 {
@@ -31,20 +32,23 @@ class AdminControllerTest extends TestCase
 
     private PopulateIndexService&MockInterface $populateIndexService;
 
+    private PopulateLogger&MockInterface $populateLogger;
+
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->indexRepository = \Mockery::mock(IndexRepository::class);
         $this->populateIndexService = \Mockery::mock(PopulateIndexService::class);
-        $this->populateIndexService->shouldReceive('getLog')->andReturn([]);
+        $this->populateLogger = \Mockery::mock(PopulateLogger::class);
+        $this->populateLogger->shouldReceive('getLog')->andReturn([]);
     }
 
     public function testDeniesNonAdmins(): void
     {
         $this->expectException(AccessDeniedException::class);
 
-        $this->createController(isAdmin: false)->index($this->createRequest(), $this->indexRepository, $this->populateIndexService);
+        $this->createController(isAdmin: false)->index($this->createRequest(), $this->indexRepository, $this->populateIndexService, $this->populateLogger);
     }
 
     public function testRejectsInvalidCsrfToken(): void
@@ -52,7 +56,7 @@ class AdminControllerTest extends TestCase
         $this->populateIndexService->shouldNotReceive('processApi');
 
         $response = $this->createController(validToken: 'expected')
-            ->index($this->createRequest(token: 'other'), $this->indexRepository, $this->populateIndexService)
+            ->index($this->createRequest(token: 'other'), $this->indexRepository, $this->populateIndexService, $this->populateLogger)
         ;
 
         $this->assertSame(Response::HTTP_FORBIDDEN, $response->getStatusCode());
@@ -66,7 +70,7 @@ class AdminControllerTest extends TestCase
         $request = $this->createRequest(token: null);
         $request->headers->set(AdminController::CSRF_TOKEN_HEADER, 'valid');
 
-        $response = $this->createController()->index($request, $this->indexRepository, $this->populateIndexService);
+        $response = $this->createController()->index($request, $this->indexRepository, $this->populateIndexService, $this->populateLogger);
 
         $this->assertSame(Response::HTTP_ACCEPTED, $response->getStatusCode());
     }
@@ -76,7 +80,7 @@ class AdminControllerTest extends TestCase
         $index = $this->expectIndex('products');
         $this->populateIndexService->shouldReceive('processApi')->once()->with($index, true, false, true);
 
-        $response = $this->createController()->index($this->createRequest(), $this->indexRepository, $this->populateIndexService);
+        $response = $this->createController()->index($this->createRequest(), $this->indexRepository, $this->populateIndexService, $this->populateLogger);
 
         $this->assertSame(Response::HTTP_ACCEPTED, $response->getStatusCode());
         $this->assertTrue($this->decode($response)['success']);
@@ -86,7 +90,7 @@ class AdminControllerTest extends TestCase
     {
         $this->indexRepository->shouldReceive('flattenedGet')->with('products')->andThrow(new ItemNotFoundInRepositoryException('products'));
 
-        $response = $this->createController()->index($this->createRequest(), $this->indexRepository, $this->populateIndexService);
+        $response = $this->createController()->index($this->createRequest(), $this->indexRepository, $this->populateIndexService, $this->populateLogger);
 
         $this->assertSame(Response::HTTP_NOT_FOUND, $response->getStatusCode());
     }
@@ -99,7 +103,7 @@ class AdminControllerTest extends TestCase
             [new PopulationNotStartedException(PopulationNotStartedException::TYPE_NOT_AVAILABLE_IN_SYNC)],
         ));
 
-        $response = $this->createController()->index($this->createRequest(), $this->indexRepository, $this->populateIndexService);
+        $response = $this->createController()->index($this->createRequest(), $this->indexRepository, $this->populateIndexService, $this->populateLogger);
 
         $this->assertSame(Response::HTTP_CONFLICT, $response->getStatusCode());
         $this->assertSame('Process not started (not available in sync mode)', $this->decode($response)['error']);
@@ -110,7 +114,7 @@ class AdminControllerTest extends TestCase
         $this->expectIndex('products');
         $this->populateIndexService->shouldReceive('processApi')->andThrow(new \RuntimeException('boom'));
 
-        $response = $this->createController()->index($this->createRequest(), $this->indexRepository, $this->populateIndexService);
+        $response = $this->createController()->index($this->createRequest(), $this->indexRepository, $this->populateIndexService, $this->populateLogger);
 
         $this->assertSame(Response::HTTP_INTERNAL_SERVER_ERROR, $response->getStatusCode());
         $this->assertSame(['success', 'log', 'error'], array_keys($this->decode($response)));

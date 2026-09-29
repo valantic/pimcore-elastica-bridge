@@ -36,6 +36,7 @@ use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 use Valantic\ElasticaBridgeBundle\Service\DocumentHelper;
 use Valantic\ElasticaBridgeBundle\Service\LockService;
 use Valantic\ElasticaBridgeBundle\Service\PopulateIndexService;
+use Valantic\ElasticaBridgeBundle\Service\PopulateLogger;
 
 /**
  * Covers when population may start (documents, cooldown, locks, pending messages) and what gets dispatched.
@@ -52,6 +53,8 @@ class PopulateIndexServiceLockingTest extends TestCase
     private DocumentRepository&MockInterface $documentRepository;
     private DocumentHelper&MockInterface $documentHelper;
     private PopulateIndexService $service;
+
+    private PopulateLogger $logger;
     private int $documentCount = 10;
     private ?KernelInterface $previousKernel;
 
@@ -293,7 +296,7 @@ class PopulateIndexServiceLockingTest extends TestCase
         $this->assertInstanceOf(PopulateIndexMessage::class, $envelope->getMessage());
         $this->assertSame(['synchronous' => false], $envelope->last(HandlerArgumentsStamp::class)?->getAdditionalArguments());
         $this->assertSame([PopulationSource::SCHEDULER, PopulationSource::SCHEDULER], array_map(static fn (PreExecuteEvent $event): PopulationSource => $event->source, $preExecuteEvents->getArrayCopy()));
-        $this->assertContains('categories: <fg=red>Process not started (cooldown)</>', $this->service->getLog());
+        $this->assertContains('categories: <fg=red>Process not started (cooldown)</>', $this->logger->getLog());
     }
 
     private function createIndex(string $name = 'products'): IndexInterface&MockInterface
@@ -325,6 +328,9 @@ class PopulateIndexServiceLockingTest extends TestCase
 
     private function createService(LockService $lockService): PopulateIndexService
     {
+        $consoleOutput = \Mockery::spy(ConsoleOutputInterface::class);
+        $this->logger = new PopulateLogger($consoleOutput);
+
         return new PopulateIndexService(
             $this->indexRepository,
             \Mockery::mock(ElasticsearchClient::class),
@@ -333,7 +339,8 @@ class PopulateIndexServiceLockingTest extends TestCase
             $this->documentHelper,
             $this->eventDispatcher,
             $this->bus,
-            \Mockery::spy(ConsoleOutputInterface::class),
+            $consoleOutput,
+            $this->logger,
         );
     }
 
