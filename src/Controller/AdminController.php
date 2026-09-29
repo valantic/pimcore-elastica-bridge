@@ -14,6 +14,7 @@ use Valantic\ElasticaBridgeBundle\Exception\Index\PopulationNotStartedException;
 use Valantic\ElasticaBridgeBundle\Exception\Repository\ItemNotFoundInRepositoryException;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 use Valantic\ElasticaBridgeBundle\Service\PopulateIndexService;
+use Valantic\ElasticaBridgeBundle\Service\PopulateLogger;
 
 #[Route(path: '/admin/elastica-bridge')]
 class AdminController extends UserAwareController
@@ -38,6 +39,7 @@ class AdminController extends UserAwareController
         Request $request,
         IndexRepository $indexRepository,
         PopulateIndexService $populateIndexService,
+        PopulateLogger $populateLogger,
     ): Response {
         $this->denyAccessUnlessGranted('ROLE_PIMCORE_ADMIN');
 
@@ -61,14 +63,14 @@ class AdminController extends UserAwareController
 
             return new JsonResponse([
                 'success' => false,
-                'log' => $populateIndexService->getLog(),
+                'log' => $populateLogger->getLog(),
                 'error' => ($notStarted ?? $throwable)->getMessage(),
             ], $notStarted instanceof PopulationNotStartedException ? Response::HTTP_CONFLICT : Response::HTTP_INTERNAL_SERVER_ERROR);
         }
 
         return new JsonResponse([
             'success' => true,
-            'log' => $populateIndexService->getLog(),
+            'log' => $populateLogger->getLog(),
         ], Response::HTTP_ACCEPTED);
     }
 

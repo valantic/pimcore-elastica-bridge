@@ -17,7 +17,6 @@ use Pimcore\Model\Document\Listing as DocumentListing;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\NullOutput;
-use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -48,11 +47,6 @@ class PopulateIndexService
 {
     private bool $shouldDelete = false;
 
-    /**
-     * @var string[]
-     */
-    private array $messages = [];
-
     public function __construct(
         private readonly IndexRepository $indexRepository,
         private readonly ElasticsearchClient $esClient,
@@ -62,6 +56,7 @@ class PopulateIndexService
         private readonly EventDispatcherInterface $eventDispatcher,
         private readonly MessageBusInterface $messengerBusElasticaBridge,
         private readonly ConsoleOutputInterface $consoleOutput,
+        private readonly PopulateLogger $logger,
     ) {
     }
 
@@ -84,7 +79,7 @@ class PopulateIndexService
                 }
             } catch (PopulationNotStartedException $e) {
                 if (!$e->isSilentModeEnabled()) {
-                    $this->log($indexConfig->getName(), '<fg=red>' . $e->getMessage() . '</>');
+                    $this->logger->log($indexConfig->getName(), '<fg=red>' . $e->getMessage() . '</>');
                 }
 
                 continue;
@@ -142,7 +137,7 @@ class PopulateIndexService
                 $indexConfig = $indexConfig->getName();
             }
 
-            $this->log($indexConfig, '<fg=red>' . $populationNotStartedException->getMessage() . '</>');
+            $this->logger->log($indexConfig, '<fg=red>' . $populationNotStartedException->getMessage() . '</>');
 
             throw $populationNotStartedException;
         }
@@ -163,7 +158,7 @@ class PopulateIndexService
             $inactiveElasticaIndex = $indexConfig->getBlueGreenInactiveElasticaIndex();
             $inactiveElasticaIndex->delete();
             $inactiveElasticaIndex->create($indexConfig->getCreateArguments());
-            $this->log($indexConfig->getName(), '<comment>Re-created inactive blue/green index</comment>');
+            $this->logger->log($indexConfig->getName(), '<comment>Re-created inactive blue/green index</comment>');
         }
     }
 
@@ -192,15 +187,15 @@ class PopulateIndexService
             return;
         }
 
-        $this->log($indexName, '<comment>Switching blue/green index</comment>');
+        $this->logger->log($indexName, '<comment>Switching blue/green index</comment>');
         $oldIndex = $indexConfig->getBlueGreenActiveElasticaIndex();
         $newIndex = $indexConfig->getBlueGreenInactiveElasticaIndex();
         $newIndex->flush();
 
         $oldIndex->removeAlias($indexConfig->getName());
-        $this->log($indexConfig->getName(), 'removed alias from ' . $oldIndex->getName(), ConsoleOutputInterface::VERBOSITY_VERBOSE);
+        $this->logger->log($indexConfig->getName(), 'removed alias from ' . $oldIndex->getName(), ConsoleOutputInterface::VERBOSITY_VERBOSE);
         $newIndex->addAlias($indexConfig->getName());
-        $this->log($indexConfig->getName(), 'added alias to ' . $newIndex->getName(), ConsoleOutputInterface::VERBOSITY_VERBOSE);
+        $this->logger->log($indexConfig->getName(), 'added alias to ' . $newIndex->getName(), ConsoleOutputInterface::VERBOSITY_VERBOSE);
         $oldIndex->flush();
         $this->postPopulateIndex($indexConfig);
     }
@@ -315,36 +310,9 @@ class PopulateIndexService
         yield new PopulateIndexMessage(new ReleaseIndexLock($indexConfig->getName(), $this->lockService->getIndexingKey($indexConfig)));
     }
 
-    /**
-     * @phpstan-param ConsoleOutputInterface::VERBOSITY_* $level
-     */
-    public function setVerbosity(int $level): self
-    {
-        $this->consoleOutput->setVerbosity($level);
-
-        return $this;
-    }
-
     public function isPopulating(IndexInterface $indexConfig): bool
     {
         return $this->lockService->isIndexingLocked($indexConfig);
-    }
-
-    /**
-     * @phpstan-param OutputInterface::VERBOSITY_* $verbosityLevel
-     */
-    public function log(string $indexName, string $message, int $verbosityLevel = OutputInterface::VERBOSITY_NORMAL): void
-    {
-        $this->messages[] = sprintf('%s: %s', $indexName, $message);
-        $this->consoleOutput->writeln(sprintf('<info>%s</info>-> %s', $indexName, $message), $verbosityLevel);
-    }
-
-    /**
-     * @return string[]
-     */
-    public function getLog(): array
-    {
-        return $this->messages;
     }
 
     private function ensureCorrectIndexSetup(IndexInterface $indexConfig): void
@@ -375,7 +343,7 @@ class PopulateIndexService
             && !ElasticsearchResponse::getResponse($this->esClient->indices()->existsAlias(['name' => $indexConfig->getName()]))->asBool()
         ) {
             $nonAliasIndex->delete();
-            $this->log($indexConfig->getName(), '<comment>Deleted non-blue/green index to prepare for blue/green usage</comment>');
+            $this->logger->log($indexConfig->getName(), '<comment>Deleted non-blue/green index to prepare for blue/green usage</comment>');
         }
 
         foreach (IndexBlueGreenSuffix::cases() as $suffix) {
@@ -392,7 +360,7 @@ class PopulateIndexService
             ;
         }
 
-        $this->log($indexConfig->getName(), '<comment>Ensured indices are correctly set up with alias</comment>');
+        $this->logger->log($indexConfig->getName(), '<comment>Ensured indices are correctly set up with alias</comment>');
     }
 
     /**
@@ -402,12 +370,12 @@ class PopulateIndexService
     {
         if ($this->shouldDelete && $index->exists()) {
             $index->delete();
-            $this->log($indexConfig->getName(), sprintf('<comment>Deleted %s</comment>', $description));
+            $this->logger->log($indexConfig->getName(), sprintf('<comment>Deleted %s</comment>', $description));
         }
 
         if (!$index->exists()) {
             $index->create($indexConfig->getCreateArguments());
-            $this->log($indexConfig->getName(), sprintf('<comment>Created %s</comment>', $description));
+            $this->logger->log($indexConfig->getName(), sprintf('<comment>Created %s</comment>', $description));
         }
     }
 

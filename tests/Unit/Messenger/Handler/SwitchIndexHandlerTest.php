@@ -30,6 +30,7 @@ use Valantic\ElasticaBridgeBundle\Repository\ConfigurationRepository;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 use Valantic\ElasticaBridgeBundle\Service\LockService;
 use Valantic\ElasticaBridgeBundle\Service\PopulateIndexService;
+use Valantic\ElasticaBridgeBundle\Service\PopulateLogger;
 
 class SwitchIndexHandlerTest extends TestCase
 {
@@ -38,6 +39,8 @@ class SwitchIndexHandlerTest extends TestCase
     private LockFactory $lockFactory;
     private LockService $lockService;
     private PopulateIndexService&MockInterface $populateIndexService;
+
+    private PopulateLogger&MockInterface $populateLogger;
     private MessageBusInterface&MockInterface $bus;
     private EventDispatcher $eventDispatcher;
     private SwitchIndexHandler $handler;
@@ -73,7 +76,8 @@ class SwitchIndexHandlerTest extends TestCase
         $this->lockFactory = new LockFactory(new InMemoryStore());
         $this->lockService = new LockService($this->lockFactory, $configurationRepository, $consoleOutput);
         $this->populateIndexService = \Mockery::mock(PopulateIndexService::class);
-        $this->populateIndexService->shouldReceive('log')->byDefault();
+        $this->populateLogger = \Mockery::mock(PopulateLogger::class);
+        $this->populateLogger->shouldReceive('log')->byDefault();
         $this->bus = \Mockery::mock(MessageBusInterface::class);
 
         $this->eventDispatcher = new EventDispatcher();
@@ -87,6 +91,7 @@ class SwitchIndexHandlerTest extends TestCase
             $this->lockService,
             $consoleOutput,
             $this->populateIndexService,
+            $this->populateLogger,
             $this->eventDispatcher,
             $this->bus,
             $indexRepository,
@@ -171,7 +176,7 @@ class SwitchIndexHandlerTest extends TestCase
             $event->skipSwitch();
         });
         $this->populateIndexService->shouldNotReceive('switchBlueGreenIndex');
-        $this->populateIndexService->shouldReceive('log')->once()->with('products', \Mockery::pattern('/^Switch failed:/'));
+        $this->populateLogger->shouldReceive('log')->once()->with('products', \Mockery::pattern('/^Switch failed:/'));
 
         $this->expectException(SwitchIndexException::class);
 

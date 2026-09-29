@@ -18,6 +18,7 @@ use Valantic\ElasticaBridgeBundle\Model\Event\ElasticaBridgeEvents;
 use Valantic\ElasticaBridgeBundle\Model\Event\PreExecuteEvent;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 use Valantic\ElasticaBridgeBundle\Service\PopulateIndexService;
+use Valantic\ElasticaBridgeBundle\Service\PopulateLogger;
 
 class Index extends BaseCommand
 {
@@ -35,6 +36,7 @@ class Index extends BaseCommand
         private readonly IndexRepository $indexRepository,
         private readonly MessageBusInterface $messengerBusElasticaBridge,
         private readonly PopulateIndexService $populateIndexService,
+        private readonly PopulateLogger $populateLogger,
         private readonly EventDispatcherInterface $eventDispatcher,
     ) {
         parent::__construct();
@@ -80,7 +82,8 @@ class Index extends BaseCommand
     {
         $failedIndices = [];
         $skippedIndices = [];
-        $this->populateIndexService->setVerbosity($this->output->getVerbosity())->setShouldDelete($this->input->getOption(self::OPTION_DELETE) === true);
+        $this->populateLogger->setVerbosity($this->output->getVerbosity());
+        $this->populateIndexService->setShouldDelete($this->input->getOption(self::OPTION_DELETE) === true);
         $populate = $this->input->getOption(self::OPTION_POPULATE) === true;
         $lockRelease = $this->input->getOption(self::OPTION_LOCK_RELEASE) === true;
         $noCooldown = $this->input->getOption(self::OPTION_COOLDOWN) !== true;

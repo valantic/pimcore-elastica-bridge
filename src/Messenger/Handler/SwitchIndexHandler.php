@@ -22,6 +22,7 @@ use Valantic\ElasticaBridgeBundle\Model\Event\WaitForCompletionEvent;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 use Valantic\ElasticaBridgeBundle\Service\LockService;
 use Valantic\ElasticaBridgeBundle\Service\PopulateIndexService;
+use Valantic\ElasticaBridgeBundle\Service\PopulateLogger;
 
 #[AsMessageHandler]
 class SwitchIndexHandler
@@ -31,6 +32,7 @@ class SwitchIndexHandler
         private readonly LockService $lockService,
         private readonly ConsoleOutputInterface $consoleOutput,
         private readonly PopulateIndexService $populateIndexService,
+        private readonly PopulateLogger $populateLogger,
         private readonly EventDispatcherInterface $eventDispatcher,
         private readonly MessageBusInterface $messengerBusElasticaBridge,
         private readonly IndexRepository $indexRepository,
@@ -65,7 +67,7 @@ class SwitchIndexHandler
             sleep($event->getSleepDuration());
             $retries++;
             $event = $this->eventDispatcher->dispatch(new WaitForCompletionEvent($index, $retries, $message->retries), ElasticaBridgeEvents::WAIT_FOR_COMPLETION_EVENT);
-            $this->populateIndexService->log($message->indexName, sprintf('Attempt %d. %d messages remaining.', $retries, $event->getRemainingMessages()));
+            $this->populateLogger->log($message->indexName, sprintf('Attempt %d. %d messages remaining.', $retries, $event->getRemainingMessages()));
         }
 
         if ($event->getRemainingMessages() > 0) {
@@ -94,7 +96,7 @@ class SwitchIndexHandler
         } catch (RecoverableMessageHandlingException) {
             return;
         } catch (\Throwable $e) {
-            $this->populateIndexService->log($message->indexName, sprintf('Switch failed: %s', $e->getMessage()));
+            $this->populateLogger->log($message->indexName, sprintf('Switch failed: %s', $e->getMessage()));
 
             throw new SwitchIndexException('Switch failed', $e->getCode(), previous: $e);
         }
@@ -116,7 +118,7 @@ class SwitchIndexHandler
             } catch (RecoverableMessageHandlingException) {
                 return;
             } catch (\Throwable $e) {
-                $this->populateIndexService->log($message->indexName, sprintf('Release failed: %s', $e->getMessage()));
+                $this->populateLogger->log($message->indexName, sprintf('Release failed: %s', $e->getMessage()));
 
                 throw new SwitchIndexException('Release failed', $e->getCode(), previous: $e);
             }

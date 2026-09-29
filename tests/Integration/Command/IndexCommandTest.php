@@ -23,12 +23,15 @@ use Valantic\ElasticaBridgeBundle\Model\Event\ElasticaBridgeEvents;
 use Valantic\ElasticaBridgeBundle\Model\Event\PreExecuteEvent;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 use Valantic\ElasticaBridgeBundle\Service\PopulateIndexService;
+use Valantic\ElasticaBridgeBundle\Service\PopulateLogger;
 
 class IndexCommandTest extends TestCase
 {
     use MockeryPHPUnitIntegration;
 
     private PopulateIndexService&MockInterface $populateIndexService;
+
+    private PopulateLogger&MockInterface $populateLogger;
     private EventDispatcher $eventDispatcher;
     private CommandTester $tester;
 
@@ -60,16 +63,17 @@ class IndexCommandTest extends TestCase
         });
 
         $this->populateIndexService = \Mockery::mock(PopulateIndexService::class);
-        $this->populateIndexService->shouldReceive('setVerbosity')->andReturnSelf()->byDefault();
+        $this->populateLogger = \Mockery::mock(PopulateLogger::class);
+        $this->populateLogger->shouldReceive('setVerbosity')->andReturnSelf()->byDefault();
         $this->populateIndexService->shouldReceive('setShouldDelete')->andReturnSelf()->byDefault();
         $this->eventDispatcher = new EventDispatcher();
 
-        $this->tester = new CommandTester(new Index($indexRepository, $bus, $this->populateIndexService, $this->eventDispatcher));
+        $this->tester = new CommandTester(new Index($indexRepository, $bus, $this->populateIndexService, $this->populateLogger, $this->eventDispatcher));
     }
 
     public function testCommandHasCorrectName(): void
     {
-        $command = new Index(\Mockery::mock(IndexRepository::class), \Mockery::mock(MessageBusInterface::class), $this->populateIndexService, $this->eventDispatcher);
+        $command = new Index(\Mockery::mock(IndexRepository::class), \Mockery::mock(MessageBusInterface::class), $this->populateIndexService, $this->populateLogger, $this->eventDispatcher);
 
         $this->assertSame('valantic:elastica-bridge:index', $command->getName());
     }
