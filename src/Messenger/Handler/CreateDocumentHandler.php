@@ -57,7 +57,16 @@ class CreateDocumentHandler
         $index = $this->indexRepository->flattenedGet($message->esIndex);
 
         try {
-            $dataObject = $message->objectType::getById($message->objectId) ?? throw new \RuntimeException('DataObject not found');
+            $dataObject = $message->objectType::getById($message->objectId);
+
+            if ($dataObject === null) {
+                // the element was deleted after the message was generated, so there is nothing to index or to retry
+                $this->consoleOutput->writeln(sprintf('Element %s %s no longer exists. (Index: %s)', $message->objectType, $message->objectId, $message->esIndex), ConsoleOutputInterface::VERBOSITY_VERBOSE);
+                $messageDecreased = true;
+
+                return;
+            }
+
             $event = $this->eventDispatcher->dispatch(new PreDocumentCreateEvent($index, $dataObject), ElasticaBridgeEvents::PRE_DOCUMENT_CREATE);
 
             if ($event->isExecutionStopped()) {

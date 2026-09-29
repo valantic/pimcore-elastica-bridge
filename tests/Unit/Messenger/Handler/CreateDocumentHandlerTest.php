@@ -205,19 +205,33 @@ class CreateDocumentHandlerTest extends TestCase
         $this->assertInstanceOf(\RuntimeException::class, $event->throwable);
     }
 
-    public function testMissingElementIsSkippedWhenSkippingFailingDocuments(): void
+    public function testMissingElementCountsAsProcessedWithoutRetry(): void
     {
-        $this->configurationRepository->shouldReceive('shouldSkipFailingDocuments')->andReturn(true);
         $this->document->shouldNotReceive('shouldIndex');
+        $this->inactiveIndex->shouldNotReceive('addDocuments');
 
         ($this->handler)($this->createMessage(objectId: 404));
 
         $event = $this->getPostEvent();
-        $this->assertFalse($event->success);
-        $this->assertTrue($event->skipped);
+        $this->assertTrue($event->success);
+        $this->assertFalse($event->skipped);
+        $this->assertFalse($event->willRetry);
+        $this->assertNull($event->throwable);
         $this->assertNull($event->element);
         $this->assertSame(404, $event->elementId);
-        $this->assertSame('DataObject not found', $event->throwable?->getMessage());
+        $this->assertSame(9, $this->populationProgress->getRemaining());
+    }
+
+    public function testMissingElementDoesNotDependOnSkippingFailingDocuments(): void
+    {
+        $this->configurationRepository->shouldReceive('shouldSkipFailingDocuments')->andReturn(true);
+
+        ($this->handler)($this->createMessage(objectId: 404));
+
+        $event = $this->getPostEvent();
+        $this->assertTrue($event->success);
+        $this->assertFalse($event->skipped);
+        $this->assertNull($event->throwable);
     }
 
     public function testDispatchesCallbackEvent(): void
