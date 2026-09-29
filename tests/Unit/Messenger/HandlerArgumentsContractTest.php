@@ -22,7 +22,9 @@ class HandlerArgumentsContractTest extends TestCase
     public static function handlerArguments(): iterable
     {
         yield 'PopulateHandler synchronous' => [PopulateHandler::class, SyncTransportDetectionInterface::SYNCHRONOUS_ARGUMENT, 'bool'];
+
         yield 'CreateDocumentHandler synchronous' => [CreateDocumentHandler::class, SyncTransportDetectionInterface::SYNCHRONOUS_ARGUMENT, 'bool'];
+
         yield 'CreateDocumentHandler retryCount' => [CreateDocumentHandler::class, RetryCountSupportInterface::RETRY_COUNT_ARGUMENT, 'int'];
     }
 
