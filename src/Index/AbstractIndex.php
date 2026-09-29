@@ -59,12 +59,7 @@ abstract class AbstractIndex implements IndexInterface
 
     public function getBatchSize(): int
     {
-        return 5000;
-    }
-
-    public function shouldPopulateInSubprocesses(): bool
-    {
-        return false;
+        return 500;
     }
 
     public function getElasticaIndex(): Index

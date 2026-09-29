@@ -1,3 +1,13 @@
 valantic_elastica_bridge:
+  events:
+    auto_save:
+      document: false
+      asset: false
+      data_object: false
   client:
+    should_add_sentry_breadcrumbs: true
     dsn: 'http://localhost:9200'
+  indexing:
+    lock_timeout: 3600 # lock timeout for indexing
+    interval: 600 # interval in which the scheduler is executed
+    cooldown: 3600 # cooldown between two scheduler runs for each index

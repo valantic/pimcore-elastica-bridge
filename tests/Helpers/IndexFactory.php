@@ -70,11 +70,6 @@ class IndexFactory
                 return 100;
             }
 
-            public function shouldPopulateInSubprocesses(): bool
-            {
-                return false;
-            }
-
             public function getElasticaIndex(): Index
             {
                 throw new \RuntimeException('Not implemented in test double');

@@ -15,7 +15,7 @@ class RefreshedElementEvent extends Event
      */
     public function __construct(
         private readonly AbstractElement $element,
-        private readonly array $indices,
+        private array $indices,
     ) {
     }
 
@@ -30,5 +30,13 @@ class RefreshedElementEvent extends Event
     public function getIndices(): array
     {
         return $this->indices;
+    }
+
+    /**
+     * @param array<IndexInterface> $indices
+     */
+    public function setIndices(array $indices): void
+    {
+        $this->indices = $indices;
     }
 }
