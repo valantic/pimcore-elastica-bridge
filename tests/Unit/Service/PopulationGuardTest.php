@@ -9,6 +9,7 @@ use Mockery\MockInterface;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\Lock\Key;
 use Symfony\Component\Lock\LockFactory;
 use Symfony\Component\Lock\Store\InMemoryStore;
 use Valantic\ElasticaBridgeBundle\Exception\Index\PopulationNotStartedException;
@@ -150,6 +151,33 @@ class PopulationGuardTest extends TestCase
         $this->guard->assertCanStart($this->index, 10, ignoreQueueLock: false);
 
         $this->assertFalse($this->otherProcess()->createLockFromKey($this->otherProcess()->getKey('products', 'queue'))->acquire(), 'queue lock should be held');
+    }
+
+    public function testReturnsTheKeyTheQueueLockWasAcquiredWith(): void
+    {
+        $key = $this->guard->assertCanStart($this->index, 10, ignoreQueueLock: false);
+
+        $this->assertInstanceOf(Key::class, $key);
+        $this->assertSame('pimcore-elastica-bridge:queue:products', (string) $key);
+        $this->assertFalse($this->otherProcess()->createLockFromKey($this->otherProcess()->getKey('products', 'queue'))->acquire(), 'queue lock should be held');
+
+        $this->otherProcess()->createLockFromKey($key)->release();
+
+        $this->assertTrue($this->otherProcess()->createLockFromKey($this->otherProcess()->getKey('products', 'queue'))->acquire(), 'the returned key should release the queue lock');
+    }
+
+    public function testAnotherKeyForTheSameResourceCannotReleaseTheQueueLock(): void
+    {
+        $this->guard->assertCanStart($this->index, 10, ignoreQueueLock: false);
+
+        $this->otherProcess()->createLockFromKey($this->otherProcess()->getKey('products', 'queue'))->release();
+
+        $this->assertFalse($this->otherProcess()->createLockFromKey($this->otherProcess()->getKey('products', 'queue'))->acquire(), 'only the acquiring key owns the lock');
+    }
+
+    public function testReturnsNoKeyWhenTheQueueLockIsIgnored(): void
+    {
+        $this->assertNull($this->guard->assertCanStart($this->index, 10));
     }
 
     public function testReleasesTheQueueLockWhenPopulationCannotStart(): void

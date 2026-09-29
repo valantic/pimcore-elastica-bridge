@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Valantic\ElasticaBridgeBundle\Service;
 
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\Lock\Key;
 use Valantic\ElasticaBridgeBundle\Exception\Index\PopulationNotStartedException;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 use Valantic\ElasticaBridgeBundle\Model\Event\ElasticaBridgeEvents;
@@ -27,6 +28,9 @@ class PopulationGuard
      *
      * @param bool $keepProcessingLock if false, the processing lock is released automatically instead of by ReleaseIndexLock
      *
+     * @return Key|null the key the queue lock was acquired with, or null if the queue lock is ignored.
+     *                  Only this instance can release the lock, because the lock store identifies the owner by the token stored in it.
+     *
      * @throws PopulationNotStartedException
      */
     public function assertCanStart(
@@ -36,7 +40,7 @@ class PopulationGuard
         bool $ignoreLock = false,
         bool $keepProcessingLock = true,
         bool $ignoreQueueLock = true,
-    ): void {
+    ): ?Key {
         $cooldownKey = $this->lockService->getKey($indexConfig->getName(), 'cooldown');
         $queueKey = $this->lockService->getKey($indexConfig->getName(), 'queue');
         $queueLock = $this->lockService->createLockFromKey($queueKey);
@@ -78,5 +82,7 @@ class PopulationGuard
 
             throw $exception;
         }
+
+        return $ignoreQueueLock ? null : $queueKey;
     }
 }

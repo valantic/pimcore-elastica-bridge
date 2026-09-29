@@ -171,6 +171,37 @@ class PopulateIndexServiceLockingTest extends TestCase
         $this->assertCount(1, $this->dispatched);
     }
 
+    public function testProcessApiSendsTheKeyThatOwnsTheQueueLock(): void
+    {
+        $index = $this->createIndex();
+
+        $this->service->processApi($index, populate: true, ignoreCooldown: true);
+
+        $message = $this->dispatched[0];
+        $this->assertInstanceOf(TriggerSingleIndexMessage::class, $message);
+        $this->createLockService()->createLockFromKey($message->key)->release();
+
+        $this->createService($this->createLockService())->processApi($index, populate: true, ignoreCooldown: true);
+
+        $this->assertCount(2, $this->dispatched, 'releasing with the key of the message should free the queue lock');
+    }
+
+    public function testProcessApiReleasesQueueLockWhenDispatchFails(): void
+    {
+        $index = $this->createIndex();
+        $this->bus = \Mockery::mock(MessageBusInterface::class);
+        $this->bus->shouldReceive('dispatch')->once()->andThrow(new \RuntimeException('transport is down'));
+
+        try {
+            $this->createService($this->createLockService())->processApi($index, populate: true, ignoreCooldown: true);
+            $this->fail('Expected the dispatch failure to be rethrown');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame('transport is down', $exception->getMessage());
+        }
+
+        $this->assertTrue($this->createLockService()->createLockFromKey($this->lockService->getKey('products', 'queue'))->acquire(), 'queue lock should have been released');
+    }
+
     public function testProcessApiReleasesQueueLockWhenPopulationCannotStart(): void
     {
         $index = $this->createIndex();

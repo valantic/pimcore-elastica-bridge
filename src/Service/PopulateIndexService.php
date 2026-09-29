@@ -71,10 +71,17 @@ class PopulateIndexService
 
         $this->eventDispatcher->dispatch(new PreExecuteEvent($indexConfig, PopulationSource::API), ElasticaBridgeEvents::PRE_EXECUTE);
 
-        $this->populationGuard->assertCanStart($indexConfig, $this->messageGenerator->getDocumentCount($indexConfig), $ignoreCooldown, $ignoreLock, false, ignoreQueueLock: false);
+        $queueKey = $this->populationGuard->assertCanStart($indexConfig, $this->messageGenerator->getDocumentCount($indexConfig), $ignoreCooldown, $ignoreLock, false, ignoreQueueLock: false)
+            ?? throw new \LogicException('The queue lock was not acquired');
 
-        $key = $this->lockService->getKey($indexConfig->getName(), 'queue');
-        $this->messengerBusElasticaBridge->dispatch(new TriggerSingleIndexMessage($indexConfig->getName(), $populate, $ignoreCooldown, $ignoreLock, $key));
+        try {
+            $this->messengerBusElasticaBridge->dispatch(new TriggerSingleIndexMessage($indexConfig->getName(), $populate, $ignoreCooldown, $ignoreLock, $queueKey));
+        } catch (\Throwable $throwable) {
+            // the message will not be handled, so nothing else releases the queue lock
+            $this->lockService->createLockFromKey($queueKey)->release();
+
+            throw $throwable;
+        }
     }
 
     /**
