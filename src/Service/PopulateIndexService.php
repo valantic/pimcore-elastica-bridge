@@ -20,8 +20,6 @@ use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 
 class PopulateIndexService
 {
-    private bool $shouldDelete = false;
-
     public function __construct(
         private readonly IndexRepository $indexRepository,
         private readonly IndexSetupService $indexSetupService,
@@ -44,7 +42,7 @@ class PopulateIndexService
                 $this->eventDispatcher->dispatch(new PreExecuteEvent($indexConfig, PopulationSource::SCHEDULER), ElasticaBridgeEvents::PRE_EXECUTE);
                 $this->populationGuard->assertCanStart($indexConfig, $this->messageGenerator->getDocumentCount($indexConfig));
 
-                $this->indexSetupService->setupIndex($indexConfig, $this->shouldDelete);
+                $this->indexSetupService->setupIndex($indexConfig);
 
                 foreach ($this->messageGenerator->generate($indexConfig) as $message) {
                     yield (new Envelope($message))->with(new HandlerArgumentsStamp([
@@ -87,6 +85,7 @@ class PopulateIndexService
         bool $populate = false,
         bool $ignoreLock = false,
         bool $ignoreCooldown = false,
+        bool $deleteExisting = false,
     ): \Generator {
         try {
             if (is_string($indexConfig)) {
@@ -95,7 +94,7 @@ class PopulateIndexService
 
             $this->populationGuard->assertCanStart($indexConfig, $this->messageGenerator->getDocumentCount($indexConfig), $ignoreCooldown, $ignoreLock, $populate);
 
-            $this->indexSetupService->setupIndex($indexConfig, $this->shouldDelete);
+            $this->indexSetupService->setupIndex($indexConfig, $deleteExisting);
 
             if (!$populate) {
                 return;
@@ -111,13 +110,6 @@ class PopulateIndexService
 
             throw $populationNotStartedException;
         }
-    }
-
-    public function setShouldDelete(bool $shouldDelete): self
-    {
-        $this->shouldDelete = $shouldDelete;
-
-        return $this;
     }
 
     public function isPopulating(IndexInterface $indexConfig): bool

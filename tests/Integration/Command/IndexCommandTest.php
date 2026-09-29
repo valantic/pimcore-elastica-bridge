@@ -65,7 +65,6 @@ class IndexCommandTest extends TestCase
         $this->populateIndexService = \Mockery::mock(PopulateIndexService::class);
         $this->populateLogger = \Mockery::mock(PopulateLogger::class);
         $this->populateLogger->shouldReceive('setVerbosity')->andReturnSelf()->byDefault();
-        $this->populateIndexService->shouldReceive('setShouldDelete')->andReturnSelf()->byDefault();
         $this->eventDispatcher = new EventDispatcher();
 
         $this->tester = new CommandTester(new Index($indexRepository, $bus, $this->populateIndexService, $this->populateLogger, $this->eventDispatcher));
@@ -86,18 +85,17 @@ class IndexCommandTest extends TestCase
         });
         $switch = new SwitchIndex('products');
         $release = new ReleaseIndexLock('products');
-        $this->populateIndexService->shouldReceive('setShouldDelete')->once()->with(false)->andReturnSelf();
         $this->populateIndexService
             ->shouldReceive('triggerSingleIndex')
             ->once()
-            ->with($this->indices['products'], true, false, true)
+            ->with($this->indices['products'], true, false, true, false)
             ->andReturnUsing(static function () use ($switch, $release): \Generator {
                 yield new PopulateIndexMessage($switch);
 
                 yield new PopulateIndexMessage($release);
             })
         ;
-        $this->populateIndexService->shouldReceive('triggerSingleIndex')->once()->with($this->indices['categories'], true, false, true)->andReturnUsing(static fn (): \Generator => yield from []);
+        $this->populateIndexService->shouldReceive('triggerSingleIndex')->once()->with($this->indices['categories'], true, false, true, false)->andReturnUsing(static fn (): \Generator => yield from []);
 
         $exitCode = $this->tester->execute(['--populate' => true]);
 
@@ -109,11 +107,10 @@ class IndexCommandTest extends TestCase
 
     public function testPassesOptionsToPopulateService(): void
     {
-        $this->populateIndexService->shouldReceive('setShouldDelete')->once()->with(true)->andReturnSelf();
         $this->populateIndexService
             ->shouldReceive('triggerSingleIndex')
             ->once()
-            ->with($this->indices['products'], false, true, false)
+            ->with($this->indices['products'], false, true, false, true)
             ->andReturnUsing(static fn (): \Generator => yield from [])
         ;
 
@@ -122,7 +119,7 @@ class IndexCommandTest extends TestCase
 
     public function testSkipsIndicesThatWereNotRequested(): void
     {
-        $this->populateIndexService->shouldReceive('triggerSingleIndex')->once()->with($this->indices['categories'], true, false, true)->andReturnUsing(static fn (): \Generator => yield from []);
+        $this->populateIndexService->shouldReceive('triggerSingleIndex')->once()->with($this->indices['categories'], true, false, true, false)->andReturnUsing(static fn (): \Generator => yield from []);
 
         $this->tester->execute(['index' => ['categories'], '--populate' => true]);
 
@@ -136,7 +133,7 @@ class IndexCommandTest extends TestCase
                 throw new PopulationNotStartedException(PopulationNotStartedException::TYPE_DISABLED);
             }
         });
-        $this->populateIndexService->shouldReceive('triggerSingleIndex')->once()->with($this->indices['categories'], true, false, true)->andReturnUsing(static fn (): \Generator => yield from []);
+        $this->populateIndexService->shouldReceive('triggerSingleIndex')->once()->with($this->indices['categories'], true, false, true, false)->andReturnUsing(static fn (): \Generator => yield from []);
 
         $this->tester->execute(['--populate' => true]);
 
@@ -145,13 +142,13 @@ class IndexCommandTest extends TestCase
 
     public function testContinuesWithNextIndexWhenPopulationCannotStart(): void
     {
-        $this->populateIndexService->shouldReceive('triggerSingleIndex')->once()->with($this->indices['products'], true, false, true)->andReturnUsing(static function (): \Generator {
+        $this->populateIndexService->shouldReceive('triggerSingleIndex')->once()->with($this->indices['products'], true, false, true, false)->andReturnUsing(static function (): \Generator {
             yield from [];
 
             throw new PopulationNotStartedException(PopulationNotStartedException::TYPE_COOLDOWN);
         });
         $release = new ReleaseIndexLock('categories');
-        $this->populateIndexService->shouldReceive('triggerSingleIndex')->once()->with($this->indices['categories'], true, false, true)->andReturnUsing(static function () use ($release): \Generator {
+        $this->populateIndexService->shouldReceive('triggerSingleIndex')->once()->with($this->indices['categories'], true, false, true, false)->andReturnUsing(static function () use ($release): \Generator {
             yield new PopulateIndexMessage($release);
         });
 

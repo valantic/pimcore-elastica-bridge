@@ -83,7 +83,7 @@ class Index extends BaseCommand
         $failedIndices = [];
         $skippedIndices = [];
         $this->populateLogger->setVerbosity($this->output->getVerbosity());
-        $this->populateIndexService->setShouldDelete($this->input->getOption(self::OPTION_DELETE) === true);
+        $delete = $this->input->getOption(self::OPTION_DELETE) === true;
         $populate = $this->input->getOption(self::OPTION_POPULATE) === true;
         $lockRelease = $this->input->getOption(self::OPTION_LOCK_RELEASE) === true;
         $noCooldown = $this->input->getOption(self::OPTION_COOLDOWN) !== true;
@@ -108,7 +108,7 @@ class Index extends BaseCommand
             }
 
             try {
-                foreach ($this->populateIndexService->triggerSingleIndex($indexConfig, $populate, $lockRelease, $noCooldown) as $message) {
+                foreach ($this->populateIndexService->triggerSingleIndex($indexConfig, $populate, $lockRelease, $noCooldown, $delete) as $message) {
                     if ($message instanceof PopulateIndexMessage) {
                         $this->messengerBusElasticaBridge->dispatch($message->message);
                     }
