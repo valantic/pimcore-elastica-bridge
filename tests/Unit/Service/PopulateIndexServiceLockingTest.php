@@ -20,7 +20,6 @@ use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Messenger\Stamp\HandlerArgumentsStamp;
 use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
-use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Enum\PopulationSource;
 use Valantic\ElasticaBridgeBundle\Exception\Index\PopulationNotStartedException;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
@@ -34,6 +33,7 @@ use Valantic\ElasticaBridgeBundle\Repository\ConfigurationRepository;
 use Valantic\ElasticaBridgeBundle\Repository\DocumentRepository;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 use Valantic\ElasticaBridgeBundle\Service\DocumentHelper;
+use Valantic\ElasticaBridgeBundle\Service\IndexSetupService;
 use Valantic\ElasticaBridgeBundle\Service\LockService;
 use Valantic\ElasticaBridgeBundle\Service\PopulateIndexService;
 use Valantic\ElasticaBridgeBundle\Service\PopulateLogger;
@@ -55,6 +55,8 @@ class PopulateIndexServiceLockingTest extends TestCase
     private PopulateIndexService $service;
 
     private PopulateLogger $logger;
+
+    private IndexSetupService&MockInterface $indexSetupService;
     private int $documentCount = 10;
     private ?KernelInterface $previousKernel;
 
@@ -117,6 +119,24 @@ class PopulateIndexServiceLockingTest extends TestCase
         $this->documentCount = 0;
 
         $this->assertNotStarted(PopulationNotStartedException::TYPE_NO_DOCUMENTS, fn () => iterator_to_array($this->service->triggerSingleIndex($this->createIndex(), populate: true)));
+    }
+
+    public function testSetsUpIndexWithoutDeletingByDefault(): void
+    {
+        $index = $this->createIndex();
+
+        iterator_to_array($this->service->triggerSingleIndex($index, populate: false), false);
+
+        $this->indexSetupService->shouldHaveReceived('setupIndex')->once()->with($index, false);
+    }
+
+    public function testForwardsDeleteRequestToIndexSetup(): void
+    {
+        $index = $this->createIndex();
+
+        iterator_to_array($this->service->setShouldDelete(true)->triggerSingleIndex($index, populate: false), false);
+
+        $this->indexSetupService->shouldHaveReceived('setupIndex')->once()->with($index, true);
     }
 
     public function testRefusesToPopulateDuringCooldown(): void
@@ -329,11 +349,12 @@ class PopulateIndexServiceLockingTest extends TestCase
     private function createService(LockService $lockService): PopulateIndexService
     {
         $consoleOutput = \Mockery::spy(ConsoleOutputInterface::class);
+        $this->indexSetupService = \Mockery::spy(IndexSetupService::class);
         $this->logger = new PopulateLogger($consoleOutput);
 
         return new PopulateIndexService(
             $this->indexRepository,
-            \Mockery::mock(ElasticsearchClient::class),
+            $this->indexSetupService,
             $lockService,
             $this->documentRepository,
             $this->documentHelper,

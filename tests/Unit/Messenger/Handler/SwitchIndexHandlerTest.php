@@ -28,8 +28,8 @@ use Valantic\ElasticaBridgeBundle\Model\Event\PreSwitchIndexEvent;
 use Valantic\ElasticaBridgeBundle\Model\Event\WaitForCompletionEvent;
 use Valantic\ElasticaBridgeBundle\Repository\ConfigurationRepository;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
+use Valantic\ElasticaBridgeBundle\Service\IndexSetupService;
 use Valantic\ElasticaBridgeBundle\Service\LockService;
-use Valantic\ElasticaBridgeBundle\Service\PopulateIndexService;
 use Valantic\ElasticaBridgeBundle\Service\PopulateLogger;
 
 class SwitchIndexHandlerTest extends TestCase
@@ -38,7 +38,9 @@ class SwitchIndexHandlerTest extends TestCase
 
     private LockFactory $lockFactory;
     private LockService $lockService;
-    private PopulateIndexService&MockInterface $populateIndexService;
+    private IndexSetupService&MockInterface $indexSetupService;
+
+    private IndexInterface&MockInterface $index;
 
     private PopulateLogger&MockInterface $populateLogger;
     private MessageBusInterface&MockInterface $bus;
@@ -63,10 +65,10 @@ class SwitchIndexHandlerTest extends TestCase
         $kernel->shouldReceive('getContainer')->andReturn($container);
         \Pimcore::setKernel($kernel);
 
-        $index = \Mockery::mock(IndexInterface::class);
-        $index->shouldReceive('getName')->andReturn('products');
+        $this->index = \Mockery::mock(IndexInterface::class);
+        $this->index->shouldReceive('getName')->andReturn('products');
         $indexRepository = \Mockery::mock(IndexRepository::class);
-        $indexRepository->shouldReceive('flattenedGet')->with('products')->andReturn($index);
+        $indexRepository->shouldReceive('flattenedGet')->with('products')->andReturn($this->index);
 
         $configurationRepository = \Mockery::mock(ConfigurationRepository::class);
         $configurationRepository->shouldReceive('getIndexingLockTimeout')->andReturn(300);
@@ -75,7 +77,7 @@ class SwitchIndexHandlerTest extends TestCase
         $consoleOutput = \Mockery::spy(ConsoleOutputInterface::class);
         $this->lockFactory = new LockFactory(new InMemoryStore());
         $this->lockService = new LockService($this->lockFactory, $configurationRepository, $consoleOutput);
-        $this->populateIndexService = \Mockery::mock(PopulateIndexService::class);
+        $this->indexSetupService = \Mockery::mock(IndexSetupService::class);
         $this->populateLogger = \Mockery::mock(PopulateLogger::class);
         $this->populateLogger->shouldReceive('log')->byDefault();
         $this->bus = \Mockery::mock(MessageBusInterface::class);
@@ -90,7 +92,7 @@ class SwitchIndexHandlerTest extends TestCase
             $this->lockFactory,
             $this->lockService,
             $consoleOutput,
-            $this->populateIndexService,
+            $this->indexSetupService,
             $this->populateLogger,
             $this->eventDispatcher,
             $this->bus,
@@ -110,7 +112,7 @@ class SwitchIndexHandlerTest extends TestCase
     public function testSwitchesIndexAndInitiatesCooldown(): void
     {
         $postSwitchEvents = $this->collectEvents(ElasticaBridgeEvents::POST_SWITCH_INDEX);
-        $this->populateIndexService->shouldReceive('switchBlueGreenIndex')->once()->with('products');
+        $this->indexSetupService->shouldReceive('switchBlueGreenIndex')->once()->with($this->index);
 
         ($this->handler)(new SwitchIndex('products', cooldown: true));
 
@@ -121,7 +123,7 @@ class SwitchIndexHandlerTest extends TestCase
 
     public function testDoesNotInitiateCooldownWhenDisabled(): void
     {
-        $this->populateIndexService->shouldReceive('switchBlueGreenIndex')->once()->with('products');
+        $this->indexSetupService->shouldReceive('switchBlueGreenIndex')->once()->with($this->index);
 
         ($this->handler)(new SwitchIndex('products', cooldown: false));
 
@@ -133,7 +135,7 @@ class SwitchIndexHandlerTest extends TestCase
         $this->eventDispatcher->addListener(ElasticaBridgeEvents::PRE_SWITCH_INDEX, static function (PreSwitchIndexEvent $event): void {
             $event->initiateCooldown = false;
         });
-        $this->populateIndexService->shouldReceive('switchBlueGreenIndex')->once();
+        $this->indexSetupService->shouldReceive('switchBlueGreenIndex')->once();
 
         ($this->handler)(new SwitchIndex('products', cooldown: true));
 
@@ -143,7 +145,7 @@ class SwitchIndexHandlerTest extends TestCase
     public function testWaitsUntilAllMessagesAreProcessed(): void
     {
         $this->remainingMessages = [5, 2, 0];
-        $this->populateIndexService->shouldReceive('switchBlueGreenIndex')->once()->with('products');
+        $this->indexSetupService->shouldReceive('switchBlueGreenIndex')->once()->with($this->index);
 
         ($this->handler)(new SwitchIndex('products'));
     }
@@ -151,7 +153,7 @@ class SwitchIndexHandlerTest extends TestCase
     public function testReschedulesWhenMessagesRemainAfterMaximumRetries(): void
     {
         $this->remainingMessages = [3];
-        $this->populateIndexService->shouldNotReceive('switchBlueGreenIndex');
+        $this->indexSetupService->shouldNotReceive('switchBlueGreenIndex');
         $postSwitchEvents = $this->collectEvents(ElasticaBridgeEvents::POST_SWITCH_INDEX);
 
         $this->bus
@@ -175,7 +177,7 @@ class SwitchIndexHandlerTest extends TestCase
         $this->eventDispatcher->addListener(ElasticaBridgeEvents::WAIT_FOR_COMPLETION_EVENT, static function (WaitForCompletionEvent $event): void {
             $event->skipSwitch();
         });
-        $this->populateIndexService->shouldNotReceive('switchBlueGreenIndex');
+        $this->indexSetupService->shouldNotReceive('switchBlueGreenIndex');
         $this->populateLogger->shouldReceive('log')->once()->with('products', \Mockery::pattern('/^Switch failed:/'));
 
         $this->expectException(SwitchIndexException::class);
@@ -186,7 +188,7 @@ class SwitchIndexHandlerTest extends TestCase
     public function testFailsWhenRemainingMessagesAreNegative(): void
     {
         $this->remainingMessages = [-1];
-        $this->populateIndexService->shouldNotReceive('switchBlueGreenIndex');
+        $this->indexSetupService->shouldNotReceive('switchBlueGreenIndex');
 
         $this->expectException(SwitchIndexException::class);
 
