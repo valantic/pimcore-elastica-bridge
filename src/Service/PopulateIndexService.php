@@ -4,10 +4,6 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Service;
 
-use Elastic\Elasticsearch\Exception\ClientResponseException;
-use Elastic\Elasticsearch\Exception\MissingParameterException;
-use Elastic\Elasticsearch\Exception\ServerResponseException;
-use Elastica\Index;
 use Pimcore\Db;
 use Pimcore\Model\Asset;
 use Pimcore\Model\Asset\Listing as AssetListing;
@@ -21,10 +17,7 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Messenger\Stamp\HandlerArgumentsStamp;
-use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
-use Valantic\ElasticaBridgeBundle\Enum\IndexBlueGreenSuffix;
 use Valantic\ElasticaBridgeBundle\Enum\PopulationSource;
-use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
 use Valantic\ElasticaBridgeBundle\Exception\Index\PopulationNotStartedException;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 use Valantic\ElasticaBridgeBundle\Messenger\Handler\CreateDocumentHandler;
@@ -41,7 +34,6 @@ use Valantic\ElasticaBridgeBundle\Model\Event\PreProcessMessagesEvent;
 use Valantic\ElasticaBridgeBundle\Model\Event\PreSwitchIndexEvent;
 use Valantic\ElasticaBridgeBundle\Repository\DocumentRepository;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
-use Valantic\ElasticaBridgeBundle\Util\ElasticsearchResponse;
 
 class PopulateIndexService
 {
@@ -49,7 +41,7 @@ class PopulateIndexService
 
     public function __construct(
         private readonly IndexRepository $indexRepository,
-        private readonly ElasticsearchClient $esClient,
+        private readonly IndexSetupService $indexSetupService,
         private readonly LockService $lockService,
         private readonly DocumentRepository $documentRepository,
         private readonly DocumentHelper $documentHelper,
@@ -70,7 +62,7 @@ class PopulateIndexService
                 $this->eventDispatcher->dispatch(new PreExecuteEvent($indexConfig, PopulationSource::SCHEDULER), ElasticaBridgeEvents::PRE_EXECUTE);
                 $this->checkIndex($indexConfig);
 
-                $this->setupIndex($indexConfig);
+                $this->indexSetupService->setupIndex($indexConfig, $this->shouldDelete);
 
                 foreach ($this->generateMessagesForIndex($indexConfig) as $message) {
                     yield (new Envelope($message))->with(new HandlerArgumentsStamp([
@@ -121,7 +113,7 @@ class PopulateIndexService
 
             $this->checkIndex($indexConfig, $ignoreCooldown, $ignoreLock, $populate);
 
-            $this->setupIndex($indexConfig);
+            $this->indexSetupService->setupIndex($indexConfig, $this->shouldDelete);
 
             if (!$populate) {
                 return;
@@ -148,56 +140,6 @@ class PopulateIndexService
         $this->shouldDelete = $shouldDelete;
 
         return $this;
-    }
-
-    public function setupIndex(IndexInterface $indexConfig): void
-    {
-        $this->ensureCorrectIndexSetup($indexConfig);
-
-        if ($indexConfig->usesBlueGreenIndices()) {
-            $inactiveElasticaIndex = $indexConfig->getBlueGreenInactiveElasticaIndex();
-            $inactiveElasticaIndex->delete();
-            $inactiveElasticaIndex->create($indexConfig->getCreateArguments());
-            $this->logger->log($indexConfig->getName(), '<comment>Re-created inactive blue/green index</comment>');
-        }
-    }
-
-    public function postPopulateIndex(IndexInterface $indexConfig): void
-    {
-        $currentIndex = $this->esClient->getIndex($indexConfig->getName());
-
-        if ($indexConfig->usesBlueGreenIndices()) {
-            $currentIndex = $indexConfig->getBlueGreenInactiveElasticaIndex();
-        }
-
-        $currentIndex->refresh();
-    }
-
-    /**
-     * @throws ClientResponseException
-     * @throws ServerResponseException
-     * @throws MissingParameterException
-     */
-    public function switchBlueGreenIndex(string $indexName): void
-    {
-        $indexConfig = $this->indexRepository->flattenedGet($indexName);
-        $this->ensureCorrectIndexSetup($indexConfig);
-
-        if (!$indexConfig->usesBlueGreenIndices()) {
-            return;
-        }
-
-        $this->logger->log($indexName, '<comment>Switching blue/green index</comment>');
-        $oldIndex = $indexConfig->getBlueGreenActiveElasticaIndex();
-        $newIndex = $indexConfig->getBlueGreenInactiveElasticaIndex();
-        $newIndex->flush();
-
-        $oldIndex->removeAlias($indexConfig->getName());
-        $this->logger->log($indexConfig->getName(), 'removed alias from ' . $oldIndex->getName(), ConsoleOutputInterface::VERBOSITY_VERBOSE);
-        $newIndex->addAlias($indexConfig->getName());
-        $this->logger->log($indexConfig->getName(), 'added alias to ' . $newIndex->getName(), ConsoleOutputInterface::VERBOSITY_VERBOSE);
-        $oldIndex->flush();
-        $this->postPopulateIndex($indexConfig);
     }
 
     public function getDocumentCount(IndexInterface $indexConfig): int
@@ -313,70 +255,6 @@ class PopulateIndexService
     public function isPopulating(IndexInterface $indexConfig): bool
     {
         return $this->lockService->isIndexingLocked($indexConfig);
-    }
-
-    private function ensureCorrectIndexSetup(IndexInterface $indexConfig): void
-    {
-        if ($indexConfig->usesBlueGreenIndices()) {
-            $this->ensureCorrectBlueGreenIndexSetup($indexConfig);
-
-            return;
-        }
-
-        $this->ensureCorrectSimpleIndexSetup($indexConfig);
-    }
-
-    private function ensureCorrectSimpleIndexSetup(
-        IndexInterface $indexConfig,
-    ): void {
-        $this->ensureIndexExists($indexConfig, $indexConfig->getElasticaIndex(), 'index');
-    }
-
-    private function ensureCorrectBlueGreenIndexSetup(
-        IndexInterface $indexConfig,
-    ): void {
-        $nonAliasIndex = $this->esClient->getIndex($indexConfig->getName());
-
-        // In case an index with the same name as the blue/green alias exists, delete it
-        if (
-            $nonAliasIndex->exists()
-            && !ElasticsearchResponse::getResponse($this->esClient->indices()->existsAlias(['name' => $indexConfig->getName()]))->asBool()
-        ) {
-            $nonAliasIndex->delete();
-            $this->logger->log($indexConfig->getName(), '<comment>Deleted non-blue/green index to prepare for blue/green usage</comment>');
-        }
-
-        foreach (IndexBlueGreenSuffix::cases() as $suffix) {
-            $name = $indexConfig->getName() . $suffix->value;
-
-            $this->ensureIndexExists($indexConfig, $this->esClient->getIndex($name), sprintf('blue/green index with alias %s', $name));
-        }
-
-        try {
-            $indexConfig->getBlueGreenActiveSuffix();
-        } catch (BlueGreenIndicesIncorrectlySetupException) {
-            $this->esClient->getIndex($indexConfig->getName() . IndexBlueGreenSuffix::BLUE->value)
-                ->addAlias($indexConfig->getName())
-            ;
-        }
-
-        $this->logger->log($indexConfig->getName(), '<comment>Ensured indices are correctly set up with alias</comment>');
-    }
-
-    /**
-     * Creates the index if it is missing, deleting it first if {@see self::setShouldDelete()} was requested.
-     */
-    private function ensureIndexExists(IndexInterface $indexConfig, Index $index, string $description): void
-    {
-        if ($this->shouldDelete && $index->exists()) {
-            $index->delete();
-            $this->logger->log($indexConfig->getName(), sprintf('<comment>Deleted %s</comment>', $description));
-        }
-
-        if (!$index->exists()) {
-            $index->create($indexConfig->getCreateArguments());
-            $this->logger->log($indexConfig->getName(), sprintf('<comment>Created %s</comment>', $description));
-        }
     }
 
     private function getListing(string $document, IndexInterface $indexConfig): DataObjectListing|DocumentListing|AssetListing

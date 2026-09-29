@@ -20,8 +20,8 @@ use Valantic\ElasticaBridgeBundle\Model\Event\PostSwitchIndexEvent;
 use Valantic\ElasticaBridgeBundle\Model\Event\PreSwitchIndexEvent;
 use Valantic\ElasticaBridgeBundle\Model\Event\WaitForCompletionEvent;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
+use Valantic\ElasticaBridgeBundle\Service\IndexSetupService;
 use Valantic\ElasticaBridgeBundle\Service\LockService;
-use Valantic\ElasticaBridgeBundle\Service\PopulateIndexService;
 use Valantic\ElasticaBridgeBundle\Service\PopulateLogger;
 
 #[AsMessageHandler]
@@ -31,7 +31,7 @@ class SwitchIndexHandler
         private readonly LockFactory $lockFactory,
         private readonly LockService $lockService,
         private readonly ConsoleOutputInterface $consoleOutput,
-        private readonly PopulateIndexService $populateIndexService,
+        private readonly IndexSetupService $indexSetupService,
         private readonly PopulateLogger $populateLogger,
         private readonly EventDispatcherInterface $eventDispatcher,
         private readonly MessageBusInterface $messengerBusElasticaBridge,
@@ -101,7 +101,7 @@ class SwitchIndexHandler
             throw new SwitchIndexException('Switch failed', $e->getCode(), previous: $e);
         }
 
-        $this->populateIndexService->switchBlueGreenIndex($message->indexName);
+        $this->indexSetupService->switchBlueGreenIndex($index);
 
         if ($event->initiateCooldown) {
             $this->lockService->initiateCooldown($message->indexName);
