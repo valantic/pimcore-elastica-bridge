@@ -172,17 +172,50 @@ class SwitchIndexHandlerTest extends TestCase
         $this->assertCount(0, $postSwitchEvents);
     }
 
-    public function testFailsWhenListenerSkipsSwitch(): void
+    public function testSkipsSwitchQuietlyWhenWaitListenerSkips(): void
     {
         $this->eventDispatcher->addListener(ElasticaBridgeEvents::WAIT_FOR_COMPLETION_EVENT, static function (WaitForCompletionEvent $event): void {
             $event->skipSwitch();
         });
         $this->indexSetupService->shouldNotReceive('switchBlueGreenIndex');
-        $this->populateLogger->shouldReceive('log')->once()->with('products', \Mockery::pattern('/^Switch failed:/'));
-
-        $this->expectException(SwitchIndexException::class);
+        $this->bus->shouldNotReceive('dispatch');
+        $postSwitchEvents = $this->collectEvents(ElasticaBridgeEvents::POST_SWITCH_INDEX);
+        $this->populateLogger->shouldReceive('log')->once()->with('products', 'Switch skipped by a listener');
 
         ($this->handler)(new SwitchIndex('products'));
+
+        $this->assertCount(0, $postSwitchEvents);
+        $this->assertTrue($this->lockService->createLockFromKey($this->lockService->getKey('products', 'cooldown'))->acquire(), 'a skipped switch should not start a cooldown');
+    }
+
+    public function testSkipsSwitchQuietlyWhenListenerSkipsWhileWaiting(): void
+    {
+        $this->remainingMessages = [5];
+        $this->eventDispatcher->addListener(ElasticaBridgeEvents::WAIT_FOR_COMPLETION_EVENT, static function (WaitForCompletionEvent $event): void {
+            if ($event->retries > 0) {
+                $event->skipSwitch();
+            }
+        }, -10);
+        $this->indexSetupService->shouldNotReceive('switchBlueGreenIndex');
+        $this->bus->shouldNotReceive('dispatch');
+        $this->populateLogger->shouldReceive('log')->with('products', 'Switch skipped by a listener')->once();
+
+        ($this->handler)(new SwitchIndex('products'));
+    }
+
+    public function testSkipsSwitchWithoutWaitingWhenPreSwitchListenerSkips(): void
+    {
+        $this->eventDispatcher->addListener(ElasticaBridgeEvents::PRE_SWITCH_INDEX, static function (PreSwitchIndexEvent $event): void {
+            $event->skipSwitch();
+        });
+        $waitEvents = $this->collectEvents(ElasticaBridgeEvents::WAIT_FOR_COMPLETION_EVENT);
+        $this->indexSetupService->shouldNotReceive('switchBlueGreenIndex');
+        $this->populateLogger->shouldReceive('log')->once()->with('products', 'Switch skipped by a listener');
+
+        ($this->handler)(new SwitchIndex('products'));
+
+        $this->assertCount(0, $waitEvents);
+        $this->assertTrue($this->lockService->createLockFromKey($this->lockService->getKey('products', 'cooldown'))->acquire(), 'a skipped switch should not start a cooldown');
     }
 
     public function testFailsWhenRemainingMessagesAreNegative(): void
@@ -206,6 +239,22 @@ class SwitchIndexHandlerTest extends TestCase
 
         $this->assertFalse($lock->isAcquired());
         $this->assertTrue($this->lockFactory->createLock((string) $key)->acquire(), 'indexing lock should be released');
+    }
+
+    public function testReleasesIndexingLockWithoutWaitingWhenListenerSkips(): void
+    {
+        $this->remainingMessages = [3];
+        $this->eventDispatcher->addListener(ElasticaBridgeEvents::WAIT_FOR_COMPLETION_EVENT, static function (WaitForCompletionEvent $event): void {
+            $event->skipSwitch();
+        });
+        $key = $this->lockService->getKey('products', 'indexing');
+        $lock = $this->lockFactory->createLockFromKey($key, autoRelease: false);
+        $this->assertTrue($lock->acquire());
+        $this->bus->shouldNotReceive('dispatch');
+
+        ($this->handler)(new ReleaseIndexLock('products', $key));
+
+        $this->assertTrue($this->lockFactory->createLock((string) $key)->acquire(), 'indexing lock should be released even though messages remain');
     }
 
     public function testKeepsIndexingLockWhileMessagesRemain(): void

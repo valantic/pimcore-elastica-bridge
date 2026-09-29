@@ -9,9 +9,9 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Lock\Key;
 use Symfony\Component\Lock\LockFactory;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
-use Symfony\Component\Messenger\Exception\RecoverableMessageHandlingException;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Messenger\Stamp\DelayStamp;
+use Valantic\ElasticaBridgeBundle\Enum\WaitOutcome;
 use Valantic\ElasticaBridgeBundle\Exception\Index\SwitchIndexException;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\ReleaseIndexLock;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\SwitchIndex;
@@ -52,15 +52,15 @@ class SwitchIndexHandler
         }
     }
 
-    private function waitForCompletion(ReleaseIndexLock|SwitchIndex $message): void
+    private function waitForCompletion(ReleaseIndexLock|SwitchIndex $message): WaitOutcome
     {
         $index = $this->indexRepository->flattenedGet($message->indexName);
 
         $event = $this->eventDispatcher->dispatch(new WaitForCompletionEvent($index, 0, $message->retries), ElasticaBridgeEvents::WAIT_FOR_COMPLETION_EVENT);
         $retries = 0;
 
-        if (!$event->isSuccess()) {
-            throw new SwitchIndexException($message::class . ' failed');
+        if ($event->isSwitchSkipped()) {
+            return WaitOutcome::Skipped;
         }
 
         while ($retries < $event->maximumRetries && $event->getRemainingMessages() !== 0) {
@@ -68,6 +68,10 @@ class SwitchIndexHandler
             $retries++;
             $event = $this->eventDispatcher->dispatch(new WaitForCompletionEvent($index, $retries, $message->retries), ElasticaBridgeEvents::WAIT_FOR_COMPLETION_EVENT);
             $this->populateLogger->log($message->indexName, sprintf('Attempt %d. %d messages remaining.', $retries, $event->getRemainingMessages()));
+
+            if ($event->isSwitchSkipped()) {
+                return WaitOutcome::Skipped;
+            }
         }
 
         if ($event->getRemainingMessages() > 0) {
@@ -76,7 +80,7 @@ class SwitchIndexHandler
 
             $this->messengerBusElasticaBridge->dispatch($message->retry(), [$delayStamp]);
 
-            throw new RecoverableMessageHandlingException('Max attempts reached, rescheduling');
+            return WaitOutcome::Rescheduled;
         }
 
         if ($event->getRemainingMessages() < 0) {
@@ -84,21 +88,36 @@ class SwitchIndexHandler
 
             throw new SwitchIndexException('Remaining messages is negative, skipping');
         }
+
+        return WaitOutcome::Completed;
     }
 
     private function switchIndex(SwitchIndex $message): void
     {
         $index = $this->indexRepository->flattenedGet($message->indexName);
+
         $event = $this->eventDispatcher->dispatch(new PreSwitchIndexEvent($index, $message->cooldown), ElasticaBridgeEvents::PRE_SWITCH_INDEX);
 
-        try {
-            $this->waitForCompletion($message);
-        } catch (RecoverableMessageHandlingException) {
+        if ($event->isSwitchSkipped()) {
+            $this->populateLogger->log($message->indexName, 'Switch skipped by a listener');
+
             return;
+        }
+
+        try {
+            $outcome = $this->waitForCompletion($message);
         } catch (\Throwable $e) {
             $this->populateLogger->log($message->indexName, sprintf('Switch failed: %s', $e->getMessage()));
 
             throw new SwitchIndexException('Switch failed', $e->getCode(), previous: $e);
+        }
+
+        if ($outcome === WaitOutcome::Skipped) {
+            $this->populateLogger->log($message->indexName, 'Switch skipped by a listener');
+        }
+
+        if ($outcome !== WaitOutcome::Completed) {
+            return;
         }
 
         $this->indexSetupService->switchBlueGreenIndex($index);
@@ -112,20 +131,28 @@ class SwitchIndexHandler
 
     private function releaseLock(ReleaseIndexLock $message): void
     {
-        if ($message->key instanceof Key) {
-            try {
-                $this->waitForCompletion($message);
-            } catch (RecoverableMessageHandlingException) {
-                return;
-            } catch (\Throwable $e) {
-                $this->populateLogger->log($message->indexName, sprintf('Release failed: %s', $e->getMessage()));
-
-                throw new SwitchIndexException('Release failed', $e->getCode(), previous: $e);
-            }
-
-            $this->consoleOutput->writeln(sprintf('releasing lock %s (%s)', $message->key, hash('sha256', (string) $message->key)), ConsoleOutputInterface::VERBOSITY_VERBOSE);
-
-            $this->lockFactory->createLockFromKey($message->key)->release();
+        if (!$message->key instanceof Key) {
+            return;
         }
+
+        try {
+            $outcome = $this->waitForCompletion($message);
+        } catch (\Throwable $e) {
+            $this->populateLogger->log($message->indexName, sprintf('Release failed: %s', $e->getMessage()));
+
+            throw new SwitchIndexException('Release failed', $e->getCode(), previous: $e);
+        }
+
+        if ($outcome === WaitOutcome::Rescheduled) {
+            return;
+        }
+
+        if ($outcome === WaitOutcome::Skipped) {
+            $this->populateLogger->log($message->indexName, 'Not waiting for the remaining messages as requested by a listener, releasing the lock');
+        }
+
+        $this->consoleOutput->writeln(sprintf('releasing lock %s (%s)', $message->key, hash('sha256', (string) $message->key)), ConsoleOutputInterface::VERBOSITY_VERBOSE);
+
+        $this->lockFactory->createLockFromKey($message->key)->release();
     }
 }

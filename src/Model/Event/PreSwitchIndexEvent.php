@@ -10,7 +10,7 @@ class PreSwitchIndexEvent extends AbstractPopulateEvent
 {
     private int $remainingMessages = 0;
 
-    private bool $success = true;
+    private bool $switchSkipped = false;
 
     public function __construct(
         IndexInterface $index,
@@ -21,7 +21,7 @@ class PreSwitchIndexEvent extends AbstractPopulateEvent
 
     public function skipSwitch(): void
     {
-        $this->success = false;
+        $this->switchSkipped = true;
     }
 
     /** use this to set the remaining messages, either from fast storage or from the database */
@@ -35,8 +35,8 @@ class PreSwitchIndexEvent extends AbstractPopulateEvent
         return $this->remainingMessages;
     }
 
-    public function isSuccess(): bool
+    public function isSwitchSkipped(): bool
     {
-        return $this->success;
+        return $this->switchSkipped;
     }
 }
