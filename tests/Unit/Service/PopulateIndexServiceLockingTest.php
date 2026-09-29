@@ -21,6 +21,7 @@ use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Messenger\Stamp\HandlerArgumentsStamp;
 use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
+use Valantic\ElasticaBridgeBundle\Enum\PopulationSource;
 use Valantic\ElasticaBridgeBundle\Exception\Index\PopulationNotStartedException;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\PopulateIndexMessage;
@@ -232,7 +233,7 @@ class PopulateIndexServiceLockingTest extends TestCase
         $this->assertTrue($message->ignoreCooldown);
         $this->assertFalse($message->ignoreLock);
         $this->assertSame('pimcore-elastica-bridge:queue:products', (string) $message->key);
-        $this->assertSame(PreExecuteEvent::SOURCE_API, $preExecuteEvents[0]->source);
+        $this->assertSame(PopulationSource::API, $preExecuteEvents[0]->source);
 
         $this->assertNotStarted(PopulationNotStartedException::TYPE_PROCESSING, fn () => $this->createService($this->createLockService())->processApi($index, populate: true, ignoreCooldown: true));
         $this->assertCount(1, $this->dispatched);
@@ -291,7 +292,7 @@ class PopulateIndexServiceLockingTest extends TestCase
         $this->assertInstanceOf(Envelope::class, $envelope);
         $this->assertInstanceOf(PopulateIndexMessage::class, $envelope->getMessage());
         $this->assertSame(['synchronous' => false], $envelope->last(HandlerArgumentsStamp::class)?->getAdditionalArguments());
-        $this->assertSame([PreExecuteEvent::SOURCE_SCHEDULER, PreExecuteEvent::SOURCE_SCHEDULER], array_map(static fn (PreExecuteEvent $event): int => $event->source, $preExecuteEvents->getArrayCopy()));
+        $this->assertSame([PopulationSource::SCHEDULER, PopulationSource::SCHEDULER], array_map(static fn (PreExecuteEvent $event): PopulationSource => $event->source, $preExecuteEvents->getArrayCopy()));
         $this->assertContains('categories: <fg=red>Process not started (cooldown)</>', $this->service->getLog());
     }
 
