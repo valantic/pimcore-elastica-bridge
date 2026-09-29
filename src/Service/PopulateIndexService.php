@@ -7,6 +7,7 @@ namespace Valantic\ElasticaBridgeBundle\Service;
 use Elastic\Elasticsearch\Exception\ClientResponseException;
 use Elastic\Elasticsearch\Exception\MissingParameterException;
 use Elastic\Elasticsearch\Exception\ServerResponseException;
+use Elastica\Index;
 use Pimcore\Db;
 use Pimcore\Model\Asset;
 use Pimcore\Model\Asset\Listing as AssetListing;
@@ -210,12 +211,7 @@ class PopulateIndexService
         $count = 0;
 
         foreach ($allowedDocuments as $document) {
-            $documentInstance = $this->documentRepository->get($document);
-            $this->documentHelper->setTenantIfNeeded($documentInstance, $indexConfig);
-
-            $listing = $documentInstance->getListingInstance($indexConfig);
-
-            $count += $listing->getTotalCount();
+            $count += $this->getListing($document, $indexConfig)->getTotalCount();
         }
 
         return $count;
@@ -240,14 +236,12 @@ class PopulateIndexService
         }
 
         foreach ($allowedDocuments as $document) {
-            $documentInstance = $this->documentRepository->get($document);
-            $this->documentHelper->setTenantIfNeeded($documentInstance, $indexConfig);
             $this->consoleOutput->writeln(sprintf('Indexing %s', $document), ConsoleOutputInterface::VERBOSITY_VERBOSE);
 
             $progressbar = new ProgressBar($this->consoleOutput->isDecorated() ? $this->consoleOutput : new NullOutput());
             $progressbar->setFormat('%message% %current%/%max% [%bar%] %percent:3s%% %elapsed:16s%/%estimated:-16s% %memory:6s%');
             $progressbar->setMessage($document);
-            $listing = $documentInstance->getListingInstance($indexConfig);
+            $listing = $this->getListing($document, $indexConfig);
             $totalCount = $listing->getTotalCount();
 
             if ($totalCount === 0) {
@@ -367,17 +361,7 @@ class PopulateIndexService
     private function ensureCorrectSimpleIndexSetup(
         IndexInterface $indexConfig,
     ): void {
-        $index = $indexConfig->getElasticaIndex();
-
-        if ($this->shouldDelete && $index->exists()) {
-            $index->delete();
-            $this->log($indexConfig->getName(), '<comment>Deleted index</comment>');
-        }
-
-        if (!$index->exists()) {
-            $index->create($indexConfig->getCreateArguments());
-            $this->log($indexConfig->getName(), '<comment>Created index</comment>');
-        }
+        $this->ensureIndexExists($indexConfig, $indexConfig->getElasticaIndex(), 'index');
     }
 
     private function ensureCorrectBlueGreenIndexSetup(
@@ -396,17 +380,8 @@ class PopulateIndexService
 
         foreach (IndexBlueGreenSuffix::cases() as $suffix) {
             $name = $indexConfig->getName() . $suffix->value;
-            $aliasIndex = $this->esClient->getIndex($name);
 
-            if ($this->shouldDelete && $aliasIndex->exists()) {
-                $aliasIndex->delete();
-                $this->log($indexConfig->getName(), sprintf('<comment>Deleted blue/green index with alias %s</comment>', $name));
-            }
-
-            if (!$aliasIndex->exists()) {
-                $aliasIndex->create($indexConfig->getCreateArguments());
-                $this->log($indexConfig->getName(), sprintf('<comment>Created blue/green index with alias %s</comment>', $name));
-            }
+            $this->ensureIndexExists($indexConfig, $this->esClient->getIndex($name), sprintf('blue/green index with alias %s', $name));
         }
 
         try {
@@ -418,6 +393,30 @@ class PopulateIndexService
         }
 
         $this->log($indexConfig->getName(), '<comment>Ensured indices are correctly set up with alias</comment>');
+    }
+
+    /**
+     * Creates the index if it is missing, deleting it first if {@see self::setShouldDelete()} was requested.
+     */
+    private function ensureIndexExists(IndexInterface $indexConfig, Index $index, string $description): void
+    {
+        if ($this->shouldDelete && $index->exists()) {
+            $index->delete();
+            $this->log($indexConfig->getName(), sprintf('<comment>Deleted %s</comment>', $description));
+        }
+
+        if (!$index->exists()) {
+            $index->create($indexConfig->getCreateArguments());
+            $this->log($indexConfig->getName(), sprintf('<comment>Created %s</comment>', $description));
+        }
+    }
+
+    private function getListing(string $document, IndexInterface $indexConfig): DataObjectListing|DocumentListing|AssetListing
+    {
+        $documentInstance = $this->documentRepository->get($document);
+        $this->documentHelper->setTenantIfNeeded($documentInstance, $indexConfig);
+
+        return $documentInstance->getListingInstance($indexConfig);
     }
 
     private function checkIndex(
