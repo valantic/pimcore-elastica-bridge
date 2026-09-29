@@ -24,7 +24,6 @@ use Valantic\ElasticaBridgeBundle\Enum\PopulationSource;
 use Valantic\ElasticaBridgeBundle\Exception\Index\PopulationNotStartedException;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\PopulateIndexMessage;
-use Valantic\ElasticaBridgeBundle\Messenger\Message\ReleaseIndexLock;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\TriggerSingleIndexMessage;
 use Valantic\ElasticaBridgeBundle\Model\Event\ElasticaBridgeEvents;
 use Valantic\ElasticaBridgeBundle\Model\Event\PreExecuteEvent;
@@ -37,6 +36,7 @@ use Valantic\ElasticaBridgeBundle\Service\LockService;
 use Valantic\ElasticaBridgeBundle\Service\PopulateIndexService;
 use Valantic\ElasticaBridgeBundle\Service\PopulateLogger;
 use Valantic\ElasticaBridgeBundle\Service\PopulationGuard;
+use Valantic\ElasticaBridgeBundle\Service\PopulationMessageGenerator;
 use Valantic\ElasticaBridgeBundle\Service\PopulationProgress;
 
 /**
@@ -175,30 +175,6 @@ class PopulateIndexServiceLockingTest extends TestCase
         $this->assertTrue($this->service->isPopulating($index));
     }
 
-    public function testMessageGenerationWithoutDocumentsOnlyReleasesLockAndStartsCooldown(): void
-    {
-        $this->documentCount = 0;
-        $index = $this->createIndex();
-
-        $messages = iterator_to_array($this->service->generateMessagesForIndex($index), false);
-
-        $this->assertCount(1, $messages);
-        $this->assertInstanceOf(PopulateIndexMessage::class, $messages[0]);
-        $this->assertInstanceOf(ReleaseIndexLock::class, $messages[0]->message);
-        $this->assertSame('products', $messages[0]->message->indexName);
-        $this->assertSame($this->lockService->getIndexingKey($index), $messages[0]->message->key);
-        $this->assertFalse($this->createLockService()->createLockFromKey($this->lockService->getKey('products', 'cooldown'))->acquire(), 'cooldown should be active');
-    }
-
-    public function testMessageGenerationWithoutDocumentsSkipsCooldownWhenIgnored(): void
-    {
-        $this->documentCount = 0;
-
-        iterator_to_array($this->service->generateMessagesForIndex($this->createIndex(), ignoreCooldown: true), false);
-
-        $this->assertTrue($this->createLockService()->createLockFromKey($this->lockService->getKey('products', 'cooldown'))->acquire(), 'cooldown should not be active');
-    }
-
     public function testProcessApiQueuesTriggerMessageAndHoldsQueueLock(): void
     {
         $index = $this->createIndex();
@@ -304,13 +280,10 @@ class PopulateIndexServiceLockingTest extends TestCase
             $this->indexSetupService,
             new PopulationGuard($lockService, $this->eventDispatcher),
             $lockService,
-            $this->documentRepository,
-            $this->documentHelper,
             $this->eventDispatcher,
             $this->bus,
-            $consoleOutput,
             $this->logger,
-            new PopulationProgress(),
+            new PopulationMessageGenerator($this->documentRepository, $this->documentHelper, $lockService, $this->eventDispatcher, $consoleOutput, new PopulationProgress()),
         );
     }
 
