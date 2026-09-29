@@ -135,7 +135,7 @@ class PopulateIndexServiceLockingTest extends TestCase
     {
         $index = $this->createIndex();
 
-        iterator_to_array($this->service->setShouldDelete(true)->triggerSingleIndex($index, populate: false), false);
+        iterator_to_array($this->service->triggerSingleIndex($index, populate: false, deleteExisting: true), false);
 
         $this->indexSetupService->shouldHaveReceived('setupIndex')->once()->with($index, true);
     }
