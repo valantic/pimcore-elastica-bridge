@@ -18,6 +18,7 @@ use Symfony\Component\Messenger\Stamp\SentStamp;
 use Symfony\Component\Messenger\Transport\InMemory\InMemoryTransport;
 use Symfony\Component\Messenger\Transport\Sync\SyncTransport;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\CreateDocumentMessage;
+use Valantic\ElasticaBridgeBundle\Messenger\Message\ReleaseIndexLock;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\SwitchIndex;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\TriggerSingleIndexMessage;
 use Valantic\ElasticaBridgeBundle\Messenger\Middleware\SyncTransportMiddleware;
@@ -55,9 +56,18 @@ class HandlerArgumentsMiddlewareTest extends TestCase
         $this->assertSame(['synchronous' => false], $envelope->last(HandlerArgumentsStamp::class)?->getAdditionalArguments());
     }
 
+    public function testSyncTransportMiddlewareAlsoCoversSwitchAndReleaseMessages(): void
+    {
+        foreach ([new SwitchIndex('products'), new ReleaseIndexLock('products')] as $message) {
+            $envelope = $this->handle(new SyncTransportMiddleware(), new Envelope($message, [new SentStamp(InMemoryTransport::class, 'elastica_bridge_populate')]));
+
+            $this->assertSame(['synchronous' => false], $envelope->last(HandlerArgumentsStamp::class)?->getAdditionalArguments());
+        }
+    }
+
     public function testSyncTransportMiddlewareIgnoresOtherMessages(): void
     {
-        $envelope = $this->handle(new SyncTransportMiddleware(), new Envelope(new SwitchIndex('products'), [new SentStamp(SyncTransport::class)]));
+        $envelope = $this->handle(new SyncTransportMiddleware(), new Envelope(new \stdClass(), [new SentStamp(SyncTransport::class)]));
 
         $this->assertNull($envelope->last(HandlerArgumentsStamp::class));
     }

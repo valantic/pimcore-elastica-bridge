@@ -39,11 +39,12 @@ class SwitchIndexHandler
     ) {
     }
 
-    public function __invoke(ReleaseIndexLock|SwitchIndex $message): void
+    // parameter name must match SyncTransportDetectionInterface::SYNCHRONOUS_ARGUMENT
+    public function __invoke(ReleaseIndexLock|SwitchIndex $message, bool $synchronous = true): void
     {
         try {
             match ($message::class) {
-                SwitchIndex::class => $this->switchIndex($message),
+                SwitchIndex::class => $this->switchIndex($message, $synchronous),
                 ReleaseIndexLock::class => $this->releaseLock($message),
                 default => throw new \RuntimeException(sprintf('Unknown message type %s', $message::class)),
             };
@@ -92,9 +93,13 @@ class SwitchIndexHandler
         return WaitOutcome::Completed;
     }
 
-    private function switchIndex(SwitchIndex $message): void
+    private function switchIndex(SwitchIndex $message, bool $synchronous): void
     {
         $index = $this->indexRepository->flattenedGet($message->indexName);
+
+        if (!$synchronous && !$this->eventDispatcher->hasListeners(ElasticaBridgeEvents::WAIT_FOR_COMPLETION_EVENT)) {
+            $this->populateLogger->log($message->indexName, sprintf('<comment>No listener for %s: the switch does not wait for queued messages, so documents that are retried later can be missing from the new index (see async.md)</comment>', ElasticaBridgeEvents::WAIT_FOR_COMPLETION_EVENT));
+        }
 
         $event = $this->eventDispatcher->dispatch(new PreSwitchIndexEvent($index, $message->cooldown), ElasticaBridgeEvents::PRE_SWITCH_INDEX);
 

@@ -20,6 +20,16 @@ This configuration will send all relevant messages to the `elastica_bridge_popul
 configured to use the `doctrine` transport, which stores the messages in the database. The `queue_name` parameter
 specifies the name of the queue where the messages are stored.
 
+## Waiting for queued messages
+The bundle does not count queued messages itself. Without a listener that reports the remaining messages
+(`PRE_SWITCH_INDEX` and `WAIT_FOR_COMPLETION_EVENT`, see below), the switch does not wait: it runs as soon as its message is consumed.
+That is after all document messages have been picked up, but not after documents that failed and are retried later.
+Such a document is written to the index that is inactive by then, so it is missing from the new index until the next population,
+and documents that end up in the failure transport go unnoticed.
+
+If you use an async transport, register a listener that counts the remaining messages.
+A warning is logged when a switch is processed asynchronously and no listener is registered for `WAIT_FOR_COMPLETION_EVENT`.
+
 ## Event Listeners
 To take full advantage you will need to configure some event listeners.
 See [PopulateListener.php](/docs/example/src/EventListener/PopulateListener.php) and [PopulateService.php](/docs/example/src/Service/PopulateService.php) for a full working example.

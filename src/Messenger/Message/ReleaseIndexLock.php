@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Valantic\ElasticaBridgeBundle\Messenger\Message;
 
 use Symfony\Component\Lock\Key;
+use Valantic\ElasticaBridgeBundle\Messenger\Middleware\SyncTransportDetectionInterface;
 
-class ReleaseIndexLock extends AbstractPopulateMessage
+class ReleaseIndexLock extends AbstractPopulateMessage implements SyncTransportDetectionInterface
 {
     public function __construct(
         public readonly string $indexName,

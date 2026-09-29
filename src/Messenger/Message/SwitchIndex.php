@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Messenger\Message;
 
-class SwitchIndex extends AbstractPopulateMessage
+use Valantic\ElasticaBridgeBundle\Messenger\Middleware\SyncTransportDetectionInterface;
+
+class SwitchIndex extends AbstractPopulateMessage implements SyncTransportDetectionInterface
 {
     public function __construct(
         public readonly string $indexName,

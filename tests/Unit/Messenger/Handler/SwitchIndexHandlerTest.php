@@ -48,6 +48,8 @@ class SwitchIndexHandlerTest extends TestCase
     private SwitchIndexHandler $handler;
     private ?KernelInterface $previousKernel;
 
+    private \Closure $waitListener;
+
     /**
      * @var list<int> remaining message counts reported by consecutive WAIT_FOR_COMPLETION_EVENT dispatches
      */
@@ -83,10 +85,11 @@ class SwitchIndexHandlerTest extends TestCase
         $this->bus = \Mockery::mock(MessageBusInterface::class);
 
         $this->eventDispatcher = new EventDispatcher();
-        $this->eventDispatcher->addListener(ElasticaBridgeEvents::WAIT_FOR_COMPLETION_EVENT, function (WaitForCompletionEvent $event): void {
+        $this->waitListener = function (WaitForCompletionEvent $event): void {
             $event->setSleepDuration(0);
             $event->setRemainingMessages(count($this->remainingMessages) > 1 ? array_shift($this->remainingMessages) : $this->remainingMessages[0]);
-        });
+        };
+        $this->eventDispatcher->addListener(ElasticaBridgeEvents::WAIT_FOR_COMPLETION_EVENT, $this->waitListener);
 
         $this->handler = new SwitchIndexHandler(
             $this->lockFactory,
@@ -216,6 +219,32 @@ class SwitchIndexHandlerTest extends TestCase
 
         $this->assertCount(0, $waitEvents);
         $this->assertTrue($this->lockService->createLockFromKey($this->lockService->getKey('products', 'cooldown'))->acquire(), 'a skipped switch should not start a cooldown');
+    }
+
+    public function testWarnsWhenRunningAsyncWithoutAnyoneCountingRemainingMessages(): void
+    {
+        $this->eventDispatcher->removeListener(ElasticaBridgeEvents::WAIT_FOR_COMPLETION_EVENT, $this->waitListener);
+        $this->indexSetupService->shouldReceive('switchBlueGreenIndex')->once();
+        $this->populateLogger->shouldReceive('log')->once()->with('products', \Mockery::pattern('/No listener for .*wait_for_completion_event/'));
+
+        ($this->handler)(new SwitchIndex('products'), synchronous: false);
+    }
+
+    public function testDoesNotWarnInSyncMode(): void
+    {
+        $this->eventDispatcher->removeListener(ElasticaBridgeEvents::WAIT_FOR_COMPLETION_EVENT, $this->waitListener);
+        $this->indexSetupService->shouldReceive('switchBlueGreenIndex')->once();
+        $this->populateLogger->shouldNotReceive('log');
+
+        ($this->handler)(new SwitchIndex('products'), synchronous: true);
+    }
+
+    public function testDoesNotWarnWhenAListenerCountsRemainingMessages(): void
+    {
+        $this->indexSetupService->shouldReceive('switchBlueGreenIndex')->once();
+        $this->populateLogger->shouldNotReceive('log');
+
+        ($this->handler)(new SwitchIndex('products'), synchronous: false);
     }
 
     public function testFailsWhenRemainingMessagesAreNegative(): void
