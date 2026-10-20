@@ -14,7 +14,7 @@
     "slidev-theme-geist": "^0.8.1"
   },
   "devDependencies": {
-    "playwright-chromium": "^1.63.0"
+    "playwright-chromium": "^1.64.1"
   },
   "allowScripts": {
     "playwright-chromium@1.63.0": true
