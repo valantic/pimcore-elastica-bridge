@@ -4,11 +4,18 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Tests\Unit\Service;
 
+use Elastica\Document;
+use Elastica\Exception\NotFoundException;
+use Elastica\Index;
+use Elastica\Query\Ids;
+use Elastica\Response;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\MessageBusInterface;
+use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\RefreshElementInIndex;
 use Valantic\ElasticaBridgeBundle\Model\Event\ElasticaBridgeEvents;
@@ -130,5 +137,192 @@ class PropagateChangesTest extends TestCase
         ;
 
         $this->service->handle($element);
+    }
+
+    public static function indexOperationProvider(): array
+    {
+        return [
+            'not present and should be indexed is inserted' => [false, true, 1, 0, 1],
+            'present and should be indexed is updated' => [true, true, 1, 0, 0],
+            'present and should not be indexed is deleted' => [true, false, 0, 1, 0],
+            'not present and should not be indexed is left alone' => [false, false, 0, 0, 0],
+        ];
+    }
+
+    public static function operationWithoutStaleCopyCleanupProvider(): array
+    {
+        return [
+            'update' => [true, true],
+            'delete' => [true, false],
+            'nothing' => [false, false],
+        ];
+    }
+
+    #[DataProvider('indexOperationProvider')]
+    public function testHandleIndexOnlyPassesLookupParamsToLookupAndDelete(
+        bool $isPresent,
+        bool $shouldIndex,
+        int $expectedAddCalls,
+        int $expectedDeleteCalls,
+        int $expectedStaleCleanupCalls,
+    ): void {
+        $params = ['routing' => 'object99', 'pipeline' => 'enrich'];
+        $lookupParams = ['routing' => 'object99'];
+        $element = PimcoreElementFactory::createDataObject(1);
+        $elasticaDocument = new Document('object1', []);
+
+        $document = $this->createDocumentFor($element, $shouldIndex);
+        $index = $this->createIndexFor($element, $document);
+        $this->prepareHelper($document, $element, $params, $lookupParams, $elasticaDocument);
+
+        $elasticaIndex = \Mockery::mock(Index::class);
+        $this->expectLookup($elasticaIndex, $isPresent, $lookupParams, $elasticaDocument);
+        $elasticaIndex->shouldReceive('addDocument')->times($expectedAddCalls)->with($elasticaDocument);
+        $elasticaIndex->shouldReceive('deleteById')->times($expectedDeleteCalls)->with('object1', $lookupParams);
+        $elasticaIndex->shouldReceive('deleteByQuery')->times($expectedStaleCleanupCalls);
+
+        $this->service->handleIndex($element, $index, $elasticaIndex);
+    }
+
+    public function testHandleIndexRemovesStaleCopyUnderOtherRoutingBeforeInserting(): void
+    {
+        $params = ['routing' => 'object99', 'pipeline' => 'enrich'];
+        $lookupParams = ['routing' => 'object99'];
+        $element = PimcoreElementFactory::createDataObject(1);
+        $elasticaDocument = new Document('object1', []);
+        $calls = [];
+
+        $document = $this->createDocumentFor($element, true);
+        $index = $this->createIndexFor($element, $document);
+        $this->prepareHelper($document, $element, $params, $lookupParams, $elasticaDocument);
+
+        $elasticaIndex = \Mockery::mock(Index::class);
+        $this->expectLookup($elasticaIndex, false, $lookupParams, $elasticaDocument);
+        $elasticaIndex
+            ->shouldReceive('deleteByQuery')
+            ->once()
+            ->with(
+                \Mockery::on(static fn (Ids $query): bool => $query->toArray() === ['ids' => ['values' => ['object1']]]),
+                ['conflicts' => 'proceed'],
+            )
+            ->andReturnUsing(static function () use (&$calls): Response {
+                $calls[] = 'deleteByQuery';
+
+                return \Mockery::mock(Response::class);
+            })
+        ;
+        $elasticaIndex
+            ->shouldReceive('addDocument')
+            ->once()
+            ->andReturnUsing(static function () use (&$calls): Response {
+                $calls[] = 'addDocument';
+
+                return \Mockery::mock(Response::class);
+            })
+        ;
+
+        $this->service->handleIndex($element, $index, $elasticaIndex);
+
+        $this->assertSame(['deleteByQuery', 'addDocument'], $calls);
+    }
+
+    public function testHandleIndexDoesNotSearchForStaleCopyWithoutRouting(): void
+    {
+        $params = ['pipeline' => 'enrich'];
+        $element = PimcoreElementFactory::createDataObject(1);
+        $elasticaDocument = new Document('object1', []);
+
+        $document = $this->createDocumentFor($element, true);
+        $index = $this->createIndexFor($element, $document);
+        $this->prepareHelper($document, $element, $params, [], $elasticaDocument);
+
+        $elasticaIndex = \Mockery::mock(Index::class);
+        $this->expectLookup($elasticaIndex, false, [], $elasticaDocument);
+        $elasticaIndex->shouldReceive('deleteByQuery')->never();
+        $elasticaIndex->shouldReceive('addDocument')->once()->with($elasticaDocument);
+
+        $this->service->handleIndex($element, $index, $elasticaIndex);
+    }
+
+    #[DataProvider('operationWithoutStaleCopyCleanupProvider')]
+    public function testHandleIndexDoesNotSearchForStaleCopyOnUpdateDeleteOrNothing(
+        bool $isPresent,
+        bool $shouldIndex,
+    ): void {
+        $params = ['routing' => 'object99'];
+        $element = PimcoreElementFactory::createDataObject(1);
+        $elasticaDocument = new Document('object1', []);
+
+        $document = $this->createDocumentFor($element, $shouldIndex);
+        $index = $this->createIndexFor($element, $document);
+        $this->prepareHelper($document, $element, $params, $params, $elasticaDocument);
+
+        $elasticaIndex = \Mockery::mock(Index::class);
+        $this->expectLookup($elasticaIndex, $isPresent, $params, $elasticaDocument);
+        $elasticaIndex->shouldReceive('addDocument', 'deleteById');
+        $elasticaIndex->shouldReceive('deleteByQuery')->never();
+
+        $this->service->handleIndex($element, $index, $elasticaIndex);
+    }
+
+    private function createDocumentFor(object $element, bool $shouldIndex): \Mockery\MockInterface
+    {
+        $document = \Mockery::mock(DocumentInterface::class);
+        $document->shouldReceive('getElasticsearchId')->with($element)->andReturn('object1');
+        $document->shouldReceive('shouldIndex')->with($element)->andReturn($shouldIndex);
+
+        return $document;
+    }
+
+    private function createIndexFor(object $element, \Mockery\MockInterface $document): \Mockery\MockInterface
+    {
+        $index = \Mockery::mock(IndexInterface::class);
+        $index->shouldReceive('findDocumentInstanceByPimcore')->with($element)->andReturn($document);
+        $index->shouldReceive('subscribedDocuments')->andReturn([$document::class]);
+
+        return $index;
+    }
+
+    /**
+     * @param array<string,mixed> $params
+     * @param array<string,mixed> $lookupParams
+     */
+    private function prepareHelper(
+        \Mockery\MockInterface $document,
+        object $element,
+        array $params,
+        array $lookupParams,
+        Document $elasticaDocument,
+    ): void {
+        $this->documentHelper->shouldReceive('setTenantIfNeeded', 'resetTenantIfNeeded');
+        $this->documentHelper->shouldReceive('getParams')->with($document, $element)->andReturn($params);
+        $this->documentHelper->shouldReceive('getLookupParams')->with($params)->andReturn($lookupParams);
+        $this->documentHelper
+            ->shouldReceive('elementToDocument')
+            ->with($document, $element, $params)
+            ->andReturn($elasticaDocument)
+        ;
+
+        $this->eventDispatcher->shouldReceive('dispatch')->andReturnUsing(static fn ($event) => $event);
+    }
+
+    /**
+     * @param array<string,mixed> $lookupParams
+     */
+    private function expectLookup(
+        \Mockery\MockInterface $elasticaIndex,
+        bool $isPresent,
+        array $lookupParams,
+        Document $elasticaDocument,
+    ): void {
+        $lookup = $elasticaIndex->shouldReceive('getDocument')->once()->with('object1', $lookupParams);
+
+        if ($isPresent) {
+            $lookup->andReturn($elasticaDocument);
+
+            return;
+        }
+
+        $lookup->andThrow(new NotFoundException('not found'));
     }
 }

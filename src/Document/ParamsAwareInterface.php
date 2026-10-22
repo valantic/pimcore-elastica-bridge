@@ -11,6 +11,9 @@ use Pimcore\Model\Element\AbstractElement;
  * All params are applied when indexing the document. Only `routing` is also applied when looking up and deleting
  * it, as other params (e.g. `pipeline`) are not valid for those requests.
  *
+ * The `routing` value must not change during the lifetime of an element. If it does (e.g. a variant is moved to
+ * another parent), the document under the previous routing is removed before the document is inserted again.
+ *
  * @template TElement of AbstractElement
  *
  * @extends DocumentInterface<TElement>
