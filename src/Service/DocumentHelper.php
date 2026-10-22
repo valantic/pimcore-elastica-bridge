@@ -66,7 +66,7 @@ class DocumentHelper
             return [];
         }
 
-        return array_filter($document->getParams($dataObject));
+        return array_filter($document->getParams($dataObject), static fn ($value): bool => (bool) $value);
     }
 
     /**
