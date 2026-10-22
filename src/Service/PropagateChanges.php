@@ -6,6 +6,7 @@ namespace Valantic\ElasticaBridgeBundle\Service;
 
 use Elastica\Exception\NotFoundException;
 use Elastica\Index;
+use Elastica\Query\Ids;
 use Pimcore\Model\DataObject\AbstractObject;
 use Pimcore\Model\Element\AbstractElement;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -21,6 +22,10 @@ use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 
 class PropagateChanges
 {
+    private const string OPTION_CONFLICTS = 'conflicts';
+
+    private const string CONFLICTS_PROCEED = 'proceed';
+
     private static bool $isPropagationStopped = false;
 
     public function __construct(
@@ -98,7 +103,10 @@ class PropagateChanges
             return;
         }
 
-        $isPresent = $this->isIdInIndex($document::getElasticsearchId($element), $elasticaIndex);
+        $params = $this->documentHelper->getParams($document, $element);
+        $lookupParams = $this->documentHelper->getLookupParams($params);
+
+        $isPresent = $this->isIdInIndex($document::getElasticsearchId($element), $elasticaIndex, $lookupParams);
         $shouldIndex = $document->shouldIndex($element);
 
         $operation = match (true) {
@@ -115,9 +123,25 @@ class PropagateChanges
         }
 
         match ($operation) {
-            ElementInIndexOperation::INSERT => $this->addElementToIndex($element, $elasticaIndex, $document),
-            ElementInIndexOperation::UPDATE => $this->updateElementInIndex($element, $elasticaIndex, $document),
-            ElementInIndexOperation::DELETE => $this->deleteElementFromIndex($element, $elasticaIndex, $document),
+            ElementInIndexOperation::INSERT => $this->addElementToIndex(
+                $element,
+                $elasticaIndex,
+                $document,
+                $params,
+                $lookupParams,
+            ),
+            ElementInIndexOperation::UPDATE => $this->updateElementInIndex(
+                $element,
+                $elasticaIndex,
+                $document,
+                $params,
+            ),
+            ElementInIndexOperation::DELETE => $this->deleteElementFromIndex(
+                $element,
+                $elasticaIndex,
+                $document,
+                $lookupParams,
+            ),
             ElementInIndexOperation::NOTHING => null,
         };
 
@@ -130,39 +154,57 @@ class PropagateChanges
 
     /**
      * @param DocumentInterface<AbstractElement> $document
+     * @param array<string,mixed> $params
+     * @param array<string,mixed> $lookupParams
      */
     private function addElementToIndex(
         AbstractElement $element,
         Index $index,
         DocumentInterface $document,
+        array $params,
+        array $lookupParams,
     ): void {
-        $elasticaDocument = $this->documentHelper->elementToDocument($document, $element);
+        if ($lookupParams !== []) {
+            // A document is only found when it is looked up with its current routing. If the routing changed (e.g. a
+            // variant was moved to another parent), the old document would stay behind in its previous shard.
+            // A query without routing searches all shards, so it removes that stale copy before the new one is added.
+            $index->deleteByQuery(
+                new Ids([$document::getElasticsearchId($element)]),
+                [self::OPTION_CONFLICTS => self::CONFLICTS_PROCEED],
+            );
+        }
+
+        $elasticaDocument = $this->documentHelper->elementToDocument($document, $element, $params);
         $index->addDocument($elasticaDocument);
     }
 
     /**
      * @param DocumentInterface<AbstractElement> $document
+     * @param array<string,mixed> $params
      */
     private function updateElementInIndex(
         AbstractElement $element,
         Index $index,
         DocumentInterface $document,
+        array $params,
     ): void {
-        $elasticaDocument = $this->documentHelper->elementToDocument($document, $element);
+        $elasticaDocument = $this->documentHelper->elementToDocument($document, $element, $params);
         // updateDocument() allows partial updates, hence the full replace here
         $index->addDocument($elasticaDocument);
     }
 
     /**
      * @param DocumentInterface<AbstractElement> $document
+     * @param array<string,mixed> $lookupParams
      */
     private function deleteElementFromIndex(
         AbstractElement $element,
         Index $index,
         DocumentInterface $document,
+        array $lookupParams,
     ): void {
         $elasticsearchId = $document::getElasticsearchId($element);
-        $index->deleteById($elasticsearchId);
+        $index->deleteById($elasticsearchId, $lookupParams);
     }
 
     /**
@@ -190,11 +232,13 @@ class PropagateChanges
 
     /**
      * Checks whether a given ID is in an index.
+     *
+     * @param array<string,mixed> $options
      */
-    private function isIdInIndex(string $id, Index $index): bool
+    private function isIdInIndex(string $id, Index $index, array $options = []): bool
     {
         try {
-            $index->getDocument($id);
+            $index->getDocument($id, $options);
         } catch (NotFoundException) {
             return false;
         }
