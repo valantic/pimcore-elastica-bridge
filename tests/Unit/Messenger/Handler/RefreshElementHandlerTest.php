@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Valantic\ElasticaBridgeBundle\Tests\Unit\Messenger\Handler;
 
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
+use PHPUnit\Framework\TestCase;
 use Pimcore\Model\DataObject\AbstractObject;
 use Pimcore\Model\DataObject\Concrete;
-use PHPUnit\Framework\TestCase;
 use Valantic\ElasticaBridgeBundle\Messenger\Handler\RefreshElementHandler;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\RefreshElement;
 use Valantic\ElasticaBridgeBundle\Service\PropagateChanges;

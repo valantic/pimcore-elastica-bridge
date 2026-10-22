@@ -10,6 +10,7 @@ use Elastica\Index;
 use Elastica\Query\Ids;
 use Elastica\Response;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
+use Mockery\MockInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -56,6 +57,25 @@ class PropagateChangesTest extends TestCase
             $this->messageBus,
             $this->eventDispatcher,
         );
+    }
+
+    public static function indexOperationProvider(): array
+    {
+        return [
+            'not present and should be indexed is inserted' => [false, true, 1, 0, 1],
+            'present and should be indexed is updated' => [true, true, 1, 0, 0],
+            'present and should not be indexed is deleted' => [true, false, 0, 1, 0],
+            'not present and should not be indexed is left alone' => [false, false, 0, 0, 0],
+        ];
+    }
+
+    public static function operationWithoutStaleCopyCleanupProvider(): array
+    {
+        return [
+            'update' => [true, true],
+            'delete' => [true, false],
+            'nothing' => [false, false],
+        ];
     }
 
     public function testStopPropagation(): void
@@ -137,25 +157,6 @@ class PropagateChangesTest extends TestCase
         ;
 
         $this->service->handle($element);
-    }
-
-    public static function indexOperationProvider(): array
-    {
-        return [
-            'not present and should be indexed is inserted' => [false, true, 1, 0, 1],
-            'present and should be indexed is updated' => [true, true, 1, 0, 0],
-            'present and should not be indexed is deleted' => [true, false, 0, 1, 0],
-            'not present and should not be indexed is left alone' => [false, false, 0, 0, 0],
-        ];
-    }
-
-    public static function operationWithoutStaleCopyCleanupProvider(): array
-    {
-        return [
-            'update' => [true, true],
-            'delete' => [true, false],
-            'nothing' => [false, false],
-        ];
     }
 
     #[DataProvider('indexOperationProvider')]
@@ -265,7 +266,7 @@ class PropagateChangesTest extends TestCase
         $this->service->handleIndex($element, $index, $elasticaIndex);
     }
 
-    private function createDocumentFor(object $element, bool $shouldIndex): \Mockery\MockInterface
+    private function createDocumentFor(object $element, bool $shouldIndex): MockInterface
     {
         $document = \Mockery::mock(DocumentInterface::class);
         $document->shouldReceive('getElasticsearchId')->with($element)->andReturn('object1');
@@ -274,7 +275,7 @@ class PropagateChangesTest extends TestCase
         return $document;
     }
 
-    private function createIndexFor(object $element, \Mockery\MockInterface $document): \Mockery\MockInterface
+    private function createIndexFor(object $element, MockInterface $document): MockInterface
     {
         $index = \Mockery::mock(IndexInterface::class);
         $index->shouldReceive('findDocumentInstanceByPimcore')->with($element)->andReturn($document);
@@ -288,7 +289,7 @@ class PropagateChangesTest extends TestCase
      * @param array<string,mixed> $lookupParams
      */
     private function prepareHelper(
-        \Mockery\MockInterface $document,
+        MockInterface $document,
         object $element,
         array $params,
         array $lookupParams,
@@ -310,7 +311,7 @@ class PropagateChangesTest extends TestCase
      * @param array<string,mixed> $lookupParams
      */
     private function expectLookup(
-        \Mockery\MockInterface $elasticaIndex,
+        MockInterface $elasticaIndex,
         bool $isPresent,
         array $lookupParams,
         Document $elasticaDocument,

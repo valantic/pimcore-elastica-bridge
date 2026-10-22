@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Valantic\ElasticaBridgeBundle\Tests\Unit\Service;
 
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
+use Mockery\MockInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
@@ -27,6 +28,26 @@ class DocumentHelperTest extends TestCase
         parent::setUp();
 
         $this->helper = new DocumentHelper();
+    }
+
+    public static function paramsProvider(): array
+    {
+        return [
+            'routing is kept' => [['routing' => 'object1'], ['routing' => 'object1']],
+            'null is dropped' => [['routing' => null], []],
+            'empty string is dropped' => [['routing' => ''], []],
+            'other params are kept' => [['routing' => 'object1', 'pipeline' => 'enrich'], ['routing' => 'object1', 'pipeline' => 'enrich']],
+            'no params' => [[], []],
+        ];
+    }
+
+    public static function lookupParamsProvider(): array
+    {
+        return [
+            'only routing is valid for lookups' => [['routing' => 'object1', 'pipeline' => 'enrich'], ['routing' => 'object1']],
+            'no routing' => [['pipeline' => 'enrich'], []],
+            'no params' => [[], []],
+        ];
     }
 
     public function testElementToDocumentCreatesElasticaDocument(): void
@@ -116,26 +137,6 @@ class DocumentHelperTest extends TestCase
         $this->assertTrue(true);
     }
 
-    public static function paramsProvider(): array
-    {
-        return [
-            'routing is kept' => [['routing' => 'object1'], ['routing' => 'object1']],
-            'null is dropped' => [['routing' => null], []],
-            'empty string is dropped' => [['routing' => ''], []],
-            'other params are kept' => [['routing' => 'object1', 'pipeline' => 'enrich'], ['routing' => 'object1', 'pipeline' => 'enrich']],
-            'no params' => [[], []],
-        ];
-    }
-
-    public static function lookupParamsProvider(): array
-    {
-        return [
-            'only routing is valid for lookups' => [['routing' => 'object1', 'pipeline' => 'enrich'], ['routing' => 'object1']],
-            'no routing' => [['pipeline' => 'enrich'], []],
-            'no params' => [[], []],
-        ];
-    }
-
     #[DataProvider('paramsProvider')]
     public function testGetParamsDropsEmptyValues(array $params, array $expected): void
     {
@@ -200,7 +201,7 @@ class DocumentHelperTest extends TestCase
         $this->assertFalse($this->helper->elementToDocument($document, $element)->hasParam('routing'));
     }
 
-    private function createParamsAwareDocument(object $element): \Mockery\MockInterface
+    private function createParamsAwareDocument(object $element): MockInterface
     {
         $document = \Mockery::mock(DocumentInterface::class, ParamsAwareInterface::class);
         $document->shouldReceive('getType')->andReturn(DocumentType::DATA_OBJECT);
