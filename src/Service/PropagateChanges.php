@@ -6,6 +6,7 @@ namespace Valantic\ElasticaBridgeBundle\Service;
 
 use Elastica\Exception\NotFoundException;
 use Elastica\Index;
+use Elastica\Query\Ids;
 use Pimcore\Model\DataObject\AbstractObject;
 use Pimcore\Model\Element\AbstractElement;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -21,6 +22,9 @@ use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 
 class PropagateChanges
 {
+    private const OPTION_CONFLICTS = 'conflicts';
+    private const CONFLICTS_PROCEED = 'proceed';
+
     private static bool $isPropagationStopped = false;
 
     public function __construct(
@@ -118,7 +122,13 @@ class PropagateChanges
         }
 
         match ($operation) {
-            ElementInIndexOperation::INSERT => $this->addElementToIndex($element, $elasticaIndex, $document, $params),
+            ElementInIndexOperation::INSERT => $this->addElementToIndex(
+                $element,
+                $elasticaIndex,
+                $document,
+                $params,
+                $lookupParams,
+            ),
             ElementInIndexOperation::UPDATE => $this->updateElementInIndex(
                 $element,
                 $elasticaIndex,
@@ -144,13 +154,25 @@ class PropagateChanges
     /**
      * @param DocumentInterface<AbstractElement> $document
      * @param array<string,mixed> $params
+     * @param array<string,mixed> $lookupParams
      */
     private function addElementToIndex(
         AbstractElement $element,
         Index $index,
         DocumentInterface $document,
         array $params,
+        array $lookupParams,
     ): void {
+        if ($lookupParams !== []) {
+            // A document is only found when it is looked up with its current routing. If the routing changed (e.g. a
+            // variant was moved to another parent), the old document would stay behind in its previous shard.
+            // A query without routing searches all shards, so it removes that stale copy before the new one is added.
+            $index->deleteByQuery(
+                new Ids([$document::getElasticsearchId($element)]),
+                [self::OPTION_CONFLICTS => self::CONFLICTS_PROCEED],
+            );
+        }
+
         $elasticaDocument = $this->documentHelper->elementToDocument($document, $element, $params);
         $index->addDocument($elasticaDocument);
     }
