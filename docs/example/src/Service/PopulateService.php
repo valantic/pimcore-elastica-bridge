@@ -42,17 +42,20 @@ class PopulateService
         $this->redis->set($this->getKeyName($indexName, self::REMAINING_MESSAGES), $expectedMessages);
     }
 
-    public function getActualMessageCount(string $indexName): int
+    /**
+     * Counts the elements (not messages) still queued for an index; a CreateDocumentMessage carries a batch of objectIds.
+     */
+    public function getRemainingElementCount(string $indexName): int
     {
         $query = "SELECT
-        COUNT(mm.id) AS remaining_messages
+        COALESCE(SUM(CAST(REGEXP_SUBSTR(REGEXP_SUBSTR(mm.body, 'objectIds[^;]*;a:[0-9]+'), '[0-9]+$') AS UNSIGNED)), 0) AS remaining_elements
         FROM messenger_messages mm
         WHERE mm.queue_name = 'elastica_bridge_populate'
           AND mm.body LIKE CONCAT('%\\\\\\\\\"', :indexName, '\\\\\\\\\"%')
           AND mm.delivered_at IS NULL
           AND mm.body LIKE '%CreateDocument%'";
 
-        $count = $this->connection->executeQuery($query, ['indexName' => $indexName, 'indexNameLength' => strlen($indexName)])->fetchOne();
+        $count = $this->connection->executeQuery($query, ['indexName' => $indexName])->fetchOne();
 
         return (int) $count;
     }

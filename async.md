@@ -27,6 +27,9 @@ That is after all document messages have been picked up, but not after documents
 Such a document is written to the index that is inactive by then, so it is missing from the new index until the next population,
 and documents that end up in the failure transport go unnoticed.
 
+Each document message carries a batch of elements (see `IndexInterface::getMessageBatchSize()`). If some elements of a batch fail
+and failing documents are not skipped, the other elements are indexed and each failed element is retried in a message of its own.
+
 If you use an async transport, register a listener that counts the remaining messages.
 A warning is logged when a switch is processed asynchronously and no listener is registered for `WAIT_FOR_COMPLETION_EVENT`.
 

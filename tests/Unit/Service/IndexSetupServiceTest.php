@@ -20,6 +20,8 @@ class IndexSetupServiceTest extends TestCase
     use MockeryPHPUnitIntegration;
 
     private const array CREATE_ARGUMENTS = ['settings' => ['number_of_shards' => 1]];
+    private const array BULK_SETTINGS = ['refresh_interval' => '-1', 'number_of_replicas' => 0];
+    private const array POST_SETTINGS = ['refresh_interval' => '1s', 'number_of_replicas' => 1];
 
     private ElasticsearchClient&MockInterface $esClient;
 
@@ -37,6 +39,8 @@ class IndexSetupServiceTest extends TestCase
         $this->indexConfig = \Mockery::mock(IndexInterface::class);
         $this->indexConfig->shouldReceive('getName')->andReturn('products');
         $this->indexConfig->shouldReceive('getCreateArguments')->andReturn(self::CREATE_ARGUMENTS);
+        $this->indexConfig->shouldReceive('getBulkIndexingSettings')->andReturn([])->byDefault();
+        $this->indexConfig->shouldReceive('getPostBulkIndexingSettings')->andReturn([])->byDefault();
         $this->logger = new PopulateLogger(\Mockery::spy(ConsoleOutputInterface::class));
         $this->service = new IndexSetupService($this->esClient, $this->logger);
     }
@@ -95,6 +99,32 @@ class IndexSetupServiceTest extends TestCase
         $this->assertContains('products: <comment>Re-created inactive blue/green index</comment>', $this->logger->getLog());
     }
 
+    public function testSetupAppliesBulkSettingsToRecreatedInactiveIndex(): void
+    {
+        [$blue, $green] = $this->blueGreenIndices();
+        $blue->shouldReceive('exists')->andReturn(true);
+        $green->shouldReceive('exists')->andReturn(true);
+        $this->indexConfig->shouldReceive('getBlueGreenActiveSuffix')->andReturn(IndexBlueGreenSuffix::BLUE);
+        $this->indexConfig->shouldReceive('getBulkIndexingSettings')->andReturn(self::BULK_SETTINGS);
+        $inactive = \Mockery::mock(Index::class);
+        $inactive->shouldReceive('delete')->once()->ordered();
+        $inactive->shouldReceive('create')->once()->ordered();
+        $inactive->shouldReceive('setSettings')->once()->with(self::BULK_SETTINGS)->ordered();
+        $this->indexConfig->shouldReceive('getBlueGreenInactiveElasticaIndex')->andReturn($inactive);
+
+        $this->service->setupIndex($this->indexConfig);
+    }
+
+    public function testSetupDoesNotApplyBulkSettingsToNonBlueGreenIndex(): void
+    {
+        $index = $this->simpleIndex();
+        $index->shouldReceive('exists')->andReturn(true);
+        $index->shouldNotReceive('setSettings');
+        $this->indexConfig->shouldReceive('getBulkIndexingSettings')->andReturn(self::BULK_SETTINGS);
+
+        $this->service->setupIndex($this->indexConfig);
+    }
+
     public function testSwitchNeverDeletesExistingIndices(): void
     {
         [$blue, $green] = $this->blueGreenIndices();
@@ -120,6 +150,29 @@ class IndexSetupServiceTest extends TestCase
         $this->service->switchBlueGreenIndex($this->indexConfig);
     }
 
+    public function testSwitchRestoresSettingsOnNewIndexBeforeMovingAlias(): void
+    {
+        [$blue, $green] = $this->blueGreenIndices();
+        $blue->shouldReceive('exists')->andReturn(true);
+        $green->shouldReceive('exists')->andReturn(true);
+        $this->indexConfig->shouldReceive('getBlueGreenActiveSuffix')->andReturn(IndexBlueGreenSuffix::BLUE);
+        $this->indexConfig->shouldReceive('getBlueGreenActiveElasticaIndex')->andReturn($blue);
+        $this->indexConfig->shouldReceive('getBlueGreenInactiveElasticaIndex')->andReturn($green);
+        $this->indexConfig->shouldReceive('getPostBulkIndexingSettings')->andReturn(self::POST_SETTINGS);
+        $blue->shouldReceive('getName')->andReturn('products--blue');
+        $green->shouldReceive('getName')->andReturn('products--green');
+        $green->shouldReceive('flush');
+        $blue->shouldReceive('flush');
+
+        $green->shouldReceive('setSettings')->once()->with(self::POST_SETTINGS)->ordered();
+        $green->shouldReceive('refresh')->once()->ordered();
+        $blue->shouldReceive('removeAlias')->once()->with('products')->ordered();
+        $green->shouldReceive('addAlias')->once()->with('products')->ordered();
+        $blue->shouldNotReceive('setSettings');
+
+        $this->service->switchBlueGreenIndex($this->indexConfig);
+    }
+
     public function testSwitchDoesNothingForSimpleIndices(): void
     {
         $index = $this->simpleIndex();
@@ -127,6 +180,7 @@ class IndexSetupServiceTest extends TestCase
         $index->shouldNotReceive('delete');
         $index->shouldNotReceive('addAlias');
         $index->shouldNotReceive('removeAlias');
+        $index->shouldNotReceive('setSettings');
 
         $this->service->switchBlueGreenIndex($this->indexConfig);
     }

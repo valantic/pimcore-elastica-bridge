@@ -76,6 +76,32 @@ abstract class AbstractIndex implements IndexInterface
         return 500;
     }
 
+    public function getMessageBatchSize(): int
+    {
+        return 50;
+    }
+
+    public function getBulkIndexingSettings(): array
+    {
+        return [
+            'refresh_interval' => '-1',
+            'number_of_replicas' => 0,
+        ];
+    }
+
+    public function getPostBulkIndexingSettings(): array
+    {
+        $settings = $this->getSettings();
+        // getSettings() may nest the settings under "index", or use flat or dotted keys
+        $configured = static fn (string $name): mixed => $settings['index'][$name] ?? $settings['index.' . $name] ?? $settings[$name] ?? null;
+
+        // null resets a setting to the Elasticsearch default
+        return [
+            'refresh_interval' => $configured('refresh_interval'),
+            'number_of_replicas' => $configured('number_of_replicas'),
+        ];
+    }
+
     public function getElasticaIndex(): Index
     {
         return $this->client->getIndex($this->getName());
