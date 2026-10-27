@@ -102,6 +102,21 @@ class PopulationGuardTest extends TestCase
         $this->addToAssertionCount(1);
     }
 
+    public function testRefusesASecondRunOfTheSameProcessWhileTheFirstStillHoldsTheProcessingLock(): void
+    {
+        $lockService = $this->createLockService();
+        $guard = new PopulationGuard($lockService, $this->eventDispatcher);
+        $guard->assertCanStart($this->index, 10);
+        $firstRunKey = $lockService->getIndexingKey($this->index);
+
+        $this->assertNotStarted(PopulationNotStartedException::TYPE_PROCESSING, fn () => $guard->assertCanStart($this->index, 10));
+
+        // the key that the first run's ReleaseIndexLock carries still releases the lock, after which a new run may start
+        $lockService->createLockFromKey($firstRunKey)->release();
+        $guard->assertCanStart($this->index, 10);
+        $this->assertFalse($this->otherProcess()->getIndexingLock($this->index)->acquire(), 'the new run should hold the processing lock');
+    }
+
     public function testRefusesWhileMessagesArePending(): void
     {
         $this->pendingMessages(3);

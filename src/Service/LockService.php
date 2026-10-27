@@ -29,6 +29,9 @@ class LockService
 
     public function getIndexingLock(IndexInterface $indexConfig, bool $autorelease = false): LockInterface
     {
+        // a new key (and token) per lock: re-using one for a later run of this process would let it re-acquire a lock that an earlier run still holds
+        $this->indexingKey[$indexConfig->getName()] = $this->getKey($indexConfig->getName(), 'indexing');
+
         return $this->lockFactory
             ->createLockFromKey(
                 $this->getIndexingKey($indexConfig),
