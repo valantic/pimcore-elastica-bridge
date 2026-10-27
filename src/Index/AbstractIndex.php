@@ -92,10 +92,13 @@ abstract class AbstractIndex implements IndexInterface
     public function getPostBulkIndexingSettings(): array
     {
         $settings = $this->getSettings();
+        // getSettings() may nest the settings under "index", or use flat or dotted keys
+        $configured = static fn (string $name): mixed => $settings['index'][$name] ?? $settings['index.' . $name] ?? $settings[$name] ?? null;
 
+        // null resets a setting to the Elasticsearch default
         return [
-            'refresh_interval' => $settings['index']['refresh_interval'] ?? '1s',
-            'number_of_replicas' => $settings['index']['number_of_replicas'] ?? 1,
+            'refresh_interval' => $configured('refresh_interval'),
+            'number_of_replicas' => $configured('number_of_replicas'),
         ];
     }
 

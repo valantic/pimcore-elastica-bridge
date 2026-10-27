@@ -57,6 +57,7 @@ interface IndexInterface
 
     /**
      * Elasticsearch index settings restored on the inactive blue/green index after population completes (before the alias switch).
+     * A null value resets the setting to the Elasticsearch default.
      *
      * @return array<string, mixed>
      */

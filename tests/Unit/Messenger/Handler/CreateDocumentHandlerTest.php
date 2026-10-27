@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Tests\Unit\Messenger\Handler;
 
+use Elastica\Bulk\Action;
+use Elastica\Bulk\Response as BulkResponse;
+use Elastica\Bulk\ResponseSet as BulkResponseSet;
 use Elastica\Document;
+use Elastica\Exception\Bulk\ResponseException as BulkResponseException;
 use Elastica\Index;
+use Elastica\Response;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\MockInterface;
 use PHPUnit\Framework\TestCase;
@@ -14,6 +19,8 @@ use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpKernel\KernelInterface;
+use Symfony\Component\Messenger\Envelope;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 use Valantic\ElasticaBridgeBundle\Messenger\Handler\CreateDocumentHandler;
@@ -35,6 +42,7 @@ class CreateDocumentHandlerTest extends TestCase
     use MockeryPHPUnitIntegration;
 
     private DocumentInterface&MockInterface $document;
+    private DocumentRepository&MockInterface $documentRepository;
     private Index&MockInterface $inactiveIndex;
     private ConfigurationRepository&MockInterface $configurationRepository;
     private EventDispatcher $eventDispatcher;
@@ -46,6 +54,11 @@ class CreateDocumentHandlerTest extends TestCase
      * @var list<PostDocumentCreateEvent>
      */
     private array $postEvents = [];
+
+    /**
+     * @var list<object>
+     */
+    private array $dispatchedMessages = [];
 
     protected function setUp(): void
     {
@@ -71,8 +84,8 @@ class CreateDocumentHandlerTest extends TestCase
         $indexRepository->shouldReceive('flattenedGet')->with('products')->andReturn($index);
 
         $this->document = \Mockery::mock(DocumentInterface::class);
-        $documentRepository = \Mockery::mock(DocumentRepository::class);
-        $documentRepository->shouldReceive('get')->with('ProductDocument')->andReturn($this->document);
+        $this->documentRepository = \Mockery::mock(DocumentRepository::class);
+        $this->documentRepository->shouldReceive('get')->with('ProductDocument')->andReturn($this->document)->byDefault();
 
         $documentHelper = \Mockery::mock(DocumentHelper::class);
         $documentHelper->shouldReceive('setTenantIfNeeded');
@@ -93,14 +106,22 @@ class CreateDocumentHandlerTest extends TestCase
             $this->postEvents[] = $event;
         });
 
+        $messageBus = \Mockery::mock(MessageBusInterface::class);
+        $messageBus->shouldReceive('dispatch')->andReturnUsing(function (object $message): Envelope {
+            $this->dispatchedMessages[] = $message;
+
+            return new Envelope($message);
+        });
+
         $this->handler = new CreateDocumentHandler(
             $documentHelper,
-            $documentRepository,
+            $this->documentRepository,
             $indexRepository,
             $this->configurationRepository,
             $this->eventDispatcher,
             $consoleOutput,
             $this->populationProgress,
+            $messageBus,
         );
     }
 
@@ -268,13 +289,12 @@ class CreateDocumentHandlerTest extends TestCase
         $this->assertSame(10, $this->populationProgress->getRemaining());
     }
 
-    public function testRetriedMessageOnlyReportsTheFailingElement(): void
+    public function testSynchronousMessageIndexesTheOtherElementsBeforeRethrowingAFailure(): void
     {
         StubDataObject::$existingIds = [1, 2, 3];
         $exception = new \RuntimeException('normalization failed');
-        $this->givenShouldIndex([1 => false, 3 => $exception]);
-        $this->givenSkippedElement(2);
-        $this->inactiveIndex->shouldNotReceive('addDocuments');
+        $this->givenShouldIndex([1 => true, 2 => $exception, 3 => true]);
+        $this->inactiveIndex->shouldReceive('addDocuments')->once()->with(\Mockery::on(static fn (array $documents): bool => count($documents) === 2));
 
         try {
             ($this->handler)($this->createMessage(objectIds: [1, 2, 3]));
@@ -283,10 +303,142 @@ class CreateDocumentHandlerTest extends TestCase
             $this->assertSame($exception, $e);
         }
 
-        // Elements 1 and 2 are reported when the message is retried; reporting them now would count them twice.
-        $this->assertSame([3], $this->getPostEventElementIds());
-        $this->assertTrue($this->postEvents[0]->willRetry);
-        $this->assertSame(10, $this->populationProgress->getRemaining());
+        // synchronous messages are not retried, so reporting the other elements can't count them twice
+        $this->assertSame([1, 3, 2], $this->getPostEventElementIds());
+        $this->assertTrue($this->postEvents[2]->willRetry);
+        $this->assertSame([], $this->dispatchedMessages);
+        $this->assertSame(8, $this->populationProgress->getRemaining());
+    }
+
+    public function testAsynchronousMessageRetriesFailingElementsInMessagesOfTheirOwn(): void
+    {
+        StubDataObject::$existingIds = [1, 2, 3];
+        $this->givenShouldIndex([1 => true, 2 => new \RuntimeException('normalization failed'), 3 => true]);
+        $this->inactiveIndex->shouldReceive('addDocuments')->once()->with(\Mockery::on(static fn (array $documents): bool => count($documents) === 2));
+
+        ($this->handler)($this->createMessage(objectIds: [1, 2, 3]), synchronous: false);
+
+        // element 2 is reported when its own message is handled
+        $this->assertSame([1, 3], $this->getPostEventElementIds());
+        $this->assertEquals([new CreateDocumentMessage([2], StubDataObject::class, 'ProductDocument', 'products')], $this->dispatchedMessages);
+    }
+
+    public function testAsynchronousMessageWithASingleElementIsRetried(): void
+    {
+        $exception = new \RuntimeException('normalization failed');
+        $this->givenShouldIndex([42 => $exception]);
+
+        try {
+            ($this->handler)($this->createMessage(), synchronous: false);
+            $this->fail('Expected the element failure to be rethrown');
+        } catch (\RuntimeException $e) {
+            $this->assertSame($exception, $e);
+        }
+
+        $this->assertTrue($this->getPostEvent()->willRetry);
+        $this->assertSame([], $this->dispatchedMessages);
+    }
+
+    public function testPartialBulkFailureOnlyFailsTheAffectedElements(): void
+    {
+        StubDataObject::$existingIds = [1, 2];
+        $this->givenShouldIndex([1 => true, 2 => true]);
+        $exception = $this->bulkFailure('2');
+        $this->inactiveIndex->shouldReceive('addDocuments')->once()->andThrow($exception);
+
+        ($this->handler)($this->createMessage(objectIds: [1, 2]), synchronous: false);
+
+        $this->assertSame([1], $this->getPostEventElementIds());
+        $this->assertTrue($this->postEvents[0]->success);
+        $this->assertEquals([new CreateDocumentMessage([2], StubDataObject::class, 'ProductDocument', 'products')], $this->dispatchedMessages);
+    }
+
+    public function testPartialBulkFailureIsReportedAsSkippedWhenSkippingFailingDocuments(): void
+    {
+        StubDataObject::$existingIds = [1, 2];
+        $this->configurationRepository->shouldReceive('shouldSkipFailingDocuments')->andReturn(true);
+        $this->givenShouldIndex([1 => true, 2 => true]);
+        $exception = $this->bulkFailure('2');
+        $this->inactiveIndex->shouldReceive('addDocuments')->once()->andThrow($exception);
+
+        ($this->handler)($this->createMessage(objectIds: [1, 2]));
+
+        $this->assertSame([1, 2], $this->getPostEventElementIds());
+        $this->assertTrue($this->postEvents[0]->success);
+        $this->assertFalse($this->postEvents[1]->success);
+        $this->assertTrue($this->postEvents[1]->skipped);
+        $this->assertSame($exception, $this->postEvents[1]->throwable);
+        $this->assertSame(9, $this->populationProgress->getRemaining());
+    }
+
+    public function testUnattributableBulkFailureFailsAllElementsOfTheRequest(): void
+    {
+        StubDataObject::$existingIds = [1, 2];
+        $this->configurationRepository->shouldReceive('shouldSkipFailingDocuments')->andReturn(true);
+        $this->givenShouldIndex([1 => true, 2 => true]);
+        $this->inactiveIndex->shouldReceive('addDocuments')->once()->andThrow($this->bulkFailure('unknown'));
+
+        ($this->handler)($this->createMessage(objectIds: [1, 2]));
+
+        $this->assertSame([1, 2], $this->getPostEventElementIds());
+
+        foreach ($this->postEvents as $event) {
+            $this->assertTrue($event->skipped);
+        }
+    }
+
+    public function testDocumentLookupFailureFailsEveryElement(): void
+    {
+        StubDataObject::$existingIds = [1, 2];
+        $exception = new \RuntimeException('no such document');
+        $this->documentRepository->shouldReceive('get')->andThrow($exception);
+        $this->inactiveIndex->shouldNotReceive('addDocuments');
+
+        try {
+            ($this->handler)($this->createMessage(objectIds: [1, 2]));
+            $this->fail('Expected the failure to be rethrown');
+        } catch (\RuntimeException $e) {
+            $this->assertSame($exception, $e);
+        }
+
+        $this->assertSame([1, 2], $this->getPostEventElementIds());
+
+        foreach ($this->postEvents as $event) {
+            $this->assertTrue($event->willRetry);
+            $this->assertSame($exception, $event->throwable);
+        }
+    }
+
+    public function testDocumentLookupFailureIsReportedAsSkippedWhenSkippingFailingDocuments(): void
+    {
+        StubDataObject::$existingIds = [1, 2];
+        $this->configurationRepository->shouldReceive('shouldSkipFailingDocuments')->andReturn(true);
+        $this->documentRepository->shouldReceive('get')->andThrow(new \RuntimeException('no such document'));
+
+        ($this->handler)($this->createMessage(objectIds: [1, 2]));
+
+        $this->assertSame([1, 2], $this->getPostEventElementIds());
+
+        foreach ($this->postEvents as $event) {
+            $this->assertTrue($event->skipped);
+            $this->assertFalse($event->willRetry);
+        }
+    }
+
+    public function testCallbackEventIsNotDispatchedWhenEveryElementWasStopped(): void
+    {
+        $this->givenSkippedElement(42);
+        $callbackEvents = [];
+        $this->eventDispatcher->addListener(ElasticaBridgeEvents::PRE_SWITCH_INDEX, static function (PreSwitchIndexEvent $event) use (&$callbackEvents): void {
+            $callbackEvents[] = $event;
+        });
+
+        $callback = new CallbackEvent();
+        $callback->setEvent(ElasticaBridgeEvents::PRE_SWITCH_INDEX, PreSwitchIndexEvent::class, [\Mockery::mock(IndexInterface::class)]);
+
+        ($this->handler)($this->createMessage(callback: $callback));
+
+        $this->assertSame([], $callbackEvents);
     }
 
     public function testRetriedBulkFailureDoesNotReportElementsWithoutDocuments(): void
@@ -408,6 +560,16 @@ class CreateDocumentHandlerTest extends TestCase
                 $event->stopExecution();
             }
         });
+    }
+
+    private function bulkFailure(string ...$failedDocumentIds): BulkResponseException
+    {
+        $responses = array_map(
+            static fn (string $id): BulkResponse => new BulkResponse(['error' => ['type' => 'mapper_parsing_exception', 'reason' => 'failed']], (new Action())->setId($id), Action::OP_TYPE_INDEX),
+            $failedDocumentIds,
+        );
+
+        return new BulkResponseException(new BulkResponseSet(new Response([]), $responses));
     }
 
     /**

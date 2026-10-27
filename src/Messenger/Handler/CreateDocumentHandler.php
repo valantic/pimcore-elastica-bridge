@@ -6,9 +6,14 @@ namespace Valantic\ElasticaBridgeBundle\Messenger\Handler;
 
 use Elastic\Elasticsearch\Exception\MissingParameterException;
 use Elastic\Elasticsearch\Exception\ServerResponseException;
+use Elastica\Document;
+use Elastica\Exception\Bulk\ResponseException as BulkResponseException;
+use Pimcore\Model\Element\AbstractElement;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
+use Symfony\Component\Messenger\MessageBusInterface;
+use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\CreateDocumentMessage;
 use Valantic\ElasticaBridgeBundle\Model\Event\ElasticaBridgeEvents;
 use Valantic\ElasticaBridgeBundle\Model\Event\PostDocumentCreateEvent;
@@ -32,6 +37,7 @@ class CreateDocumentHandler
         private readonly EventDispatcherInterface $eventDispatcher,
         private readonly ConsoleOutputInterface $consoleOutput,
         private readonly PopulationProgress $populationProgress,
+        private readonly MessageBusInterface $messengerBusElasticaBridge,
     ) {
     }
 
@@ -39,7 +45,12 @@ class CreateDocumentHandler
     public function __invoke(CreateDocumentMessage $message, bool $synchronous = true): void
     {
         $this->synchronous = $synchronous;
-        $this->handleMessage($message);
+
+        try {
+            $this->handleMessage($message);
+        } finally {
+            \Pimcore::collectGarbage();
+        }
     }
 
     /**
@@ -50,17 +61,27 @@ class CreateDocumentHandler
     private function handleMessage(CreateDocumentMessage $message): void
     {
         $index = $this->indexRepository->flattenedGet($message->esIndex);
-        $documentInstance = $this->documentRepository->get($message->document);
-        $this->documentHelper->setTenantIfNeeded($documentInstance, $index);
-        $esIndex = $index->getBlueGreenInactiveElasticaIndex();
 
-        // Collect ES documents from all elements in the batch, then send in one bulk call.
-        $allEsDocuments = [];
-        // Elements that contributed ES documents, keyed by ID; reported once addDocuments() succeeded.
-        $pendingElements = [];
+        try {
+            $documentInstance = $this->documentRepository->get($message->document);
+            $this->documentHelper->setTenantIfNeeded($documentInstance, $index);
+        } catch (\Throwable $throwable) {
+            // none of the elements can be indexed
+            $this->handleMessageFailure($message, $index, array_fill_keys($message->objectIds, null), [], $throwable);
+
+            return;
+        }
+
         // Post events are held back until the outcome of the whole message is final: if the message
         // is retried, every element in it is processed and reported again.
         $postEvents = [];
+        // Elements that contributed ES documents, keyed by ID; reported once addDocuments() succeeded.
+        $pendingElements = [];
+        /** @var array<int, Document[]> $esDocumentsPerElement element ID => its ES documents */
+        $esDocumentsPerElement = [];
+        /** @var array<int, array{?AbstractElement, \Throwable}> $failures element ID => element and why it could not be indexed */
+        $failures = [];
+        $isAnyElementProcessed = false;
 
         foreach ($message->objectIds as $objectId) {
             $dataObject = null;
@@ -83,6 +104,8 @@ class CreateDocumentHandler
 
                     continue;
                 }
+
+                $isAnyElementProcessed = true;
 
                 if ($this->consoleOutput->getVerbosity() > ConsoleOutputInterface::VERBOSITY_NORMAL) {
                     $currentCount = $event->getCurrentCount();
@@ -113,7 +136,7 @@ class CreateDocumentHandler
                     continue;
                 }
 
-                $allEsDocuments = [...$allEsDocuments, ...$esDocuments];
+                $esDocumentsPerElement[$objectId] = $esDocuments;
                 $pendingElements[$objectId] = $dataObject;
             } catch (\Throwable $throwable) {
                 $this->consoleOutput->writeln(sprintf(
@@ -124,20 +147,34 @@ class CreateDocumentHandler
                     $throwable::class,
                 ), ConsoleOutputInterface::VERBOSITY_NORMAL);
 
-                if (!$this->configurationRepository->shouldSkipFailingDocuments()) {
-                    $this->dispatchPost(new PostDocumentCreateEvent($index, $message->objectType, $objectId, $dataObject, success: false, willRetry: true, throwable: $throwable));
-
-                    throw $throwable;
-                }
-
-                $postEvents[] = new PostDocumentCreateEvent($index, $message->objectType, $objectId, $dataObject, success: false, skipped: true, throwable: $throwable);
+                $failures[$objectId] = [$dataObject, $throwable];
             }
         }
 
-        if ($allEsDocuments !== []) {
+        if ($isAnyElementProcessed && $message->callback?->shouldCallEvent() === true) {
+            $this->eventDispatcher->dispatch($message->callback->getEvent(), $message->callback->getEventName());
+        }
+
+        if ($esDocumentsPerElement !== []) {
             try {
-                $esIndex->addDocuments($allEsDocuments);
+                $index->getBlueGreenInactiveElasticaIndex()->addDocuments(array_merge(...array_values($esDocumentsPerElement)));
+            } catch (BulkResponseException $exception) {
+                // only some documents failed, the others are indexed
+                $failedElementIds = $this->getFailedElementIds($exception, $esDocumentsPerElement);
+
+                foreach ($failedElementIds as $objectId) {
+                    $failures[$objectId] = [$pendingElements[$objectId], $exception];
+                    unset($pendingElements[$objectId]);
+                }
+
+                $this->consoleOutput->writeln(sprintf(
+                    'Error indexing %s (objectIds %s): %s',
+                    $message->esIndex,
+                    implode(', ', $failedElementIds),
+                    $exception->getActionExceptionsAsString(),
+                ), ConsoleOutputInterface::VERBOSITY_NORMAL);
             } catch (\Throwable $throwable) {
+                // the whole request failed, so none of the documents are indexed
                 $this->consoleOutput->writeln(sprintf(
                     'Error indexing %s (objectIds %s): %s (%s)',
                     $message->esIndex,
@@ -146,19 +183,9 @@ class CreateDocumentHandler
                     $throwable::class,
                 ), ConsoleOutputInterface::VERBOSITY_NORMAL);
 
-                if (!$this->configurationRepository->shouldSkipFailingDocuments()) {
-                    foreach ($pendingElements as $objectId => $dataObject) {
-                        $this->dispatchPost(new PostDocumentCreateEvent($index, $message->objectType, $objectId, $dataObject, success: false, willRetry: true, throwable: $throwable));
-                    }
+                $this->handleMessageFailure($message, $index, $pendingElements, $postEvents, $throwable, $failures);
 
-                    throw $throwable;
-                }
-
-                foreach ($pendingElements as $objectId => $dataObject) {
-                    $postEvents[] = new PostDocumentCreateEvent($index, $message->objectType, $objectId, $dataObject, success: false, skipped: true, throwable: $throwable);
-                }
-
-                $pendingElements = [];
+                return;
             }
         }
 
@@ -166,15 +193,114 @@ class CreateDocumentHandler
             $postEvents[] = new PostDocumentCreateEvent($index, $message->objectType, $objectId, $dataObject);
         }
 
-        foreach ($postEvents as $postEvent) {
-            $this->dispatchPost($postEvent);
+        if ($failures === [] || $this->configurationRepository->shouldSkipFailingDocuments()) {
+            foreach ($failures as $objectId => [$dataObject, $throwable]) {
+                $postEvents[] = new PostDocumentCreateEvent($index, $message->objectType, $objectId, $dataObject, success: false, skipped: true, throwable: $throwable);
+            }
+
+            $this->dispatchPosts($postEvents);
+
+            return;
         }
 
-        if ($message->callback?->shouldCallEvent() === true) {
-            $this->eventDispatcher->dispatch($message->callback->getEvent(), $message->callback->getEventName());
+        if (!$this->synchronous && count($message->objectIds) > 1) {
+            // Retrying the whole message would keep one failing element from ever indexing the others,
+            // and report the others again; the failed elements are retried in messages of their own instead.
+            $this->dispatchPosts($postEvents);
+
+            foreach (array_keys($failures) as $objectId) {
+                $this->messengerBusElasticaBridge->dispatch(new CreateDocumentMessage([$objectId], $message->objectType, $message->document, $message->esIndex));
+            }
+
+            return;
         }
 
-        \Pimcore::collectGarbage();
+        // synchronous messages are not retried, and a message with a single element only reports that element
+        $this->dispatchPosts($postEvents);
+
+        foreach ($failures as $objectId => [$dataObject, $throwable]) {
+            $this->dispatchPost(new PostDocumentCreateEvent($index, $message->objectType, $objectId, $dataObject, success: false, willRetry: true, throwable: $throwable));
+        }
+
+        throw reset($failures)[1];
+    }
+
+    /**
+     * Handles a failure that affects all remaining elements of a message: they are skipped or the whole message is retried.
+     *
+     * @param array<int, ?AbstractElement> $elements element ID => element affected by the failure
+     * @param PostDocumentCreateEvent[] $postEvents outcomes of the other elements, reported unless the message is retried
+     * @param array<int, array{?AbstractElement, \Throwable}> $failures elements that failed on their own
+     *
+     * @throws \Throwable
+     */
+    private function handleMessageFailure(
+        CreateDocumentMessage $message,
+        IndexInterface $index,
+        array $elements,
+        array $postEvents,
+        \Throwable $throwable,
+        array $failures = [],
+    ): void {
+        $skipFailingDocuments = $this->configurationRepository->shouldSkipFailingDocuments();
+        $failures += array_map(static fn (?AbstractElement $element): array => [$element, $throwable], $elements);
+
+        if ($skipFailingDocuments) {
+            foreach ($failures as $objectId => [$dataObject, $elementThrowable]) {
+                $postEvents[] = new PostDocumentCreateEvent($index, $message->objectType, $objectId, $dataObject, success: false, skipped: true, throwable: $elementThrowable);
+            }
+
+            $this->dispatchPosts($postEvents);
+
+            return;
+        }
+
+        // the other elements are reported when the message is retried
+        foreach ($failures as $objectId => [$dataObject, $elementThrowable]) {
+            $this->dispatchPost(new PostDocumentCreateEvent($index, $message->objectType, $objectId, $dataObject, success: false, willRetry: true, throwable: $elementThrowable));
+        }
+
+        throw $throwable;
+    }
+
+    /**
+     * @param array<int, Document[]> $esDocumentsPerElement
+     *
+     * @return int[] IDs of the elements of which at least one document failed; all elements if a failure can't be attributed
+     */
+    private function getFailedElementIds(BulkResponseException $exception, array $esDocumentsPerElement): array
+    {
+        $elementIdsByDocumentId = [];
+
+        foreach ($esDocumentsPerElement as $objectId => $esDocuments) {
+            foreach ($esDocuments as $esDocument) {
+                $elementIdsByDocumentId[(string) $esDocument->getId()] = $objectId;
+            }
+        }
+
+        $failedElementIds = [];
+
+        foreach ($exception->getActionExceptions() as $actionException) {
+            $documentId = $actionException->getAction()->getMetadata()['_id'] ?? null;
+
+            if ($documentId === null || !isset($elementIdsByDocumentId[$documentId])) {
+                return array_keys($esDocumentsPerElement);
+            }
+
+            $failedElementIds[$elementIdsByDocumentId[$documentId]] = true;
+        }
+
+        return array_keys($failedElementIds);
+    }
+
+    /**
+     * @param PostDocumentCreateEvent[] $events
+     */
+    private function dispatchPosts(array $events): void
+    {
+        foreach ($events as $event) {
+            $this->dispatchPost($event);
+        }
     }
 
     private function dispatchPost(PostDocumentCreateEvent $event): void
