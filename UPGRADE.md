@@ -16,6 +16,7 @@
 - `\Valantic\ElasticaBridgeBundle\Document\DocumentInterface::getListingInstance()` now returns `DataObject\Listing|Document\Listing|Asset\Listing` instead of `AbstractListing`; update the return type of any overrides
 - `\Valantic\ElasticaBridgeBundle\Index\IndexInterface::getBatchSize()` now defaults to `500` and controls how many IDs are loaded per page when dispatching messages
 - `\Valantic\ElasticaBridgeBundle\Index\IndexInterface::shouldPopulateInSubprocesses()` was removed; remove any implementations
+- `\Valantic\ElasticaBridgeBundle\Document\DocumentRelationAwareDataObjectTrait` no longer reads the static `\Valantic\ElasticaBridgeBundle\Command\Index::$isPopulating`. It gets the `\Valantic\ElasticaBridgeBundle\Service\LockService` through the `#[Required]` setter `setIndexingLockService()`, so document classes using the trait must be autowired services. If you instantiate them yourself, call the setter
 
 ## Upgrade from v3 to v4
 
