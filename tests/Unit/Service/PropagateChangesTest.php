@@ -6,7 +6,9 @@ namespace Valantic\ElasticaBridgeBundle\Tests\Unit\Service;
 
 use Elastica\Document;
 use Elastica\Index;
-use Elastica\Query\BoolQuery;
+use Elastica\Query;
+use Elastica\Result;
+use Elastica\ResultSet;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\MockInterface;
 use PHPUnit\Framework\TestCase;
@@ -17,6 +19,7 @@ use Symfony\Component\Messenger\MessageBusInterface;
 use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Enum\DocumentType;
 use Valantic\ElasticaBridgeBundle\Enum\ElementInIndexOperation;
+use Valantic\ElasticaBridgeBundle\Index\DocumentContext;
 use Valantic\ElasticaBridgeBundle\Index\IndexContext;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\RefreshElementInIndex;
@@ -142,28 +145,35 @@ class PropagateChangesTest extends TestCase
         $this->service->handle($element);
     }
 
-    public function testHandleIndexWithContextsReplacesAllDocumentsOfElement(): void
+    public function testHandleIndexWithContextsWritesCurrentDocumentsBeforeDeletingStaleOnes(): void
     {
         $element = PimcoreElementFactory::createDataObject(42);
         $esDocuments = [new Document('object42_de'), new Document('object42_fr')];
+        [$index, $elasticaIndex] = $this->mockContextIndex($element, existingIds: ['object42_de', 'object42_it'], esDocuments: $esDocuments);
 
-        [$index, $elasticaIndex] = $this->mockContextIndex($element, $esDocuments);
-
+        $elasticaIndex->shouldReceive('addDocuments')->once()->with($esDocuments)->ordered();
         $elasticaIndex
-            ->shouldReceive('deleteByQuery')
+            ->shouldReceive('deleteDocuments')
             ->once()
-            ->with(\Mockery::on(static fn (BoolQuery $query): bool => $query->toArray() === [
-                'bool' => [
-                    'filter' => [
-                        ['term' => [DocumentInterface::META_ID => 42]],
-                        ['term' => [DocumentInterface::META_TYPE => DocumentType::DATA_OBJECT->value]],
-                    ],
-                ],
-            ]), ['conflicts' => 'proceed'])
+            ->with(\Mockery::on(static fn (array $documents): bool => array_map(static fn (Document $document): string => (string) $document->getId(), $documents) === ['object42_it']))
+            ->ordered()
         ;
-        $elasticaIndex->shouldReceive('addDocuments')->once()->with($esDocuments);
 
         $this->expectRefreshedElementInIndexEvents(ElementInIndexOperation::UPDATE);
+
+        $this->service->handleIndex($element, $index, $elasticaIndex);
+    }
+
+    public function testHandleIndexWithContextsInsertsElementThatIsNotInTheIndex(): void
+    {
+        $element = PimcoreElementFactory::createDataObject(42);
+        $esDocuments = [new Document('object42_de')];
+        [$index, $elasticaIndex] = $this->mockContextIndex($element, existingIds: [], esDocuments: $esDocuments);
+
+        $elasticaIndex->shouldReceive('addDocuments')->once()->with($esDocuments);
+        $elasticaIndex->shouldNotReceive('deleteDocuments');
+
+        $this->expectRefreshedElementInIndexEvents(ElementInIndexOperation::INSERT);
 
         $this->service->handleIndex($element, $index, $elasticaIndex);
     }
@@ -171,23 +181,76 @@ class PropagateChangesTest extends TestCase
     public function testHandleIndexWithContextsDeletesDocumentsWhenElementHasNoDocumentContexts(): void
     {
         $element = PimcoreElementFactory::createDataObject(42);
+        [$index, $elasticaIndex] = $this->mockContextIndex($element, existingIds: ['object42_de', 'object42_fr'], esDocuments: null);
 
-        [$index, $elasticaIndex] = $this->mockContextIndex($element, []);
-
-        $elasticaIndex->shouldReceive('deleteByQuery')->once();
         $elasticaIndex->shouldNotReceive('addDocuments');
+        $elasticaIndex
+            ->shouldReceive('deleteDocuments')
+            ->once()
+            ->with(\Mockery::on(static fn (array $documents): bool => array_map(static fn (Document $document): string => (string) $document->getId(), $documents) === ['object42_de', 'object42_fr']))
+        ;
 
         $this->expectRefreshedElementInIndexEvents(ElementInIndexOperation::DELETE);
 
         $this->service->handleIndex($element, $index, $elasticaIndex);
     }
 
+    public function testHandleIndexWithContextsDoesNothingForElementThatIsNeitherIndexedNorInTheIndex(): void
+    {
+        $element = PimcoreElementFactory::createDataObject(42);
+        [$index, $elasticaIndex] = $this->mockContextIndex($element, existingIds: [], esDocuments: null);
+
+        $elasticaIndex->shouldNotReceive('addDocuments');
+        $elasticaIndex->shouldNotReceive('deleteDocuments');
+
+        $this->expectRefreshedElementInIndexEvents(ElementInIndexOperation::NOTHING);
+
+        $this->service->handleIndex($element, $index, $elasticaIndex);
+    }
+
+    public function testHandleIndexWithContextsKeepsExistingDocumentsWhenWritingFails(): void
+    {
+        $element = PimcoreElementFactory::createDataObject(42);
+        [$index, $elasticaIndex] = $this->mockContextIndex($element, existingIds: ['object42_de', 'object42_it'], esDocuments: [new Document('object42_de')]);
+
+        $exception = new \RuntimeException('bulk failed');
+        $elasticaIndex->shouldReceive('addDocuments')->once()->andThrow($exception);
+        $elasticaIndex->shouldNotReceive('deleteDocuments');
+        $this->eventDispatcher->shouldReceive('dispatch')->once()->with(\Mockery::type(RefreshedElementInIndexEvent::class), ElasticaBridgeEvents::PRE_REFRESH_ELEMENT_IN_INDEX)->andReturnArg(0);
+
+        $this->expectExceptionObject($exception);
+
+        $this->service->handleIndex($element, $index, $elasticaIndex);
+    }
+
+    public function testHandleIndexWithContextsNormalizesAfterPreRefreshEvent(): void
+    {
+        $element = PimcoreElementFactory::createDataObject(42);
+        $esDocuments = [new Document('object42_de')];
+        [$index, $elasticaIndex] = $this->mockContextIndex($element, existingIds: [], esDocuments: $esDocuments);
+
+        $this->eventDispatcher
+            ->shouldReceive('dispatch')
+            ->once()
+            ->with(\Mockery::type(RefreshedElementInIndexEvent::class), ElasticaBridgeEvents::PRE_REFRESH_ELEMENT_IN_INDEX)
+            ->andReturnArg(0)
+            ->globally()
+            ->ordered()
+        ;
+        $this->documentHelper->shouldReceive('elementToContextDocuments')->globally()->ordered();
+        $elasticaIndex->shouldReceive('addDocuments')->once();
+        $this->eventDispatcher->shouldReceive('dispatch')->once()->with(\Mockery::type(RefreshedElementInIndexEvent::class), ElasticaBridgeEvents::POST_REFRESH_ELEMENT_IN_INDEX)->andReturnArg(0);
+
+        $this->service->handleIndex($element, $index, $elasticaIndex);
+    }
+
     /**
-     * @param Document[] $esDocuments
+     * @param string[] $existingIds IDs of the element's documents that are already in the index
+     * @param Document[]|null $esDocuments the element's documents, or null if it has no document contexts
      *
      * @return array{IndexInterface&MockInterface, Index&MockInterface}
      */
-    private function mockContextIndex(AbstractElement $element, array $esDocuments): array
+    private function mockContextIndex(AbstractElement $element, array $existingIds, ?array $esDocuments): array
     {
         $document = \Mockery::mock(DocumentInterface::class);
         $document->shouldReceive('getType')->andReturn(DocumentType::DATA_OBJECT);
@@ -198,16 +261,43 @@ class PropagateChangesTest extends TestCase
         $index->shouldReceive('subscribedDocuments')->andReturn([$document::class]);
         $index->shouldReceive('getContexts')->andReturn([new IndexContext(language: 'de'), new IndexContext(language: 'fr')]);
 
+        $contexts = $esDocuments === null ? [] : [[new IndexContext(language: 'de'), new DocumentContext(language: 'de')]];
         $this->documentHelper->shouldReceive('setTenantIfNeeded')->once();
         $this->documentHelper->shouldReceive('resetTenantIfNeeded')->once();
-        $this->documentHelper
-            ->shouldReceive('elementToDocumentsForContexts')
+        $this->documentHelper->shouldReceive('resolveDocumentContexts')->once()->with($document, $element, $index)->andReturn($contexts);
+
+        if ($esDocuments === null) {
+            $this->documentHelper->shouldNotReceive('elementToContextDocuments');
+        } else {
+            $this->documentHelper->shouldReceive('elementToContextDocuments')->once()->with($document, $element, $contexts)->andReturn($esDocuments)->byDefault();
+        }
+
+        $resultSet = \Mockery::mock(ResultSet::class);
+        $resultSet->shouldReceive('getResults')->andReturn(array_map(static fn (string $id): Result => new Result(['_id' => $id]), $existingIds));
+
+        $elasticaIndex = \Mockery::mock(Index::class);
+        $elasticaIndex->shouldReceive('refresh')->once()->globally()->ordered();
+        $elasticaIndex
+            ->shouldReceive('search')
             ->once()
-            ->with($document, $element, $index)
-            ->andReturn($esDocuments)
+            ->with(\Mockery::on(static fn (Query $query): bool => $query->toArray() === [
+                'query' => [
+                    'bool' => [
+                        'filter' => [
+                            ['term' => [DocumentInterface::META_ID => 42]],
+                            ['term' => [DocumentInterface::META_TYPE => DocumentType::DATA_OBJECT->value]],
+                        ],
+                    ],
+                ],
+                '_source' => false,
+                'size' => 10_000,
+            ]))
+            ->andReturn($resultSet)
+            ->globally()
+            ->ordered()
         ;
 
-        return [$index, \Mockery::mock(Index::class)];
+        return [$index, $elasticaIndex];
     }
 
     private function expectRefreshedElementInIndexEvents(ElementInIndexOperation $operation): void

@@ -57,7 +57,7 @@ By default, every Pimcore element results in one Elasticsearch document. To stor
 - `getNormalizedForContext` replaces `getNormalized` and receives both contexts. By default, it returns `getNormalized`.
 - `getIdForContext` returns the Elasticsearch ID. By default, the tenant, language, and country are appended to `getElasticsearchId`.
 
-The documents contain the context in the `__tenant`, `__language`, and `__country` fields, which can be used to filter search results. When a Pimcore element changes, all its documents are deleted and re-created.
+The documents contain the context in the `__tenant`, `__language`, and `__country` fields, which can be used to filter search results. When a Pimcore element changes, the documents of its current contexts are written and then the documents of contexts it no longer has are deleted. To find them, the Elasticsearch index is refreshed first so that recently written documents are visible to the search.
 
 ```php
 // Index
