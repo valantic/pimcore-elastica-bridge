@@ -76,8 +76,10 @@ class CreateDocumentHandlerTest extends TestCase
 
         $documentHelper = \Mockery::mock(DocumentHelper::class);
         $documentHelper->shouldReceive('setTenantIfNeeded');
-        $documentHelper->shouldReceive('elementToDocument')->andReturnUsing(
-            static fn (DocumentInterface $document, StubDataObject $element): Document => new Document((string) $element->getId()),
+        $documentHelper->shouldReceive('elementToDocumentsForContexts')->andReturnUsing(
+            static fn (DocumentInterface $document, StubDataObject $element): array => $document->shouldIndex($element)
+                ? [new Document((string) $element->getId())]
+                : [],
         );
 
         $this->configurationRepository = \Mockery::mock(ConfigurationRepository::class);
