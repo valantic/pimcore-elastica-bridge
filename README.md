@@ -13,7 +13,7 @@ The only job of the bundle is to store Pimcore elements (assets, documents, data
 
 1. `composer require valantic/pimcore-elastica-bridge`
 1. Edit `config/bundles.php` and add `\Valantic\ElasticaBridgeBundle\ValanticElasticaBridgeBundle::class => ['all' => true],`
-1. Configure the connection to your Elasticsearch cluster as seen in [`example/app/config/config.yaml`](example/app/config/config.yaml)
+1. Configure the connection to your Elasticsearch cluster as seen in [`example/app/config/config.yaml`](/docs/example/config/config.yaml)
 1. Don't forget to register your newly created services (implementing `IndexInterface` etc.) in your `services.yaml`
    ```yml
    App\Elasticsearch\:
@@ -23,7 +23,7 @@ The only job of the bundle is to store Pimcore elements (assets, documents, data
 
 ## Usage
 
-Please see the [`docs/example/`](docs/example/) folder for a complete example. The following steps link to the corresponding section in the example and explain in a bit more detail what they are doing.
+Please see the [`docs/example/`](/docs/example) folder for a complete example. The following steps link to the corresponding section in the example and explain in a bit more detail what they are doing.
 
 ### Define an index
 
@@ -49,6 +49,38 @@ See the [`ProductIndex` provided in the example](docs/example/src/Elasticsearch/
 
 See the [`ProductIndexDocument` provided in the example](docs/example/src/Elasticsearch/Index/Product/Document/ProductIndexDocument.php) for more details.
 
+### Multiple documents per element
+
+By default, every Pimcore element results in one Elasticsearch document. To store one document per e.g. tenant, language and country in the same index, return `IndexContext` instances from the index's `getContexts()`. For every `IndexContext`, the document's `getDocumentContexts()` returns one `DocumentContext` per Elasticsearch document to create:
+
+- `getDocumentContexts` replaces `shouldIndex`. By default, it returns a single `DocumentContext` with the `IndexContext`'s tenant and language if `shouldIndex` returns true.
+- `getNormalizedForContext` replaces `getNormalized` and receives both contexts. By default, it returns `getNormalized`.
+- `getIdForContext` returns the Elasticsearch ID. By default, the tenant, language, and country are appended to `getElasticsearchId`.
+
+The documents contain the context in the `__tenant`, `__language`, and `__country` fields, which can be used to filter search results. When a Pimcore element changes, the documents of its current contexts are written and then the documents of contexts it no longer has are deleted. To find them, the Elasticsearch index is refreshed first so that recently written documents are visible to the search.
+
+```php
+// Index
+public function getContexts(): array
+{
+    return [new IndexContext(language: 'de'), new IndexContext(language: 'fr')];
+}
+
+// Document
+public function getDocumentContexts(AbstractElement $element, IndexContext $indexContext): array
+{
+    return array_map(
+        static fn (string $country): DocumentContext => new DocumentContext(language: $indexContext->language, country: $country),
+        $element->isPublished() ? $element->getVisibleCountries() : [],
+    );
+}
+
+public function getNormalizedForContext(AbstractElement $element, IndexContext $indexContext, DocumentContext $documentContext): array
+{
+    return ['name' => $element->getName($documentContext->language)];
+}
+```
+
 ## Configuration
 
 ```yaml
@@ -70,7 +102,17 @@ valantic_elastica_bridge:
 
         # If true, when a document fails to be indexed, it will be skipped and indexing continue with the next document. If false, indexing that index will be aborted.
         should_skip_failing_documents: false
+
+        # Interval in seconds at which the scheduler should be executed
+        interval:             600
+
+        # If true, the built-in Symfony Scheduler provider is registered and triggers indexing automatically.
+        scheduler_enabled:    false
 ```
+
+### Async Configuration
+This bundle supports utilizing the message queue for indexing. To enable this feature, you can find the necessary configuration in the [async](async.md) documentation.
+
 ## Events
 
 This project uses Symfony's event dispatcher. Here are the events that you can listen to:
@@ -121,6 +163,20 @@ Options:
   -c, --check                    Perform post-populate checks
   -h, --help                     Display this help message
 ```
+
+### HTTP endpoint
+
+Pimcore admins can queue the population of an index via `POST /admin/elastica-bridge/refresh-index` (route `admin_elastica_bridge_refresh_index`). This requires an async `elastica_bridge_populate` transport (see [async.md](./async.md)); with the default `sync://` transport the endpoint responds with `409 Conflict`.
+
+The route is not loaded automatically, import it in your project:
+
+```yaml
+# config/routes/valantic_elastica_bridge.yaml
+valantic_elastica_bridge:
+  resource: '@ValanticElasticaBridgeBundle/Resources/config/pimcore/routing.yaml'
+```
+
+Send the index name as `indexName` and a CSRF token for the ID `elastica_bridge_refresh_index` as `_token` or in the `X-CSRF-Token` header, e.g. `csrf_token('elastica_bridge_refresh_index')` in Twig. The endpoint returns `202` when queued, `404` for unknown indices and `409` if the population could not be started (e.g. cooldown or a running population).
 
 ### Specific
 

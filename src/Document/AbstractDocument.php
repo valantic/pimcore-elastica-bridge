@@ -17,10 +17,11 @@ use Pimcore\Model\DataObject\AbstractObject;
 use Pimcore\Model\DataObject\Folder;
 use Pimcore\Model\Document as PimcoreDocument;
 use Pimcore\Model\Element\AbstractElement;
-use Pimcore\Model\Listing\AbstractListing;
 use Valantic\ElasticaBridgeBundle\Enum\DocumentType;
 use Valantic\ElasticaBridgeBundle\Exception\DocumentType\PimcoreListingClassNotFoundException;
 use Valantic\ElasticaBridgeBundle\Exception\DocumentType\UnknownPimcoreElementType;
+use Valantic\ElasticaBridgeBundle\Index\DocumentContext;
+use Valantic\ElasticaBridgeBundle\Index\IndexContext;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 
 /**
@@ -52,18 +53,48 @@ abstract class AbstractDocument implements DocumentInterface
         throw new UnknownPimcoreElementType($documentType?->value);
     }
 
+    /**
+     * Appends all context fields to getElasticsearchId(), keeping empty positions for null fields
+     * so that e.g. a tenant and a language with the same value result in different IDs.
+     */
+    public static function getIdForContext(AbstractElement $element, DocumentContext $documentContext): string
+    {
+        $contextParts = [$documentContext->tenant, $documentContext->language, $documentContext->country];
+
+        if ($contextParts === [null, null, null]) {
+            return self::getElasticsearchId($element);
+        }
+
+        return implode('_', [self::getElasticsearchId($element), ...array_map(strval(...), $contextParts)]);
+    }
+
+    public function getNormalizedForContext(AbstractElement $element, IndexContext $indexContext, DocumentContext $documentContext): array
+    {
+        return $this->getNormalized($element);
+    }
+
+    public function getDocumentContexts(AbstractElement $element, IndexContext $indexContext): array
+    {
+        return $this->shouldIndex($element)
+            ? [new DocumentContext($indexContext->tenant, $indexContext->language)]
+            : [];
+    }
+
     public function treatObjectVariantsAsDocuments(): bool
     {
         return false;
     }
 
-    public function getListingInstance(IndexInterface $index): AbstractListing
+    public function getListingInstance(IndexInterface $index): DataObject\Listing|PimcoreDocument\Listing|Listing
     {
-        /** @var class-string<AbstractListing> $listingClass */
+        /** @var class-string<DataObject\Listing|PimcoreDocument\Listing|Listing> $listingClass */
         $listingClass = $this->getListingClass();
 
-        /** @var AbstractListing $listingInstance */
         $listingInstance = new $listingClass();
+
+        if ($this->getPathCondition() !== null) {
+            $listingInstance->addConditionParam('path LIKE ?', $this->getPathCondition() . '%');
+        }
 
         if ($this->getIndexListingCondition() !== null) {
             $listingInstance->setCondition($this->getIndexListingCondition());
@@ -156,6 +187,11 @@ abstract class AbstractDocument implements DocumentInterface
         } catch (\UnhandledMatchError) {
             throw new UnknownPimcoreElementType($this->getType()->value);
         }
+    }
+
+    protected function getPathCondition(): ?string
+    {
+        return null;
     }
 
     protected function getIndexListingCondition(): ?string

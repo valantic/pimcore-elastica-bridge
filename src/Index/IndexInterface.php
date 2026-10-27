@@ -11,6 +11,7 @@ use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Document\DocumentNormalizerTrait;
 use Valantic\ElasticaBridgeBundle\Enum\IndexBlueGreenSuffix;
 use Valantic\ElasticaBridgeBundle\Exception\Index\BlueGreenIndicesIncorrectlySetupException;
+use Valantic\ElasticaBridgeBundle\Service\LockService;
 
 interface IndexInterface
 {
@@ -18,6 +19,18 @@ interface IndexInterface
      * The name of the Elasticsearch index.
      */
     public function getName(): string;
+
+    /**
+     * The contexts (e.g. tenant and language) this index stores documents for.
+     * All contexts share this index; DocumentInterface::getDocumentContexts() decides which documents are created per context.
+     *
+     * Returning an empty array (default) creates exactly one document per Pimcore element.
+     *
+     * @return IndexContext[]
+     *
+     * @see DocumentInterface::getDocumentContexts()
+     */
+    public function getContexts(): array;
 
     /**
      * The number of Pimcore elements to be stored in the index in one batch.
@@ -28,10 +41,27 @@ interface IndexInterface
     public function getBatchSize(): int;
 
     /**
-     * Defines if the the index should be populated in subprocesses.
-     * This is useful for large indexes to avoid memory issues.
+     * Number of element IDs packed into a single CreateDocumentMessage.
+     * Higher values reduce message-queue and HTTP overhead during populate.
      */
-    public function shouldPopulateInSubprocesses(): bool;
+    public function getMessageBatchSize(): int;
+
+    /**
+     * Elasticsearch index settings applied while the inactive index is being populated.
+     * Disabling refresh and replicas during bulk indexing significantly speeds up ingestion.
+     * Only applied to blue/green indices; other indices are live while being populated.
+     *
+     * @return array<string, mixed>
+     */
+    public function getBulkIndexingSettings(): array;
+
+    /**
+     * Elasticsearch index settings restored on the inactive blue/green index after population completes (before the alias switch).
+     * A null value resets the setting to the Elasticsearch default.
+     *
+     * @return array<string, mixed>
+     */
+    public function getPostBulkIndexingSettings(): array;
 
     /**
      * Defines the mapping to be used for this index.
@@ -97,11 +127,10 @@ interface IndexInterface
      * When indexing DataObjects based on usage in Pimcore Documents, the index is queried during indexing.
      * In these instances, the index needs to be refreshed in order for newly-added data to be available immediately.
      *
-     * While populating is happening (as indicated by IndexCommand::$isPopulating), use the inactive index.
+     * While populating is happening (as indicated by LockService::isIndexingLocked()), use the inactive index.
      *
      * @see DocumentNormalizerTrait::$relatedObjects
-     * @see IndexCommand
-     * @see IndexCommand::$isPopulating
+     * @see LockService::isIndexingLocked()
      * @see IndexInterface::getBlueGreenInactiveElasticaIndex()
      */
     public function refreshIndexAfterEveryDocumentWhenPopulating(): bool;

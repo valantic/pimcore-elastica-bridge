@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Valantic\ElasticaBridgeBundle\Tests\Unit\Index;
 
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
@@ -29,6 +30,18 @@ class AbstractIndexTest extends TestCase
         $this->documentRepository = \Mockery::mock(DocumentRepository::class);
     }
 
+    /**
+     * @return iterable<string, array{array<string, mixed>}>
+     */
+    public static function configuredSettingsProvider(): iterable
+    {
+        yield 'nested' => [['index' => ['refresh_interval' => '30s', 'number_of_replicas' => 0]]];
+
+        yield 'flat' => [['refresh_interval' => '30s', 'number_of_replicas' => 0]];
+
+        yield 'dotted' => [['index.refresh_interval' => '30s', 'index.number_of_replicas' => 0]];
+    }
+
     public function testGetMappingReturnsMetaFields(): void
     {
         $index = $this->createTestIndex();
@@ -39,6 +52,16 @@ class AbstractIndexTest extends TestCase
         $this->assertArrayHasKey(DocumentInterface::META_ID, $mapping['properties']);
         $this->assertArrayHasKey(DocumentInterface::META_TYPE, $mapping['properties']);
         $this->assertArrayHasKey(DocumentInterface::META_SUB_TYPE, $mapping['properties']);
+        $this->assertSame('keyword', $mapping['properties'][DocumentInterface::META_TENANT]['type']);
+        $this->assertSame('keyword', $mapping['properties'][DocumentInterface::META_LANGUAGE]['type']);
+        $this->assertSame('keyword', $mapping['properties'][DocumentInterface::META_COUNTRY]['type']);
+    }
+
+    public function testGetContextsReturnsEmptyArrayByDefault(): void
+    {
+        $index = $this->createTestIndex();
+
+        $this->assertSame([], $index->getContexts());
     }
 
     public function testGetSettingsReturnsEmptyArrayByDefault(): void
@@ -48,6 +71,22 @@ class AbstractIndexTest extends TestCase
         $this->assertSame([], $index->getSettings());
     }
 
+    public function testPostBulkIndexingSettingsResetToElasticsearchDefaultsWhenNotConfigured(): void
+    {
+        $this->assertSame(['refresh_interval' => null, 'number_of_replicas' => null], $this->createTestIndex()->getPostBulkIndexingSettings());
+    }
+
+    /**
+     * @param array<string, mixed> $settings
+     */
+    #[DataProvider('configuredSettingsProvider')]
+    public function testPostBulkIndexingSettingsRestoreConfiguredSettings(array $settings): void
+    {
+        $index = $this->createTestIndex(settings: $settings);
+
+        $this->assertSame(['refresh_interval' => '30s', 'number_of_replicas' => 0], $index->getPostBulkIndexingSettings());
+    }
+
     public function testHasMappingReturnsTrueWhenMappingExists(): void
     {
         $index = $this->createTestIndex();
@@ -55,18 +94,11 @@ class AbstractIndexTest extends TestCase
         $this->assertTrue($index->hasMapping());
     }
 
-    public function testGetBatchSizeReturnsDefault5000(): void
+    public function testGetBatchSizeReturnsDefault500(): void
     {
         $index = $this->createTestIndex();
 
-        $this->assertSame(5000, $index->getBatchSize());
-    }
-
-    public function testShouldPopulateInSubprocessesReturnsFalseByDefault(): void
-    {
-        $index = $this->createTestIndex();
-
-        $this->assertFalse($index->shouldPopulateInSubprocesses());
+        $this->assertSame(500, $index->getBatchSize());
     }
 
     public function testGetCreateArgumentsIncludesMappingsAndSettings(): void
@@ -147,15 +179,21 @@ class AbstractIndexTest extends TestCase
         $this->assertNull($result);
     }
 
-    private function createTestIndex(array $allowedDocuments = []): AbstractIndex
+    private function createTestIndex(array $allowedDocuments = [], array $settings = []): AbstractIndex
     {
-        return new class($this->client, $this->documentRepository, $allowedDocuments) extends AbstractIndex {
+        return new class($this->client, $this->documentRepository, $allowedDocuments, $settings) extends AbstractIndex {
             public function __construct(
                 ElasticsearchClient $client,
                 DocumentRepository $documentRepository,
                 private readonly array $allowedDocuments = [],
+                private readonly array $settings = [],
             ) {
                 parent::__construct($client, $documentRepository);
+            }
+
+            public function getSettings(): array
+            {
+                return $this->settings;
             }
 
             public function getName(): string

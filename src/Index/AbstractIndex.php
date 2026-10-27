@@ -35,11 +35,25 @@ abstract class AbstractIndex implements IndexInterface
                 DocumentInterface::META_SUB_TYPE => [
                     'type' => 'keyword',
                 ],
+                DocumentInterface::META_TENANT => [
+                    'type' => 'keyword',
+                ],
+                DocumentInterface::META_LANGUAGE => [
+                    'type' => 'keyword',
+                ],
+                DocumentInterface::META_COUNTRY => [
+                    'type' => 'keyword',
+                ],
             ],
         ];
     }
 
     public function getSettings(): array
+    {
+        return [];
+    }
+
+    public function getContexts(): array
     {
         return [];
     }
@@ -59,12 +73,33 @@ abstract class AbstractIndex implements IndexInterface
 
     public function getBatchSize(): int
     {
-        return 5000;
+        return 500;
     }
 
-    public function shouldPopulateInSubprocesses(): bool
+    public function getMessageBatchSize(): int
     {
-        return false;
+        return 50;
+    }
+
+    public function getBulkIndexingSettings(): array
+    {
+        return [
+            'refresh_interval' => '-1',
+            'number_of_replicas' => 0,
+        ];
+    }
+
+    public function getPostBulkIndexingSettings(): array
+    {
+        $settings = $this->getSettings();
+        // getSettings() may nest the settings under "index", or use flat or dotted keys
+        $configured = static fn (string $name): mixed => $settings['index'][$name] ?? $settings['index.' . $name] ?? $settings[$name] ?? null;
+
+        // null resets a setting to the Elasticsearch default
+        return [
+            'refresh_interval' => $configured('refresh_interval'),
+            'number_of_replicas' => $configured('number_of_replicas'),
+        ];
     }
 
     public function getElasticaIndex(): Index
