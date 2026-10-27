@@ -21,12 +21,47 @@ interface IndexInterface
     public function getName(): string;
 
     /**
+     * The contexts (e.g. tenant and language) this index stores documents for.
+     * All contexts share this index; DocumentInterface::getDocumentContexts() decides which documents are created per context.
+     *
+     * Returning an empty array (default) creates exactly one document per Pimcore element.
+     *
+     * @return IndexContext[]
+     *
+     * @see DocumentInterface::getDocumentContexts()
+     */
+    public function getContexts(): array;
+
+    /**
      * The number of Pimcore elements to be stored in the index in one batch.
      * This is used e.g. when populating the index.
      *
      * @see IndexCommand
      */
     public function getBatchSize(): int;
+
+    /**
+     * Number of element IDs packed into a single CreateDocumentMessage.
+     * Higher values reduce message-queue and HTTP overhead during populate.
+     */
+    public function getMessageBatchSize(): int;
+
+    /**
+     * Elasticsearch index settings applied while the inactive index is being populated.
+     * Disabling refresh and replicas during bulk indexing significantly speeds up ingestion.
+     * Only applied to blue/green indices; other indices are live while being populated.
+     *
+     * @return array<string, mixed>
+     */
+    public function getBulkIndexingSettings(): array;
+
+    /**
+     * Elasticsearch index settings restored on the inactive blue/green index after population completes (before the alias switch).
+     * A null value resets the setting to the Elasticsearch default.
+     *
+     * @return array<string, mixed>
+     */
+    public function getPostBulkIndexingSettings(): array;
 
     /**
      * Defines the mapping to be used for this index.

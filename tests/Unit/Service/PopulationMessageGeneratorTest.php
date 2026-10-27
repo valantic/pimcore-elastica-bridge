@@ -8,6 +8,8 @@ use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\MockInterface;
 use PHPUnit\Framework\TestCase;
 use Pimcore\Helper\LongRunningHelper;
+use Pimcore\Model\Asset\Image;
+use Pimcore\Model\Asset\Video;
 use Pimcore\Model\DataObject\Listing;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -162,15 +164,64 @@ class PopulationMessageGeneratorTest extends TestCase
         $this->assertFalse($this->createLockService()->createLockFromKey($this->lockService->getKey('products', 'cooldown'))->acquire(), 'cooldown should be active');
     }
 
+    public function testChunkIdsByTypeNeverMixesElementTypes(): void
+    {
+        $chunks = $this->chunkIdsByType([
+            1 => Image::class,
+            2 => Video::class,
+            3 => Image::class,
+            4 => Image::class,
+            5 => Video::class,
+            6 => Image::class,
+        ], 2);
+
+        $this->assertSame([
+            [Image::class, [1, 3]],
+            [Video::class, [2, 5]],
+            [Image::class, [4, 6]],
+        ], $chunks);
+    }
+
+    public function testChunkIdsByTypeFlushesPartialChunks(): void
+    {
+        $chunks = $this->chunkIdsByType([
+            1 => Image::class,
+            2 => Image::class,
+            3 => Image::class,
+            4 => Video::class,
+        ], 2);
+
+        $this->assertSame([
+            [Image::class, [1, 2]],
+            [Image::class, [3]],
+            [Video::class, [4]],
+        ], $chunks);
+    }
+
+    public function testChunkIdsByTypeYieldsNothingForNoElements(): void
+    {
+        $this->assertSame([], $this->chunkIdsByType([], 50));
+    }
+
     /**
-     * @param list<string> $allowedDocuments
+     * @param array<int, class-string> $elementTypes
+     *
+     * @return list<array{class-string, int[]}>
      */
+    private function chunkIdsByType(array $elementTypes, int $size): array
+    {
+        $method = new \ReflectionMethod(PopulationMessageGenerator::class, 'chunkIdsByType');
+
+        return iterator_to_array($method->invoke(null, $elementTypes, $size), false);
+    }
+
     private function createIndex(array $allowedDocuments = ['product_document']): IndexInterface&MockInterface
     {
         $index = \Mockery::mock(IndexInterface::class);
         $index->shouldReceive('getName')->andReturn('products');
         $index->shouldReceive('getAllowedDocuments')->andReturn($allowedDocuments);
         $index->shouldReceive('getBatchSize')->andReturn(500);
+        $index->shouldReceive('getMessageBatchSize')->andReturn(50);
 
         return $index;
     }

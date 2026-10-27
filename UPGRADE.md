@@ -17,6 +17,17 @@
 - `\Valantic\ElasticaBridgeBundle\Index\IndexInterface::getBatchSize()` now defaults to `500` and controls how many IDs are loaded per page when dispatching messages
 - `\Valantic\ElasticaBridgeBundle\Index\IndexInterface::shouldPopulateInSubprocesses()` was removed; remove any implementations
 - `\Valantic\ElasticaBridgeBundle\Document\DocumentRelationAwareDataObjectTrait` no longer reads the static `\Valantic\ElasticaBridgeBundle\Command\Index::$isPopulating`. It gets the `\Valantic\ElasticaBridgeBundle\Service\LockService` through the `#[Required]` setter `setIndexingLockService()`, so document classes using the trait must be autowired services. If you instantiate them yourself, call the setter
+- The Symfony Scheduler provider is only registered when `valantic_elastica_bridge.indexing.scheduler_enabled` is `true`
+- Indices can store multiple documents per Pimcore element, see [README.md](./README.md#multiple-documents-per-element). If you implement the interfaces without extending the abstract classes, add the new methods:
+  - `\Valantic\ElasticaBridgeBundle\Index\IndexInterface::getContexts()`; return `[]` to keep one document per element
+  - `\Valantic\ElasticaBridgeBundle\Document\DocumentInterface::getIdForContext()`, `getNormalizedForContext()`, and `getDocumentContexts()`
+- `\Valantic\ElasticaBridgeBundle\Index\AbstractIndex::getMapping()` now also maps `__tenant`, `__language`, and `__country` as `keyword`
+- Population batches several elements into one `\Valantic\ElasticaBridgeBundle\Messenger\Message\CreateDocumentMessage` and indexes them with one bulk request. If you implement `\Valantic\ElasticaBridgeBundle\Index\IndexInterface` without extending `\Valantic\ElasticaBridgeBundle\Index\AbstractIndex`, add the new methods:
+  - `getMessageBatchSize()`: the number of elements per message (`AbstractIndex` defaults to `50`)
+  - `getBulkIndexingSettings()`: settings applied to the inactive blue/green index while it is populated (`AbstractIndex` defaults to `refresh_interval: -1` and `number_of_replicas: 0`); return `[]` to keep the index settings unchanged
+  - `getPostBulkIndexingSettings()`: settings restored on the inactive blue/green index before the alias switch (`AbstractIndex` restores `refresh_interval` and `number_of_replicas` from `getSettings()`, or resets them to the Elasticsearch defaults if they are not configured there); return `[]` to restore nothing
+- `\Valantic\ElasticaBridgeBundle\Messenger\Message\CreateDocumentMessage::$objectId` was replaced by `$objectIds` (`int[]`). All IDs in one message share the same `$objectType`
+- `\Valantic\ElasticaBridgeBundle\Model\Event\PreAddDocumentToQueueEvent::$count` is the number of messages, which now carry several elements each. `PostDocumentCreateEvent` is still dispatched once per element, so count elements, not messages, when tracking the remaining work (see the example in [docs/example](./docs/example/src/Service/PopulateService.php))
 
 ## Upgrade from v3 to v4
 

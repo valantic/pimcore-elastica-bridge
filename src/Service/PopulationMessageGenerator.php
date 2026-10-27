@@ -39,6 +39,31 @@ class PopulationMessageGenerator
     ) {
     }
 
+    /**
+     * Groups IDs by element type into chunks of at most $size, as a CreateDocumentMessage carries a single element type.
+     *
+     * @param iterable<int, class-string> $elementTypes element ID => element type
+     *
+     * @return \Generator<int, array{class-string, int[]}>
+     */
+    private static function chunkIdsByType(iterable $elementTypes, int $size): \Generator
+    {
+        $chunks = [];
+
+        foreach ($elementTypes as $id => $elementType) {
+            $chunks[$elementType][] = $id;
+
+            if (count($chunks[$elementType]) >= $size) {
+                yield [$elementType, $chunks[$elementType]];
+                unset($chunks[$elementType]);
+            }
+        }
+
+        foreach ($chunks as $elementType => $ids) {
+            yield [$elementType, $ids];
+        }
+    }
+
     public function getDocumentCount(IndexInterface $indexConfig): int
     {
         $allowedDocuments = $indexConfig->getAllowedDocuments();
@@ -57,7 +82,9 @@ class PopulationMessageGenerator
     public function generate(IndexInterface $indexConfig, bool $ignoreCooldown = false): \Generator
     {
         $allowedDocuments = $indexConfig->getAllowedDocuments();
-        $batchSize = $indexConfig->getBatchSize(); // Define the batch size
+        $batchSize = $indexConfig->getBatchSize();
+        $messageBatchSize = $indexConfig->getMessageBatchSize();
+        // Number of PopulateIndexMessages to accumulate before yielding to the transport.
         $yieldSize = 10;
         $messageGenerated = false;
         $batch = [];
@@ -84,43 +111,27 @@ class PopulationMessageGenerator
                 continue;
             }
 
-            $offset = 0;
             $progressbar->setMaxSteps($totalCount);
             $progressbar->setProgress(0);
             $count = 0;
+            $elementTypes = $this->loadElementTypes($listing, $totalCount, $batchSize, $progressbar);
 
-            while ($offset < $totalCount) {
-                $listing->setOffset($offset);
-                $listing->setLimit($batchSize);
-                $ids = $listing->loadIdList();
+            foreach (self::chunkIdsByType($elementTypes, $messageBatchSize) as [$elementType, $ids]) {
+                $batch[] = new PopulateIndexMessage(new CreateDocumentMessage(
+                    $ids,
+                    $elementType,
+                    $document,
+                    $indexConfig->getName(),
+                ));
+                $messageGenerated = true;
+                $count += count($ids);
 
-                foreach ($ids ?? [] as $dataObjectId) {
-                    $progressbar->advance();
+                if (count($batch) >= $yieldSize) {
+                    $this->eventDispatcher->dispatch(new PreAddDocumentToQueueEvent($indexConfig, count($batch)), ElasticaBridgeEvents::PRE_ADD_DOCUMENT_TO_QUEUE);
 
-                    $elementType = $this->getElementType($listing, $dataObjectId);
-
-                    if ($elementType === null) {
-                        continue;
-                    }
-
-                    $batch[] = new PopulateIndexMessage(new CreateDocumentMessage(
-                        $dataObjectId,
-                        $elementType,
-                        $document,
-                        $indexConfig->getName(),
-                    ));
-                    $messageGenerated = true;
-                    $count++;
-
-                    if (count($batch) >= $yieldSize) {
-                        $this->eventDispatcher->dispatch(new PreAddDocumentToQueueEvent($indexConfig, count($batch)), ElasticaBridgeEvents::PRE_ADD_DOCUMENT_TO_QUEUE);
-
-                        yield from $batch;
-                        $batch = []; // Reset the batch
-                    }
+                    yield from $batch;
+                    $batch = [];
                 }
-
-                $offset += $batchSize;
             }
 
             \Pimcore::collectGarbage();
@@ -130,7 +141,7 @@ class PopulationMessageGenerator
                 $this->consoleOutput->writeln('');
             }
 
-            $this->consoleOutput->writeln('Dispatched ' . $count . ' messages', ConsoleOutputInterface::VERBOSITY_VERBOSE);
+            $this->consoleOutput->writeln('Dispatched ' . $count . ' elements in messages', ConsoleOutputInterface::VERBOSITY_VERBOSE);
         }
 
         if (count($batch) > 0) {
@@ -158,36 +169,83 @@ class PopulationMessageGenerator
     }
 
     /**
-     * @return class-string|null null if the element no longer exists
+     * @return \Generator<int, class-string> element ID => element type, skipping elements that no longer exist
      */
-    private function getElementType(AssetListing|DataObjectListing|DocumentListing $listing, mixed $dataObjectId): ?string
-    {
-        if ($listing instanceof AssetListing) {
-            $asset = Asset::getById($dataObjectId);
+    private function loadElementTypes(
+        AssetListing|DataObjectListing|DocumentListing $listing,
+        int $totalCount,
+        int $batchSize,
+        ProgressBar $progressbar,
+    ): \Generator {
+        for ($offset = 0; $offset < $totalCount; $offset += $batchSize) {
+            $listing->setOffset($offset);
+            $listing->setLimit($batchSize);
+            $ids = $listing->loadIdList() ?? [];
+            $types = $this->getElementTypes($listing, $ids);
 
-            return $asset instanceof Asset ? $asset::class : null;
+            foreach ($ids as $id) {
+                $progressbar->advance();
+
+                if (isset($types[$id])) {
+                    yield $id => $types[$id];
+                }
+            }
+        }
+    }
+
+    /**
+     * Resolve element types for a batch of IDs in a single query (DataObject listings)
+     * or via getById for Asset/Document listings.
+     *
+     * @param int[] $ids
+     *
+     * @return array<int, class-string> IDs of Assets/Documents that no longer exist are omitted
+     */
+    private function getElementTypes(AssetListing|DataObjectListing|DocumentListing $listing, array $ids): array
+    {
+        if ($ids === []) {
+            return [];
         }
 
-        if ($listing instanceof DocumentListing) {
-            $document = Document::getById($dataObjectId);
+        if ($listing instanceof AssetListing || $listing instanceof DocumentListing) {
+            $baseClass = $listing instanceof AssetListing ? Asset::class : Document::class;
+            $types = [];
 
-            return $document instanceof Document ? $document::class : null;
+            foreach ($ids as $id) {
+                $element = $baseClass::getById($id);
+
+                if ($element instanceof $baseClass) {
+                    $types[$id] = $element::class;
+                }
+            }
+
+            return $types;
         }
 
         $tableName = $listing->getDao()->getTableName();
-        $query = sprintf('SELECT %s FROM %s WHERE id = ?', 'className', $tableName);
-        $result = Db::getConnection()->fetchOne($query, [$dataObjectId]);
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $rows = Db::getConnection()->fetchAllAssociative(
+            sprintf('SELECT id, className FROM %s WHERE id IN (%s)', $tableName, $placeholders),
+            $ids,
+        );
+        $types = [];
 
-        if ($result === false) {
-            throw new \RuntimeException(sprintf('DataObject with ID %s not found in table %s', $dataObjectId, $tableName));
+        foreach ($rows as $row) {
+            $className = 'Pimcore\\Model\\DataObject\\' . ucfirst((string) $row['className']);
+
+            if (!class_exists($className)) {
+                throw new \RuntimeException(sprintf('DataObject class %s for ID %s does not exist', $className, $row['id']));
+            }
+
+            $types[(int) $row['id']] = $className;
         }
 
-        $className = 'Pimcore\\Model\\DataObject\\' . ucfirst((string) $result);
-
-        if (!class_exists($className)) {
-            throw new \RuntimeException(sprintf('DataObject class %s for ID %s does not exist', $className, $dataObjectId));
+        foreach ($ids as $id) {
+            if (!isset($types[$id])) {
+                throw new \RuntimeException(sprintf('DataObject with ID %s not found in table %s', $id, $tableName));
+            }
         }
 
-        return $className;
+        return $types;
     }
 }

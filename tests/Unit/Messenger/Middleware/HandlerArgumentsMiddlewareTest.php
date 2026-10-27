@@ -84,7 +84,7 @@ class HandlerArgumentsMiddlewareTest extends TestCase
             new HandleMessageMiddleware(new HandlersLocator([CreateDocumentMessage::class => [$handler]])),
         ]);
 
-        $bus->dispatch(new Envelope(new CreateDocumentMessage(1, \stdClass::class, 'product_document', 'products')));
+        $bus->dispatch(new Envelope(new CreateDocumentMessage([1], \stdClass::class, 'product_document', 'products')));
 
         $this->assertFalse($received);
     }
