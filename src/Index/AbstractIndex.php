@@ -121,7 +121,7 @@ abstract class AbstractIndex implements IndexInterface
             $documentInstance = $this->documentRepository->get($allowedDocument);
 
             if (
-                $documentInstance->getSubType() === $element::class
+                ($documentInstance->getSubType() !== null && is_a($element, $documentInstance->getSubType(), true))
                 || (
                     $documentInstance->getSubType() === null
                     && is_subclass_of($element, $documentInstance->getType()->baseClass())

@@ -7,6 +7,7 @@ namespace Valantic\ElasticaBridgeBundle\Tests\Unit\Index;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Pimcore\Model\DataObject\Concrete;
 use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Elastica\Client\ElasticsearchClient;
 use Valantic\ElasticaBridgeBundle\Enum\DocumentType;
@@ -177,6 +178,27 @@ class AbstractIndexTest extends TestCase
         $result = $index->findDocumentInstanceByPimcore($element);
 
         $this->assertNull($result);
+    }
+
+    /**
+     * A bundle or project can globally override a core Pimcore model (e.g. a bundle that wraps
+     * Document\Page for personalization) - the overridden element is a real subclass, not the
+     * exact class an IndexDocument's getSubType() names, so matching must not require identity.
+     */
+    public function testFindDocumentInstanceByPimcoreMatchesSubclassOfDeclaredSubtype(): void
+    {
+        $element = PimcoreElementFactory::createDataObject(1);
+        $document = DocumentFactory::createTestDocument(DocumentType::DATA_OBJECT, Concrete::class);
+
+        $this->documentRepository
+            ->shouldReceive('get')
+            ->once()
+            ->andReturn($document)
+        ;
+
+        $index = $this->createTestIndex([$document::class]);
+
+        $this->assertTrue($index->isElementAllowedInIndex($element));
     }
 
     private function createTestIndex(array $allowedDocuments = [], array $settings = []): AbstractIndex
