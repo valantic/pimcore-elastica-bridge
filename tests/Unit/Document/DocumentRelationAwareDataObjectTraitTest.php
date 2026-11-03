@@ -53,6 +53,7 @@ class DocumentRelationAwareDataObjectTraitTest extends TestCase
     public function testCountsDocumentsReferencingTheElementInActiveIndex(): void
     {
         $this->givenPopulating(false, blueGreen: true);
+        $this->activeIndex->shouldReceive('refresh')->once();
         $this->activeIndex
             ->shouldReceive('count')
             ->once()
@@ -74,6 +75,7 @@ class DocumentRelationAwareDataObjectTraitTest extends TestCase
     public function testDoesNotIndexElementWithoutReferencingDocuments(): void
     {
         $this->givenPopulating(false, blueGreen: true);
+        $this->activeIndex->shouldReceive('refresh')->once();
         $this->activeIndex->shouldReceive('count')->andReturn(0);
 
         $this->assertFalse($this->document->shouldIndex(PimcoreElementFactory::createDataObject(7)));
@@ -82,6 +84,7 @@ class DocumentRelationAwareDataObjectTraitTest extends TestCase
     public function testQueriesInactiveIndexWhilePopulatingBlueGreenIndex(): void
     {
         $this->givenPopulating(true, blueGreen: true);
+        $this->inactiveIndex->shouldReceive('refresh')->once();
         $this->inactiveIndex->shouldReceive('count')->once()->andReturn(3);
         $this->activeIndex->shouldNotReceive('count');
 
@@ -91,6 +94,7 @@ class DocumentRelationAwareDataObjectTraitTest extends TestCase
     public function testQueriesActiveIndexWhilePopulatingWithoutBlueGreenIndices(): void
     {
         $this->givenPopulating(true, blueGreen: false);
+        $this->activeIndex->shouldReceive('refresh')->once();
         $this->activeIndex->shouldReceive('count')->once()->andReturn(3);
         $this->inactiveIndex->shouldNotReceive('count');
 
@@ -100,6 +104,7 @@ class DocumentRelationAwareDataObjectTraitTest extends TestCase
     public function testClientErrorMeansNotIndexing(): void
     {
         $this->givenPopulating(false, blueGreen: true);
+        $this->activeIndex->shouldReceive('refresh')->once();
         $this->activeIndex->shouldReceive('count')->andThrow(new ClientResponseException('index_not_found_exception'));
 
         $this->assertFalse($this->document->shouldIndex(PimcoreElementFactory::createDataObject(7)));
@@ -108,6 +113,7 @@ class DocumentRelationAwareDataObjectTraitTest extends TestCase
     public function testServerErrorMeansNotIndexing(): void
     {
         $this->givenPopulating(false, blueGreen: true);
+        $this->activeIndex->shouldReceive('refresh')->once();
         $this->activeIndex->shouldReceive('count')->andThrow(new ServerResponseException('unavailable'));
 
         $this->assertFalse($this->document->shouldIndex(PimcoreElementFactory::createDataObject(7)));

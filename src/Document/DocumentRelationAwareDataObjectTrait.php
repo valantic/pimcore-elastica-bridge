@@ -29,17 +29,21 @@ trait DocumentRelationAwareDataObjectTrait
     public function shouldIndex(AbstractElement $element): bool
     {
         try {
-            $result = (
-                $this->privateLockService->isIndexingLocked($this->index) && $this->index->usesBlueGreenIndices()
+            $target = $this->privateLockService->isIndexingLocked($this->index) && $this->index->usesBlueGreenIndices()
                 ? $this->index->getBlueGreenInactiveElasticaIndex()
-                : $this->index->getElasticaIndex()
-            )
-                ->count(
-                    (new BoolQuery())
-                        ->addFilter(new MatchQuery(DocumentInterface::META_TYPE, DocumentType::DOCUMENT))
-                        ->addFilter(new MatchQuery(DocumentInterface::ATTRIBUTE_RELATED_OBJECTS, $element->getId())),
-                )
-            ;
+                : $this->index->getElasticaIndex();
+
+            // During a full bulk rebuild, bulk indexing settings disable auto-refresh until the
+            // final blue/green switch, so documents bulk-added so far are otherwise invisible to
+            // this query for the whole run (making it always return false, regardless of real
+            // relationships). An explicit refresh works even with auto-refresh disabled.
+            $target->refresh();
+
+            $result = $target->count(
+                (new BoolQuery())
+                    ->addFilter(new MatchQuery(DocumentInterface::META_TYPE, DocumentType::DOCUMENT))
+                    ->addFilter(new MatchQuery(DocumentInterface::ATTRIBUTE_RELATED_OBJECTS, $element->getId())),
+            );
         } catch (ClientResponseException|ServerResponseException) {
             $result = 0;
         }
