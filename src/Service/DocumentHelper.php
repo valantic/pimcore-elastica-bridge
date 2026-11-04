@@ -8,6 +8,8 @@ use Elastica\Document;
 use Pimcore\Model\Element\AbstractElement;
 use Valantic\ElasticaBridgeBundle\Document\DocumentInterface;
 use Valantic\ElasticaBridgeBundle\Document\TenantAwareInterface as DocumentTenantAwareInterface;
+use Valantic\ElasticaBridgeBundle\Index\DocumentContext;
+use Valantic\ElasticaBridgeBundle\Index\IndexContext;
 use Valantic\ElasticaBridgeBundle\Index\IndexInterface;
 use Valantic\ElasticaBridgeBundle\Index\TenantAwareInterface as IndexTenantAwareInterfaceAlias;
 
@@ -32,6 +34,97 @@ class DocumentHelper
                 DocumentInterface::META_ID => $dataObject->getId(),
             ]),
         );
+    }
+
+    /**
+     * Creates the Elastica documents to be stored in an index for a Pimcore element.
+     *
+     * For indices without contexts, this is the result of elementToDocument() if DocumentInterface::shouldIndex() allows it.
+     * For indices with contexts, one Elastica document is created per DocumentContext of every IndexContext.
+     *
+     * @internal
+     *
+     * @param DocumentInterface<AbstractElement> $document
+     *
+     * @return Document[]
+     */
+    public function elementToDocumentsForContexts(
+        DocumentInterface $document,
+        AbstractElement $dataObject,
+        IndexInterface $index,
+    ): array {
+        if ($index->getContexts() === []) {
+            return $document->shouldIndex($dataObject)
+                ? [$this->elementToDocument($document, $dataObject)]
+                : [];
+        }
+
+        return $this->elementToContextDocuments($document, $dataObject, $this->resolveDocumentContexts($document, $dataObject, $index));
+    }
+
+    /**
+     * Collects the DocumentContexts of a Pimcore element for every IndexContext of an index.
+     * An empty result means that the element is not indexed.
+     *
+     * @internal
+     *
+     * @param DocumentInterface<AbstractElement> $document
+     *
+     * @return list<array{IndexContext, DocumentContext}>
+     */
+    public function resolveDocumentContexts(
+        DocumentInterface $document,
+        AbstractElement $dataObject,
+        IndexInterface $index,
+    ): array {
+        $contexts = [];
+
+        foreach ($index->getContexts() as $indexContext) {
+            foreach ($document->getDocumentContexts($dataObject, $indexContext) as $documentContext) {
+                $contexts[] = [$indexContext, $documentContext];
+            }
+        }
+
+        return $contexts;
+    }
+
+    /**
+     * Creates one Elastica document per context returned by resolveDocumentContexts().
+     *
+     * @internal
+     *
+     * @param DocumentInterface<AbstractElement> $document
+     * @param list<array{IndexContext, DocumentContext}> $contexts
+     *
+     * @return Document[]
+     */
+    public function elementToContextDocuments(
+        DocumentInterface $document,
+        AbstractElement $dataObject,
+        array $contexts,
+    ): array {
+        $meta = [
+            DocumentInterface::META_TYPE => $document->getType(),
+            DocumentInterface::META_SUB_TYPE => $document->getSubType(),
+            DocumentInterface::META_ID => $dataObject->getId(),
+        ];
+
+        $result = [];
+
+        foreach ($contexts as [$indexContext, $documentContext]) {
+            $id = $document::getIdForContext($dataObject, $documentContext);
+            $normalized = $document->getNormalizedForContext($dataObject, $indexContext, $documentContext);
+
+            $contextMeta = array_filter([
+                DocumentInterface::META_TENANT => $documentContext->tenant,
+                DocumentInterface::META_LANGUAGE => $documentContext->language,
+                DocumentInterface::META_COUNTRY => $documentContext->country,
+            ], static fn (?string $v): bool => $v !== null);
+
+            $result[] = new Document($id, array_merge($normalized, $meta, $contextMeta));
+        }
+
+        return $result;
     }
 
     /**

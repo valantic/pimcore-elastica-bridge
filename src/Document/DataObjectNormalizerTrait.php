@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Valantic\ElasticaBridgeBundle\Document;
 
+use Doctrine\DBAL\ArrayParameterType;
+use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\ParameterType;
 use Pimcore\Localization\LocaleService;
 use Pimcore\Model\DataObject\AbstractObject;
 use Pimcore\Model\DataObject\Concrete;
@@ -20,10 +23,18 @@ trait DataObjectNormalizerTrait
 {
     protected LocaleService $localeService;
 
+    private Connection $connection;
+
     #[Required]
     public function setLocaleService(LocaleService $localeService): void
     {
         $this->localeService = $localeService;
+    }
+
+    #[Required]
+    public function setDatabaseConnection(Connection $connection): void
+    {
+        $this->connection = $connection;
     }
 
     /**
@@ -54,6 +65,7 @@ trait DataObjectNormalizerTrait
         }
 
         $result = [];
+        $expandedFields = $this->expandFields($fields);
 
         foreach ($this->getLocales() as $locale) {
             if ($useFallbackValues) {
@@ -62,7 +74,7 @@ trait DataObjectNormalizerTrait
 
             $result[$locale] = [];
 
-            foreach ($this->expandFields($fields) as $target => $source) {
+            foreach ($expandedFields as $target => $source) {
                 $result[$locale][$target] = is_callable($source)
                     ? $source($element, $locale)
                     : $element->get($source, $locale);
@@ -178,7 +190,6 @@ trait DataObjectNormalizerTrait
      * Returns a normalized array of IDs of all (recursive) children of $element, optionally limited by $objectTypes.
      *
      * @param string[] $objectTypes
-     * @param int[] $carry
      *
      * @see \App\Elasticsearch\Index\Product\Document\ProductIndexDocument::getNormalized for a usage example
      *
@@ -187,16 +198,29 @@ trait DataObjectNormalizerTrait
     protected function childrenRecursive(
         Concrete $element,
         array $objectTypes = [AbstractObject::OBJECT_TYPE_OBJECT, AbstractObject::OBJECT_TYPE_FOLDER],
-        array $carry = [],
     ): array {
-        /** @var Concrete $child */
-        foreach ($element->getChildren($objectTypes) as $child) {
-            $carry[] = $child->getId();
-            $carry = array_values(array_filter($carry));
-            $carry = $this->childrenRecursive($child, $objectTypes, $carry)[DocumentInterface::ATTRIBUTE_CHILDREN_RECURSIVE];
+        if ($objectTypes === []) {
+            return [DocumentInterface::ATTRIBUTE_CHILDREN_RECURSIVE => []];
         }
 
-        return [DocumentInterface::ATTRIBUTE_CHILDREN_RECURSIVE => array_values(array_filter($carry))];
+        // mirrors $element->getChildren($objectTypes) applied recursively: the element itself is excluded
+        // and unpublished children (including their descendants) are skipped
+        $query = 'WITH RECURSIVE descendants AS (
+                    SELECT id FROM objects WHERE parentId = ? AND type IN (?) AND published = 1
+                    UNION ALL
+                    SELECT o.id FROM objects o
+                    INNER JOIN descendants d ON o.parentId = d.id
+                    WHERE o.type IN (?) AND o.published = 1
+                )
+                SELECT id FROM descendants';
+
+        $ids = $this->connection->fetchFirstColumn(
+            $query,
+            [$element->getId(), $objectTypes, $objectTypes],
+            [ParameterType::INTEGER, ArrayParameterType::STRING, ArrayParameterType::STRING],
+        );
+
+        return [DocumentInterface::ATTRIBUTE_CHILDREN_RECURSIVE => array_map(intval(...), $ids)];
     }
 
     /**

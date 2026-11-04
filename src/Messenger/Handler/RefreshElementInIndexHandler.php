@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Valantic\ElasticaBridgeBundle\Messenger\Handler;
 
 use Pimcore\Model\Element\AbstractElement;
+use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Valantic\ElasticaBridgeBundle\Messenger\Message\RefreshElementInIndex;
 use Valantic\ElasticaBridgeBundle\Repository\IndexRepository;
 use Valantic\ElasticaBridgeBundle\Service\LockService;
@@ -21,6 +22,7 @@ class RefreshElementInIndexHandler extends AbstractRefreshHandler
         private readonly PropagateChanges $propagateChanges,
         private readonly LockService $lockService,
         private readonly IndexRepository $indexRepository,
+        private readonly ConsoleOutputInterface $consoleOutput,
     ) {
     }
 
@@ -33,7 +35,10 @@ class RefreshElementInIndexHandler extends AbstractRefreshHandler
             PropagateChanges::stopPropagation();
         }
 
-        if ($index->usesBlueGreenIndices() && !$this->lockService->getIndexingLock($index)->acquire()) {
+        $this->consoleOutput->writeln(sprintf('Refreshing element %s in index %s', $element->getId(), $index->getName()), ConsoleOutputInterface::VERBOSITY_VERBOSE);
+
+        if ($index->usesBlueGreenIndices() && $this->lockService->isIndexingLocked($index)) {
+            // Population is in progress — keep inactive index in sync too
             $this->propagateChanges->handleIndex($element, $index, $index->getBlueGreenInactiveElasticaIndex());
         }
 

@@ -32,6 +32,11 @@ class IndexFactory
                 return $this->name;
             }
 
+            public function getContexts(): array
+            {
+                return [];
+            }
+
             public function getAllowedDocuments(): array
             {
                 return $this->allowedDocuments;
@@ -68,11 +73,6 @@ class IndexFactory
             public function getBatchSize(): int
             {
                 return 100;
-            }
-
-            public function shouldPopulateInSubprocesses(): bool
-            {
-                return false;
             }
 
             public function getElasticaIndex(): Index

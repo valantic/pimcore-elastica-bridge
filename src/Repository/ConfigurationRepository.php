@@ -16,6 +16,11 @@ class ConfigurationRepository
     ) {
     }
 
+    public function getInterval(): int
+    {
+        return $this->containerBag->get('valantic_elastica_bridge')['indexing']['interval'] ?? 600;
+    }
+
     /**
      * @return list<string>
      */
@@ -56,5 +61,10 @@ class ConfigurationRepository
     public function shouldHandleDocumentAutoSave(): bool
     {
         return $this->containerBag->get('valantic_elastica_bridge')['events']['auto_save']['document'];
+    }
+
+    public function getCooldown(): int
+    {
+        return $this->containerBag->get('valantic_elastica_bridge')['indexing']['cooldown'];
     }
 }
