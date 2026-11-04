@@ -30,6 +30,11 @@ abstract class AbstractRefreshHandler
             /** @var TModel $element */
             $element = new ($className)();
             $element->setId($message->id);
+            $element->setParentId($message->parentId);
+
+            if ($message->type !== null) {
+                $element->setType($message->type);
+            }
 
             if ($element instanceof Concrete) {
                 $element->setPublished(false);
