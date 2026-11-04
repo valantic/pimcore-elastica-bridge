@@ -71,10 +71,8 @@ class IndexSetupService
         $this->restoreProductionSettings($indexConfig, $newIndex);
         $newIndex->flush();
 
-        $oldIndex->removeAlias($indexConfig->getName());
-        $this->logger->log($indexConfig->getName(), 'removed alias from ' . $oldIndex->getName(), ConsoleOutputInterface::VERBOSITY_VERBOSE);
-        $newIndex->addAlias($indexConfig->getName());
-        $this->logger->log($indexConfig->getName(), 'added alias to ' . $newIndex->getName(), ConsoleOutputInterface::VERBOSITY_VERBOSE);
+        $newIndex->addAlias($indexConfig->getName(), replace: true);
+        $this->logger->log($indexConfig->getName(), 'switched alias from ' . $oldIndex->getName() . ' to ' . $newIndex->getName(), ConsoleOutputInterface::VERBOSITY_VERBOSE);
         $oldIndex->flush();
     }
 

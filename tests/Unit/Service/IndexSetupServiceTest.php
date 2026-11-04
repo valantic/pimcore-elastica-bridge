@@ -141,8 +141,7 @@ class IndexSetupServiceTest extends TestCase
         $blue->shouldReceive('getName')->andReturn('products--blue');
         $green->shouldReceive('getName')->andReturn('products--green');
         $green->shouldReceive('flush')->once()->ordered('flush-new');
-        $blue->shouldReceive('removeAlias')->once()->with('products')->ordered('alias');
-        $green->shouldReceive('addAlias')->once()->with('products')->ordered('alias');
+        $green->shouldReceive('addAlias')->once()->with('products', true)->ordered('alias');
         $blue->shouldReceive('flush')->once();
         $green->shouldReceive('refresh')->once();
         $this->esClient->shouldReceive('getIndex')->with('products')->andReturn($this->missingIndex());
@@ -166,8 +165,7 @@ class IndexSetupServiceTest extends TestCase
 
         $green->shouldReceive('setSettings')->once()->with(self::POST_SETTINGS)->ordered();
         $green->shouldReceive('refresh')->once()->ordered();
-        $blue->shouldReceive('removeAlias')->once()->with('products')->ordered();
-        $green->shouldReceive('addAlias')->once()->with('products')->ordered();
+        $green->shouldReceive('addAlias')->once()->with('products', true)->ordered();
         $blue->shouldNotReceive('setSettings');
 
         $this->service->switchBlueGreenIndex($this->indexConfig);
